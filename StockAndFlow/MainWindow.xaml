@@ -1,0 +1,966 @@
+﻿<Window x:Class="StockAndFlow.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:StockAndFlow.ViewModels"
+        xmlns:local="clr-namespace:StockAndFlow.Views"
+        Title="Stock &amp; Flow" Height="600" Width="1000">
+
+    <!-- DataContext will be set via DI in App.xaml.cs -->
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2C3E50" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding AppName}"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="White"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Refresh"
+                            Command="{Binding RefreshMetricsCommand}"
+                            Padding="10,5"
+                            Margin="0,0,10,0"
+                            Background="#3498DB"
+                            Foreground="White"
+                            BorderThickness="0"/>
+                    <Button Content="Sync Shopify"
+                            Command="{Binding SyncShopifyCommand}"
+                            Padding="10,5"
+                            Background="#27AE60"
+                            Foreground="White"
+                            BorderThickness="0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Dashboard Metrics -->
+        <Border Grid.Row="1" Background="#ECF0F1" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <!-- Date Range Filter -->
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                              Text="Period:"
+                              FontSize="12"
+                              FontWeight="SemiBold"
+                              VerticalAlignment="Center"
+                              Margin="0,0,10,0"/>
+
+                    <DatePicker Grid.Column="1"
+                               SelectedDate="{Binding StartDate, UpdateSourceTrigger=PropertyChanged}"
+                               Margin="0,0,10,0"
+                               Width="120"/>
+
+                    <TextBlock Grid.Column="2"
+                              Text="to"
+                              FontSize="12"
+                              VerticalAlignment="Center"
+                              Margin="0,0,10,0"/>
+
+                    <DatePicker Grid.Column="3"
+                               SelectedDate="{Binding EndDate, UpdateSourceTrigger=PropertyChanged}"
+                               Width="120"/>
+                </Grid>
+
+                <!-- Metrics Display -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Total Revenue" FontSize="11" Foreground="#7F8C8D"/>
+                        <TextBlock Text="{Binding CurrentMetrics.TotalRevenue, StringFormat=C2}"
+                                   FontSize="18" FontWeight="Bold" Foreground="#27AE60"/>
+                    </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Total Expenses" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="{Binding CurrentMetrics.TotalExpenses, StringFormat=C2}"
+                               FontSize="18" FontWeight="Bold" Foreground="#E74C3C"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Inventory Losses" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="{Binding CurrentMetrics.TotalInventoryLosses, StringFormat=C2}"
+                               FontSize="18" FontWeight="Bold" Foreground="#E67E22"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3">
+                    <TextBlock Text="Net Profit" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="{Binding CurrentMetrics.NetProfit, StringFormat=C2}"
+                               FontSize="18" FontWeight="Bold" Foreground="#3498DB"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="4">
+                    <TextBlock Text="Profit Margin" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="{Binding CurrentMetrics.OverallProfitMargin, StringFormat={}{0:F2}%}"
+                               FontSize="18" FontWeight="Bold"/>
+                </StackPanel>
+
+                    <StackPanel Grid.Column="5">
+                        <TextBlock Text="Inventory Value" FontSize="11" Foreground="#7F8C8D"/>
+                        <TextBlock Text="{Binding CurrentMetrics.TotalInventoryValue, StringFormat=C2}"
+                                   FontSize="18" FontWeight="Bold"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Low Stock Alert Widget -->
+                <Border Background="#FFF3CD"
+                       BorderBrush="#F39C12"
+                       BorderThickness="1"
+                       CornerRadius="4"
+                       Padding="15"
+                       Margin="0,15,0,0"
+                       Visibility="{Binding InventoryViewModel.HasLowStock, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                  Text="⚠️"
+                                  FontSize="24"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,15,0"/>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontWeight="Bold"
+                                      FontSize="14"
+                                      Foreground="#856404">
+                                <Run Text="{Binding InventoryViewModel.LowStockCount, Mode=OneWay}"/>
+                                <Run Text="Items Need Attention"/>
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding InventoryViewModel.LowStockItems}"
+                                         Margin="0,5,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding StockStatusColor}"
+                                               CornerRadius="3"
+                                               Padding="8,4"
+                                               Margin="0,0,8,4">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}"
+                                                          Foreground="White"
+                                                          FontWeight="SemiBold"
+                                                          FontSize="11"/>
+                                                <TextBlock Text=" ("
+                                                          Foreground="White"
+                                                          FontSize="11"/>
+                                                <TextBlock Text="{Binding QuantityOnHand}"
+                                                          Foreground="White"
+                                                          FontSize="11"/>
+                                                <TextBlock Text=" left)"
+                                                          Foreground="White"
+                                                          FontSize="11"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content Tabs -->
+        <TabControl Grid.Row="2">
+            <TabItem Header="Inventory">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Border Grid.Row="0" Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Search Box -->
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding InventoryViewModel.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="300"
+                                         HorizontalAlignment="Left"
+                                         Padding="8"
+                                         BorderBrush="#BDC3C7"
+                                         BorderThickness="1">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="">
+                                                    <Setter Property="Background">
+                                                        <Setter.Value>
+                                                            <VisualBrush Stretch="None" AlignmentX="Left">
+                                                                <VisualBrush.Visual>
+                                                                    <TextBlock Text="Search inventory..."
+                                                                              Foreground="#95A5A6"
+                                                                              Margin="5,0,0,0"/>
+                                                                </VisualBrush.Visual>
+                                                            </VisualBrush>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="➕ Add Item"
+                                            Command="{Binding InventoryViewModel.AddItemCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#27AE60"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="✏️ Edit"
+                                            Command="{Binding InventoryViewModel.EditItemCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#3498DB"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="👁️ View Details"
+                                            Command="{Binding InventoryViewModel.ViewDetailsCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#9B59B6"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="🗑️ Delete"
+                                            Command="{Binding InventoryViewModel.DeleteItemCommand}"
+                                            Padding="15,8"
+                                            Background="#E74C3C"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Inventory DataGrid -->
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding InventoryViewModel.Items}"
+                                  SelectedItem="{Binding InventoryViewModel.SelectedItem}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  GridLinesVisibility="Horizontal"
+                                  RowBackground="White"
+                                  AlternatingRowBackground="#F8F9FA"
+                                  HeadersVisibility="Column"
+                                  CanUserResizeRows="False">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="Status" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding StockStatusColor}"
+                                                   CornerRadius="3"
+                                                   Padding="5,2">
+                                                <TextBlock Text="{Binding StockStatus}"
+                                                          Foreground="White"
+                                                          FontWeight="SemiBold"
+                                                          FontSize="10"
+                                                          TextAlignment="Center"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" MinWidth="150"/>
+                                <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="100"/>
+                                <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="120"/>
+                                <DataGridTextColumn Header="Cost" Binding="{Binding CostPerUnit, StringFormat=C2}" Width="100"/>
+                                <DataGridTextColumn Header="Price" Binding="{Binding SalePrice, StringFormat=C2}" Width="100"/>
+                                <DataGridTextColumn Header="Quantity" Binding="{Binding QuantityOnHand}" Width="80"/>
+                                <DataGridTextColumn Header="Min. Stock" Binding="{Binding MinimumStockLevel}" Width="85"/>
+                                <DataGridTextColumn Header="Value" Binding="{Binding TotalValue, StringFormat=C2}" Width="100"/>
+                                <DataGridTextColumn Header="Margin" Binding="{Binding ProfitMarginPercentage, StringFormat={}{0:F1}%}" Width="80"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Sales">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Border Grid.Row="0" Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Date Range Filter -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,20,0">
+                                    <TextBlock Text="From:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <DatePicker SelectedDate="{Binding SalesViewModel.StartDate}"
+                                               Width="120"
+                                               Margin="0,0,10,0"/>
+                                    <TextBlock Text="To:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <DatePicker SelectedDate="{Binding SalesViewModel.EndDate}"
+                                               Width="120"/>
+                                </StackPanel>
+
+                                <!-- Summary Stats -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0">
+                                    <Border Background="#ECF0F1" Padding="10,5" Margin="0,0,10,0" CornerRadius="3">
+                                        <StackPanel>
+                                            <TextBlock Text="Total Sales" FontSize="10" Foreground="#7F8C8D"/>
+                                            <TextBlock Text="{Binding SalesViewModel.Sales.Count}"
+                                                      FontWeight="Bold" FontSize="14"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#ECF0F1" Padding="10,5" CornerRadius="3">
+                                        <StackPanel>
+                                            <TextBlock Text="Period Revenue" FontSize="10" Foreground="#7F8C8D"/>
+                                            <TextBlock Text="{Binding SalesViewModel.TotalRevenue, StringFormat=C2}"
+                                                      FontWeight="Bold" FontSize="14" Foreground="#27AE60"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                    <Button Content="📝 Record Sale"
+                                            Command="{Binding SalesViewModel.RecordSaleCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#27AE60"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="👁️ View Details"
+                                            Command="{Binding SalesViewModel.ViewDetailsCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#9B59B6"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="🗑️ Delete"
+                                            Command="{Binding SalesViewModel.DeleteSaleCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#E74C3C"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="🔄 Refresh"
+                                            Command="{Binding SalesViewModel.RefreshCommand}"
+                                            Padding="15,8"
+                                            Background="#3498DB"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Sales DataGrid -->
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding SalesViewModel.Sales}"
+                                  SelectedItem="{Binding SalesViewModel.SelectedSale}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  GridLinesVisibility="Horizontal"
+                                  RowBackground="White"
+                                  AlternatingRowBackground="#F8F9FA"
+                                  HeadersVisibility="Column"
+                                  CanUserResizeRows="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Date" Binding="{Binding SaleDate, StringFormat={}{0:yyyy-MM-dd}}" Width="100"/>
+                                <DataGridTextColumn Header="Time" Binding="{Binding SaleDate, StringFormat={}{0:HH:mm}}" Width="70"/>
+                                <DataGridTextColumn Header="Items" Binding="{Binding ItemNames}" Width="*" MinWidth="200"/>
+                                <DataGridTextColumn Header="Item Count" Binding="{Binding ItemCount}" Width="80"/>
+                                <DataGridTextColumn Header="Total Qty" Binding="{Binding TotalQuantity}" Width="80"/>
+                                <DataGridTextColumn Header="Revenue" Binding="{Binding Revenue, StringFormat=C2}" Width="100"/>
+                                <DataGridTextColumn Header="Profit" Binding="{Binding Profit, StringFormat=C2}" Width="100"/>
+                                <DataGridTextColumn Header="Margin" Binding="{Binding ProfitMargin, StringFormat={}{0:F1}%}" Width="80"/>
+                                <DataGridTextColumn Header="Customer" Binding="{Binding CustomerName}" Width="120"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Expenses">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Border Grid.Row="0" Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Date Range Filter -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,20,0">
+                                    <TextBlock Text="From:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <DatePicker SelectedDate="{Binding ExpensesViewModel.StartDate}"
+                                               Width="120"
+                                               Margin="0,0,10,0"/>
+                                    <TextBlock Text="To:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <DatePicker SelectedDate="{Binding ExpensesViewModel.EndDate}"
+                                               Width="120"/>
+                                </StackPanel>
+
+                                <!-- Summary Stats -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0">
+                                    <Border Background="#FFEBEE" Padding="10,5" Margin="0,0,10,0" CornerRadius="3">
+                                        <StackPanel>
+                                            <TextBlock Text="Total Expenses" FontSize="10" Foreground="#7F8C8D"/>
+                                            <TextBlock Text="{Binding ExpensesViewModel.Expenses.Count}"
+                                                      FontWeight="Bold" FontSize="14"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#FFEBEE" Padding="10,5" CornerRadius="3">
+                                        <StackPanel>
+                                            <TextBlock Text="Period Total" FontSize="10" Foreground="#7F8C8D"/>
+                                            <TextBlock Text="{Binding ExpensesViewModel.TotalExpenses, StringFormat=C2}"
+                                                      FontWeight="Bold" FontSize="14" Foreground="#E74C3C"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                    <Button Content="➕ Add Expense"
+                                            Command="{Binding ExpensesViewModel.AddExpenseCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#E74C3C"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="✏️ Edit"
+                                            Command="{Binding ExpensesViewModel.EditExpenseCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#3498DB"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="👁️ View Details"
+                                            Command="{Binding ExpensesViewModel.ViewDetailsCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#9B59B6"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="🗑️ Delete"
+                                            Command="{Binding ExpensesViewModel.DeleteExpenseCommand}"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0"
+                                            Background="#95A5A6"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                    <Button Content="🔄 Refresh"
+                                            Command="{Binding ExpensesViewModel.RefreshCommand}"
+                                            Padding="15,8"
+                                            Background="#3498DB"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Expenses DataGrid -->
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding ExpensesViewModel.Expenses}"
+                                  SelectedItem="{Binding ExpensesViewModel.SelectedExpense}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  GridLinesVisibility="Horizontal"
+                                  RowBackground="White"
+                                  AlternatingRowBackground="#F8F9FA"
+                                  HeadersVisibility="Column"
+                                  CanUserResizeRows="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Date" Binding="{Binding ExpenseDate, StringFormat={}{0:yyyy-MM-dd}}" Width="100"/>
+                                <DataGridTextColumn Header="Time" Binding="{Binding ExpenseDate, StringFormat={}{0:HH:mm}}" Width="70"/>
+                                <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="150"/>
+                                <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat=C2}" Width="100"/>
+                                <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" MinWidth="200"/>
+                                <DataGridTextColumn Header="Receipt" Binding="{Binding ReceiptImagePath}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Adjustments">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Toolbar -->
+                    <Border Grid.Row="0" Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Date Range Filter -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,20,0">
+                                <TextBlock Text="From:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <DatePicker SelectedDate="{Binding AdjustmentsViewModel.StartDate}"
+                                           Width="120"
+                                           Margin="0,0,10,0"/>
+                                <TextBlock Text="To:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <DatePicker SelectedDate="{Binding AdjustmentsViewModel.EndDate}"
+                                           Width="120"/>
+                            </StackPanel>
+
+                            <!-- Summary Stats -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0">
+                                <Border Background="#FFF3CD" Padding="10,5" Margin="0,0,10,0" CornerRadius="3">
+                                    <StackPanel>
+                                        <TextBlock Text="Total Adjustments" FontSize="10" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="{Binding AdjustmentsViewModel.TotalAdjustments}"
+                                                  FontWeight="Bold" FontSize="14"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#FFEBEE" Padding="10,5" Margin="0,0,10,0" CornerRadius="3">
+                                    <StackPanel>
+                                        <TextBlock Text="Reductions" FontSize="10" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="{Binding AdjustmentsViewModel.TotalReductions}"
+                                                  FontWeight="Bold" FontSize="14" Foreground="#E74C3C"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#E8F5E9" Padding="10,5" Margin="0,0,10,0" CornerRadius="3">
+                                    <StackPanel>
+                                        <TextBlock Text="Additions" FontSize="10" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="{Binding AdjustmentsViewModel.TotalAdditions}"
+                                                  FontWeight="Bold" FontSize="14" Foreground="#27AE60"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#FFEBEE" Padding="10,5" Margin="0,0,10,0" CornerRadius="3" BorderBrush="#E74C3C" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="💸 Cost Lost" FontSize="10" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="{Binding AdjustmentsViewModel.TotalCostLost, StringFormat=C2}"
+                                                  FontWeight="Bold" FontSize="14" Foreground="#E74C3C"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#FFEBEE" Padding="10,5" CornerRadius="3" BorderBrush="#C62828" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="💸 Profit Lost" FontSize="10" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="{Binding AdjustmentsViewModel.TotalProfitLost, StringFormat=C2}"
+                                                  FontWeight="Bold" FontSize="14" Foreground="#C62828"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Action Buttons -->
+                            <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                <Button Content="📦 Record Adjustment"
+                                        Command="{Binding AdjustmentsViewModel.RecordAdjustmentCommand}"
+                                        Padding="15,8"
+                                        Margin="0,0,10,0"
+                                        Background="#E67E22"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                                <Button Content="👁️ View Details"
+                                        Command="{Binding AdjustmentsViewModel.ViewDetailsCommand}"
+                                        Padding="15,8"
+                                        Margin="0,0,10,0"
+                                        Background="#9B59B6"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                                <Button Content="🗑️ Delete"
+                                        Command="{Binding AdjustmentsViewModel.DeleteAdjustmentCommand}"
+                                        Padding="15,8"
+                                        Margin="0,0,10,0"
+                                        Background="#95A5A6"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                                <Button Content="🔄 Refresh"
+                                        Command="{Binding AdjustmentsViewModel.RefreshCommand}"
+                                        Padding="15,8"
+                                        Background="#3498DB"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Adjustments DataGrid -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding AdjustmentsViewModel.Adjustments}"
+                              SelectedItem="{Binding AdjustmentsViewModel.SelectedAdjustment}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              GridLinesVisibility="Horizontal"
+                              RowBackground="White"
+                              AlternatingRowBackground="#F8F9FA"
+                              HeadersVisibility="Column"
+                              CanUserResizeRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Date" Binding="{Binding AdjustmentDate, StringFormat={}{0:yyyy-MM-dd}}" Width="100"/>
+                            <DataGridTextColumn Header="Time" Binding="{Binding AdjustmentDate, StringFormat={}{0:HH:mm}}" Width="70"/>
+                            <DataGridTextColumn Header="Item" Binding="{Binding InventoryItemName}" Width="*" MinWidth="150"/>
+                            <DataGridTextColumn Header="Reason" Binding="{Binding ReasonDisplay}" Width="150"/>
+                            <DataGridTemplateColumn Header="Change" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding QuantityChangeDisplay}"
+                                                  Foreground="{Binding QuantityChangeColor}"
+                                                  FontWeight="Bold"
+                                                  HorizontalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*" MinWidth="200"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Reports">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header and Date Filter -->
+                        <Border Grid.Row="0" Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Reports" FontSize="20" FontWeight="Bold" Margin="0,0,20,0"/>
+                                    <TextBlock Text="From:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <DatePicker SelectedDate="{Binding ReportsViewModel.StartDate}" Width="120" Margin="0,0,10,0"/>
+                                    <TextBlock Text="To:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <DatePicker SelectedDate="{Binding ReportsViewModel.EndDate}" Width="120"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="📊 Export/Import" Command="{Binding ReportsViewModel.ExportImportCommand}"
+                                            Padding="15,8" Margin="0,0,10,0" Background="#9B59B6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                    <Button Content="🔄 Refresh" Command="{Binding ReportsViewModel.RefreshCommand}"
+                                            Padding="15,8" Background="#3498DB" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Summary Cards -->
+                        <Grid Grid.Row="1" Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Sales Card -->
+                            <Border Grid.Column="0" Background="#E8F5E9" Padding="15" Margin="0,0,10,0" BorderBrush="#4CAF50" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="💰 Total Revenue" FontSize="12" Foreground="#2E7D32" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.TotalRevenue, StringFormat=C2}"
+                                               FontSize="24" FontWeight="Bold" Foreground="#1B5E20" Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.TotalSalesCount, StringFormat={}{0} sales}"
+                                               FontSize="11" Foreground="#66BB6A" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Expenses Card -->
+                            <Border Grid.Column="1" Background="#FFEBEE" Padding="15" Margin="0,0,10,0" BorderBrush="#F44336" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="💸 Total Expenses" FontSize="12" Foreground="#C62828" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.TotalExpenses, StringFormat=C2}"
+                                               FontSize="24" FontWeight="Bold" Foreground="#B71C1C" Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.TotalExpensesCount, StringFormat={}{0} expenses}"
+                                               FontSize="11" Foreground="#E57373" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Net Profit Card -->
+                            <Border Grid.Column="2" Background="#E3F2FD" Padding="15" Margin="0,0,10,0" BorderBrush="#2196F3" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="📈 Net Profit" FontSize="12" Foreground="#1565C0" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.NetProfit, StringFormat=C2}"
+                                               FontSize="24" FontWeight="Bold" Foreground="#0D47A1" Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.ProfitMargin, StringFormat={}{0:F1}% margin}"
+                                               FontSize="11" Foreground="#42A5F5" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Inventory Card -->
+                            <Border Grid.Column="3" Background="#F3E5F5" Padding="15" BorderBrush="#9C27B0" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="📦 Inventory Value" FontSize="12" Foreground="#6A1B9A" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.TotalInventoryValue, StringFormat=C2}"
+                                               FontSize="24" FontWeight="Bold" Foreground="#4A148C" Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding ReportsViewModel.TotalItemsInStock, StringFormat={}{0} units}"
+                                               FontSize="11" Foreground="#AB47BC" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Detailed Reports Grid -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left Column -->
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <!-- Top Selling Items -->
+                                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="🏆 Top Selling Items" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <DataGrid ItemsSource="{Binding ReportsViewModel.TopSellingItems}"
+                                                  AutoGenerateColumns="False"
+                                                  IsReadOnly="True"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  RowBackground="White"
+                                                  AlternatingRowBackground="#F8F9FA"
+                                                  MaxHeight="300">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Item" Binding="{Binding ItemName}" Width="*"/>
+                                                <DataGridTextColumn Header="Qty" Binding="{Binding QuantitySold}" Width="60"/>
+                                                <DataGridTextColumn Header="Revenue" Binding="{Binding Revenue, StringFormat=C0}" Width="80"/>
+                                                <DataGridTextColumn Header="Profit" Binding="{Binding Profit, StringFormat=C0}" Width="80"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Low Stock Alert -->
+                                <Border Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="⚠️ Low Stock Alert" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <DataGrid ItemsSource="{Binding ReportsViewModel.LowStockItems}"
+                                                  AutoGenerateColumns="False"
+                                                  IsReadOnly="True"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  RowBackground="White"
+                                                  AlternatingRowBackground="#F8F9FA"
+                                                  MaxHeight="300">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Item" Binding="{Binding Name}" Width="*"/>
+                                                <DataGridTextColumn Header="Stock" Binding="{Binding QuantityOnHand}" Width="60"/>
+                                                <DataGridTextColumn Header="Value" Binding="{Binding TotalValue, StringFormat=C0}" Width="80"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Right Column -->
+                            <StackPanel Grid.Column="1">
+                                <!-- Expense Breakdown -->
+                                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="💳 Expenses by Category" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <DataGrid ItemsSource="{Binding ReportsViewModel.ExpensesByCategory}"
+                                                  AutoGenerateColumns="False"
+                                                  IsReadOnly="True"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  RowBackground="White"
+                                                  AlternatingRowBackground="#F8F9FA"
+                                                  MaxHeight="300">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="*"/>
+                                                <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="60"/>
+                                                <DataGridTextColumn Header="Amount" Binding="{Binding TotalAmount, StringFormat=C2}" Width="100"/>
+                                                <DataGridTextColumn Header="%" Binding="{Binding Percentage, StringFormat={}{0:F1}%}" Width="60"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Inventory Losses -->
+                                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="💸 Inventory Losses" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Total Adjustments:" FontSize="11" Foreground="#7F8C8D" Margin="0,0,0,8"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ReportsViewModel.TotalAdjustments}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Quantity Lost:" FontSize="11" Foreground="#7F8C8D" Margin="0,0,0,8"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ReportsViewModel.TotalInventoryLosses}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Cost Lost:" FontSize="11" Foreground="#7F8C8D" Margin="0,0,0,8"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ReportsViewModel.TotalCostLost, StringFormat=C2}" FontSize="11" FontWeight="SemiBold" Foreground="#E74C3C" Margin="0,0,0,8"/>
+
+                                            <Separator Grid.Row="3" Grid.ColumnSpan="2" Margin="0,8"/>
+                                        </Grid>
+
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" Text="Potential Profit Lost:" FontWeight="Bold" FontSize="12" Foreground="#C62828"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding ReportsViewModel.TotalProfitLost, StringFormat=C2}" FontWeight="Bold" FontSize="14" Foreground="#C62828"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Sales Performance -->
+                                <Border Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="📊 Sales Performance" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Margin="0,0,10,10">
+                                                <TextBlock Text="Total Sales" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="{Binding ReportsViewModel.TotalSalesCount}" FontSize="20" FontWeight="Bold"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Margin="10,0,0,10">
+                                                <TextBlock Text="Avg Sale Value" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="{Binding ReportsViewModel.AverageSaleValue, StringFormat=C2}" FontSize="20" FontWeight="Bold"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Separator Margin="0,10"/>
+
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                                <TextBlock Text="Gross Profit" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="{Binding ReportsViewModel.TotalSalesProfit, StringFormat=C2}"
+                                                           FontSize="20" FontWeight="Bold" Foreground="#27AE60"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                <TextBlock Text="COGS" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="{Binding ReportsViewModel.TotalCOGS, StringFormat=C2}"
+                                                           FontSize="20" FontWeight="Bold" Foreground="#E74C3C"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="3" Background="#34495E" Padding="10,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="White"
+                           VerticalAlignment="Center"/>
+
+                <ProgressBar Grid.Column="1"
+                             Width="100"
+                             Height="20"
+                             IsIndeterminate="True"
+                             Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

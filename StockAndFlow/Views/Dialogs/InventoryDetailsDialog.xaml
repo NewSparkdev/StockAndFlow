@@ -1,0 +1,180 @@
+<Window x:Class="StockAndFlow.Views.Dialogs.InventoryDetailsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Inventory Item Details"
+        Width="600"
+        Height="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <Style TargetType="TextBlock" x:Key="LabelStyle">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+
+        <Style TargetType="TextBlock" x:Key="ValueStyle">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2C3E50" Padding="20">
+            <StackPanel>
+                <TextBlock Text="📦 Inventory Item Details"
+                          FontSize="20"
+                          FontWeight="Bold"
+                          Foreground="White"/>
+                <TextBlock Text="{Binding Name}"
+                          FontSize="16"
+                          Foreground="#ECF0F1"
+                          Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20">
+                <!-- Image -->
+                <Border Background="White"
+                       Padding="15"
+                       Margin="0,0,0,20"
+                       BorderBrush="#BDC3C7"
+                       BorderThickness="1"
+                       Visibility="{Binding HasImage, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Product Image" Style="{StaticResource LabelStyle}"/>
+                        <Image Source="{Binding ImagePath}"
+                              MaxHeight="200"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Basic Information -->
+                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Basic Information" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Item Name" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding Name}" Style="{StaticResource ValueStyle}"/>
+
+                        <TextBlock Text="SKU" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding Sku}" Style="{StaticResource ValueStyle}"/>
+
+                        <TextBlock Text="Category" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding Category}" Style="{StaticResource ValueStyle}"/>
+
+                        <TextBlock Text="Description" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding Description}" Style="{StaticResource ValueStyle}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Pricing & Inventory -->
+                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Pricing &amp; Inventory" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="Cost Per Unit" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{Binding CostPerUnit, StringFormat=C2}"
+                                          Style="{StaticResource ValueStyle}"
+                                          Foreground="#E74C3C"/>
+
+                                <TextBlock Text="Sale Price" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{Binding SalePrice, StringFormat=C2}"
+                                          Style="{StaticResource ValueStyle}"
+                                          Foreground="#27AE60"/>
+
+                                <TextBlock Text="Quantity on Hand" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{Binding QuantityOnHand}" Style="{StaticResource ValueStyle}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                <TextBlock Text="Profit Per Unit" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{Binding ProfitPerUnit, StringFormat=C2}"
+                                          Style="{StaticResource ValueStyle}"
+                                          Foreground="#3498DB"/>
+
+                                <TextBlock Text="Profit Margin" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{Binding ProfitMarginPercentage, StringFormat={}{0:F1}%}"
+                                          Style="{StaticResource ValueStyle}"/>
+
+                                <TextBlock Text="Total Value" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{Binding TotalValue, StringFormat=C2}"
+                                          Style="{StaticResource ValueStyle}"
+                                          FontWeight="Bold"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Shopify Integration -->
+                <Border Background="White"
+                       Padding="15"
+                       Margin="0,0,0,20"
+                       BorderBrush="#BDC3C7"
+                       BorderThickness="1"
+                       Visibility="{Binding IsSyncedWithShopify, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Shopify Integration" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Shopify Product ID" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding ShopifyProductId}" Style="{StaticResource ValueStyle}"/>
+
+                        <TextBlock Text="Shopify Variant ID" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding ShopifyVariantId}" Style="{StaticResource ValueStyle}"/>
+
+                        <TextBlock Text="Last Synced" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding LastSyncedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
+                                  Style="{StaticResource ValueStyle}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Metadata -->
+                <Border Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Metadata" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Item ID" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding Id}"
+                                  Style="{StaticResource ValueStyle}"
+                                  FontFamily="Consolas"
+                                  FontSize="11"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,1,0,0">
+            <Button Content="Close"
+                   Click="CloseButton_Click"
+                   Padding="20,10"
+                   Background="#95A5A6"
+                   Foreground="White"
+                   BorderThickness="0"
+                   FontWeight="SemiBold"
+                   Cursor="Hand"
+                   HorizontalAlignment="Right"/>
+        </Border>
+    </Grid>
+</Window>

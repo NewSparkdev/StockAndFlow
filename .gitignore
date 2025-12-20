@@ -1,0 +1,66 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build Results
+[Dd]ebug/
+[Rr]elease/
+*.nuget.props
+*.nuget.targets
+
+# Rider
+.idea/
+
+# User-specific data
+Data/
+*.json
+!StockAndFlow/Data/.gitkeep
+
+# Images uploaded by users
+Images/
+StockAndFlow/bin/Debug/*/Images/
+!StockAndFlow/Images/.gitkeep
+
+# Installer output
+Installer/
+Publish/
+
+# Build/installer files
+*.exe
+*.msi
+BuildInstaller.bat
+QuickInstall.bat
+StockAndFlowSetup.iss
+INSTALLER_README.md
+
+# Logs
+*.log
+error.log
+startup.log
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,186 @@
+<UserControl x:Class="StockAndFlow.Views.AddEditExpenseView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F5F5">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <Style TargetType="TextBlock" x:Key="LabelStyle">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="BorderBrush" Value="#BDC3C7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="BorderBrush" Value="#BDC3C7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style TargetType="DatePicker">
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="BorderBrush" Value="#BDC3C7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PrimaryButton">
+            <Setter Property="Background" Value="#E74C3C"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style TargetType="Button" x:Key="SecondaryButton">
+            <Setter Property="Background" Value="#95A5A6"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#E74C3C" Padding="20">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="← Back to Expenses"
+                        Command="{Binding CancelCommand}"
+                        Background="Transparent"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Padding="0"
+                        FontSize="14"
+                        Cursor="Hand"
+                        VerticalAlignment="Center"
+                        Margin="0,0,20,0"/>
+                <TextBlock Text="{Binding DialogTitle}"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Foreground="White"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Form Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20">
+
+                <!-- Expense Date -->
+                <TextBlock Text="Expense Date *" Style="{StaticResource LabelStyle}"/>
+                <DatePicker SelectedDate="{Binding ExpenseDate}"/>
+
+                <!-- Amount -->
+                <TextBlock Text="Amount *" Style="{StaticResource LabelStyle}"/>
+                <TextBox Text="{Binding Amount, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+
+                <!-- Category -->
+                <TextBlock Text="Category *" Style="{StaticResource LabelStyle}"/>
+                <ComboBox ItemsSource="{Binding AvailableCategories}"
+                         SelectedItem="{Binding Category}"
+                         IsEditable="True"
+                         Text="{Binding Category, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <!-- Description -->
+                <TextBlock Text="Description" Style="{StaticResource LabelStyle}"/>
+                <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                         Height="80"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"/>
+
+                <!-- Linked Inventory Item (Optional) -->
+                <TextBlock Text="Linked Inventory Item (Optional)" Style="{StaticResource LabelStyle}"/>
+                <ComboBox ItemsSource="{Binding AvailableInventoryItems}"
+                         SelectedValue="{Binding SelectedInventoryItemId}"
+                         SelectedValuePath="Id">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                <TextBlock FontSize="10" Foreground="#7F8C8D">
+                                    <Run Text="SKU:"/>
+                                    <Run Text="{Binding Sku}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- Receipt Image -->
+                <TextBlock Text="Receipt Image" Style="{StaticResource LabelStyle}"/>
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                            Text="{Binding ReceiptImagePath, UpdateSourceTrigger=PropertyChanged}"
+                            IsReadOnly="True"
+                            Background="#ECF0F1"/>
+                    <Button Grid.Column="1"
+                            Content="Browse..."
+                            Command="{Binding BrowseReceiptCommand}"
+                            Margin="5,0,0,0"
+                            Padding="15,8"/>
+                </Grid>
+
+                <!-- Receipt Preview -->
+                <Border Background="White"
+                        Padding="10"
+                        Margin="0,0,0,15"
+                        BorderBrush="#BDC3C7"
+                        BorderThickness="1"
+                        CornerRadius="3"
+                        Visibility="{Binding HasReceipt, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Receipt Preview:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <Image Source="{Binding ReceiptImagePath}"
+                               MaxHeight="200"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Buttons -->
+        <Border Grid.Row="2"
+                Background="White"
+                BorderBrush="#BDC3C7"
+                BorderThickness="0,1,0,0"
+                Padding="20">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Content="Cancel"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CancelCommand}"
+                        Margin="0,0,10,0"
+                        Width="100"/>
+                <Button Content="Save Expense"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding SaveCommand}"
+                        Width="120"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
