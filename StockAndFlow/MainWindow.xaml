@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#2C3E50" Padding="15">
+        <Border Grid.Row="0" Background="{StaticResource Primary}" Padding="20,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -36,23 +36,17 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="Refresh"
                             Command="{Binding RefreshMetricsCommand}"
-                            Padding="10,5"
                             Margin="0,0,10,0"
-                            Background="#3498DB"
-                            Foreground="White"
-                            BorderThickness="0"/>
+                            Style="{StaticResource SecondaryButton}"/>
                     <Button Content="Sync Shopify"
                             Command="{Binding SyncShopifyCommand}"
-                            Padding="10,5"
-                            Background="#27AE60"
-                            Foreground="White"
-                            BorderThickness="0"/>
+                            Style="{StaticResource SecondaryButton}"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Dashboard Metrics -->
-        <Border Grid.Row="1" Background="#ECF0F1" Padding="15" BorderBrush="#BDC3C7" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="{StaticResource Surface}" Padding="20,16" BorderBrush="{StaticResource Outline}" BorderThickness="0,0,0,1">
             <StackPanel>
                 <!-- Date Range Filter -->
                 <Grid Margin="0,0,0,15">
@@ -99,39 +93,39 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Total Revenue" FontSize="11" Foreground="#7F8C8D"/>
+                        <TextBlock Text="Total Revenue" Style="{StaticResource Caption}"/>
                         <TextBlock Text="{Binding CurrentMetrics.TotalRevenue, StringFormat=C2}"
-                                   FontSize="18" FontWeight="Bold" Foreground="#27AE60"/>
+                                   Style="{StaticResource MetricValue}" Foreground="#27AE60"/>
                     </StackPanel>
 
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="Total Expenses" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="Total Expenses" Style="{StaticResource Caption}"/>
                     <TextBlock Text="{Binding CurrentMetrics.TotalExpenses, StringFormat=C2}"
-                               FontSize="18" FontWeight="Bold" Foreground="#E74C3C"/>
+                               Style="{StaticResource MetricValue}" Foreground="#E74C3C"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="Inventory Losses" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="Inventory Losses" Style="{StaticResource Caption}"/>
                     <TextBlock Text="{Binding CurrentMetrics.TotalInventoryLosses, StringFormat=C2}"
-                               FontSize="18" FontWeight="Bold" Foreground="#E67E22"/>
+                               Style="{StaticResource MetricValue}" Foreground="#E67E22"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="3">
-                    <TextBlock Text="Net Profit" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="Net Profit" Style="{StaticResource Caption}"/>
                     <TextBlock Text="{Binding CurrentMetrics.NetProfit, StringFormat=C2}"
-                               FontSize="18" FontWeight="Bold" Foreground="#3498DB"/>
+                               Style="{StaticResource MetricValue}" Foreground="#3498DB"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="4">
-                    <TextBlock Text="Profit Margin" FontSize="11" Foreground="#7F8C8D"/>
+                    <TextBlock Text="Profit Margin" Style="{StaticResource Caption}"/>
                     <TextBlock Text="{Binding CurrentMetrics.OverallProfitMargin, StringFormat={}{0:F2}%}"
-                               FontSize="18" FontWeight="Bold"/>
+                               Style="{StaticResource MetricValue}"/>
                 </StackPanel>
 
                     <StackPanel Grid.Column="5">
-                        <TextBlock Text="Inventory Value" FontSize="11" Foreground="#7F8C8D"/>
+                        <TextBlock Text="Inventory Value" Style="{StaticResource Caption}"/>
                         <TextBlock Text="{Binding CurrentMetrics.TotalInventoryValue, StringFormat=C2}"
-                                   FontSize="18" FontWeight="Bold"/>
+                                   Style="{StaticResource MetricValue}"/>
                     </StackPanel>
                 </Grid>
 
@@ -915,13 +909,13 @@
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Total Adjustments:" FontSize="11" Foreground="#7F8C8D" Margin="0,0,0,8"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Total Adjustments:" Style="{StaticResource Caption}" Margin="0,0,0,8"/>
                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ReportsViewModel.TotalAdjustments}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Quantity Lost:" FontSize="11" Foreground="#7F8C8D" Margin="0,0,0,8"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Quantity Lost:" Style="{StaticResource Caption}" Margin="0,0,0,8"/>
                                             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ReportsViewModel.TotalInventoryLosses}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Cost Lost:" FontSize="11" Foreground="#7F8C8D" Margin="0,0,0,8"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Cost Lost:" Style="{StaticResource Caption}" Margin="0,0,0,8"/>
                                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ReportsViewModel.TotalCostLost, StringFormat=C2}" FontSize="11" FontWeight="SemiBold" Foreground="#E74C3C" Margin="0,0,0,8"/>
 
                                             <Separator Grid.Row="3" Grid.ColumnSpan="2" Margin="0,8"/>
@@ -951,12 +945,12 @@
                                             </Grid.ColumnDefinitions>
 
                                             <StackPanel Grid.Column="0" Margin="0,0,10,10">
-                                                <TextBlock Text="Total Sales" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="Total Sales" Style="{StaticResource Caption}"/>
                                                 <TextBlock Text="{Binding ReportsViewModel.TotalSalesCount}" FontSize="20" FontWeight="Bold"/>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="1" Margin="10,0,0,10">
-                                                <TextBlock Text="Avg Sale Value" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="Avg Sale Value" Style="{StaticResource Caption}"/>
                                                 <TextBlock Text="{Binding ReportsViewModel.AverageSaleValue, StringFormat=C2}" FontSize="20" FontWeight="Bold"/>
                                             </StackPanel>
                                         </Grid>
@@ -970,13 +964,13 @@
                                             </Grid.ColumnDefinitions>
 
                                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <TextBlock Text="Gross Profit" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="Gross Profit" Style="{StaticResource Caption}"/>
                                                 <TextBlock Text="{Binding ReportsViewModel.TotalSalesProfit, StringFormat=C2}"
                                                            FontSize="20" FontWeight="Bold" Foreground="#27AE60"/>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                                <TextBlock Text="COGS" FontSize="11" Foreground="#7F8C8D"/>
+                                                <TextBlock Text="COGS" Style="{StaticResource Caption}"/>
                                                 <TextBlock Text="{Binding ReportsViewModel.TotalCOGS, StringFormat=C2}"
                                                            FontSize="20" FontWeight="Bold" Foreground="#E74C3C"/>
                                             </StackPanel>
