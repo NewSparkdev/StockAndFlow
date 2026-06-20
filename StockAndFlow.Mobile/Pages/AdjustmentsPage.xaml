@@ -10,7 +10,7 @@
         <ToolbarItem Text="Refresh" Command="{Binding RefreshCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="10" RowSpacing="8">
+    <Grid RowDefinitions="Auto,*" Padding="10" RowSpacing="8">
 
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8" Padding="0,0,0,8">
             <Label Text="From" VerticalOptions="Center"/>
@@ -29,30 +29,35 @@
                 </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:InventoryAdjustment">
-                        <Border Style="{StaticResource ListCard}">
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
-                                <Label Grid.Row="0" Grid.Column="0" Text="{Binding InventoryItemName}"
-                                       FontSize="16" FontAttributes="Bold" />
-                                <Label Grid.Row="0" Grid.Column="1" Text="{Binding QuantityChangeDisplay}"
-                                       FontAttributes="Bold"
-                                       TextColor="{Binding QuantityChangeColor}" />
-                                <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                       FontSize="12" TextColor="Gray"
-                                       Text="{Binding ReasonDisplay}" />
-                                <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                                       FontSize="13"
-                                       Text="{Binding AdjustmentDate, StringFormat='{0:d}'}" />
-                            </Grid>
-                        </Border>
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems>
+                                    <SwipeItem Text="Delete" BackgroundColor="{StaticResource Danger}" Invoked="OnDeleteSwipe" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Border Style="{StaticResource ListCard}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnRowTapped" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                    <Label Grid.Row="0" Grid.Column="0" Text="{Binding InventoryItemName}"
+                                           FontSize="16" FontAttributes="Bold" />
+                                    <Label Grid.Row="0" Grid.Column="1" Text="{Binding QuantityChangeDisplay}"
+                                           FontAttributes="Bold"
+                                           TextColor="{Binding QuantityChangeColor}" />
+                                    <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                           Style="{StaticResource Caption}"
+                                           Text="{Binding ReasonDisplay}" />
+                                    <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                           FontSize="13"
+                                           Text="{Binding AdjustmentDate, StringFormat='{0:d}'}" />
+                                </Grid>
+                            </Border>
+                        </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
-
-        <HorizontalStackLayout Grid.Row="2" Spacing="8" HorizontalOptions="Center">
-            <Button Text="Details" Command="{Binding ViewDetailsCommand}" />
-            <Button Text="Delete" Command="{Binding DeleteAdjustmentCommand}" BackgroundColor="#E74C3C" />
-        </HorizontalStackLayout>
 
     </Grid>
 

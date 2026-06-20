@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:beh="clr-namespace:StockAndFlow.Mobile.Behaviors"
              x:Class="StockAndFlow.Mobile.Pages.AddEditInventoryPage"
              Title="{Binding DialogTitle}">
 
@@ -19,22 +20,38 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <VerticalStackLayout Grid.Column="0" Spacing="4">
                     <Label Text="Cost / unit" />
-                    <Entry Text="{Binding CostPerUnit}" Keyboard="Numeric" />
+                    <Entry Text="{Binding CostPerUnit}" Keyboard="Numeric">
+                        <Entry.Behaviors>
+                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
+                        </Entry.Behaviors>
+                    </Entry>
                 </VerticalStackLayout>
                 <VerticalStackLayout Grid.Column="1" Spacing="4">
                     <Label Text="Sale price" />
-                    <Entry Text="{Binding SalePrice}" Keyboard="Numeric" />
+                    <Entry Text="{Binding SalePrice}" Keyboard="Numeric">
+                        <Entry.Behaviors>
+                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
+                        </Entry.Behaviors>
+                    </Entry>
                 </VerticalStackLayout>
             </Grid>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <VerticalStackLayout Grid.Column="0" Spacing="4">
                     <Label Text="Quantity on hand" />
-                    <Entry Text="{Binding QuantityOnHand}" Keyboard="Numeric" />
+                    <Entry Text="{Binding QuantityOnHand}" Keyboard="Numeric">
+                        <Entry.Behaviors>
+                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                        </Entry.Behaviors>
+                    </Entry>
                 </VerticalStackLayout>
                 <VerticalStackLayout Grid.Column="1" Spacing="4">
                     <Label Text="Min. stock level" />
-                    <Entry Text="{Binding MinimumStockLevel}" Keyboard="Numeric" />
+                    <Entry Text="{Binding MinimumStockLevel}" Keyboard="Numeric">
+                        <Entry.Behaviors>
+                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                        </Entry.Behaviors>
+                    </Entry>
                 </VerticalStackLayout>
             </Grid>
 
@@ -50,7 +67,7 @@
             <Image Source="{Binding ImagePath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasImage}" HeightRequest="120" Aspect="AspectFit" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
             </Grid>
 

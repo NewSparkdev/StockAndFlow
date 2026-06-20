@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:StockAndFlow.Models;assembly=StockAndFlow.Core"
+             xmlns:beh="clr-namespace:StockAndFlow.Mobile.Behaviors"
              x:Class="StockAndFlow.Mobile.Pages.RecordSalePage"
              Title="Record Sale">
 
@@ -32,14 +33,18 @@
                                     <CheckBox Grid.Row="0" Grid.Column="0" Grid.RowSpan="3"
                                               IsChecked="{Binding IsSelected}" VerticalOptions="Center" />
                                     <Label Grid.Row="0" Grid.Column="1" Text="{Binding ItemName}" FontAttributes="Bold" />
-                                    <Label Grid.Row="1" Grid.Column="1" FontSize="12" TextColor="Gray"
+                                    <Label Grid.Row="1" Grid.Column="1" Style="{StaticResource Caption}"
                                            Text="{Binding SalePricePerUnit, StringFormat='{0:C2} ea'}" />
-                                    <Label Grid.Row="2" Grid.Column="1" FontSize="12" TextColor="Gray"
+                                    <Label Grid.Row="2" Grid.Column="1" Style="{StaticResource Caption}"
                                            Text="{Binding AvailableQuantity, StringFormat='{0} in stock'}" />
                                     <Entry Grid.Row="0" Grid.Column="2" Grid.RowSpan="3"
                                            Text="{Binding Quantity}" Keyboard="Numeric"
                                            WidthRequest="60" HorizontalTextAlignment="Center"
-                                           VerticalOptions="Center" />
+                                           VerticalOptions="Center">
+                                        <Entry.Behaviors>
+                                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                                        </Entry.Behaviors>
+                                    </Entry>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -52,7 +57,7 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <VerticalStackLayout Grid.Row="1" Padding="16" Spacing="6" BackgroundColor="#F4F4F4">
+        <VerticalStackLayout Grid.Row="1" Padding="16" Spacing="6" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
             <Grid ColumnDefinitions="*,Auto">
                 <Label Text="Subtotal" />
                 <Label Grid.Column="1" Text="{Binding CartSubtotal, StringFormat='{0:C2}'}" FontAttributes="Bold" />
@@ -66,7 +71,7 @@
                 <Label Grid.Column="1" Text="{Binding CartTotal, StringFormat='{0:C2}'}" FontSize="18" FontAttributes="Bold" />
             </Grid>
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,6,0,0">
-                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Complete Sale" Command="{Binding SaveCommand}" />
             </Grid>
         </VerticalStackLayout>

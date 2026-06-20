@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:beh="clr-namespace:StockAndFlow.Mobile.Behaviors"
              x:Class="StockAndFlow.Mobile.Pages.AddEditExpensePage"
              Title="{Binding DialogTitle}">
 
@@ -11,7 +12,11 @@
             <DatePicker Date="{Binding ExpenseDate}" />
 
             <Label Text="Amount" />
-            <Entry Text="{Binding Amount}" Keyboard="Numeric" />
+            <Entry Text="{Binding Amount}" Keyboard="Numeric">
+                <Entry.Behaviors>
+                    <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
+                </Entry.Behaviors>
+            </Entry>
 
             <Label Text="Category" />
             <Picker ItemsSource="{Binding AvailableCategories}" SelectedItem="{Binding Category}" Title="Select a category" />
@@ -23,7 +28,7 @@
             <Image Source="{Binding ReceiptImagePath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasReceipt}" HeightRequest="120" Aspect="AspectFit" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
             </Grid>
 

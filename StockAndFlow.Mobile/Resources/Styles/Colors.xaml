@@ -18,6 +18,11 @@
     <Color x:Key="MidnightBlue">#190649</Color>
     <Color x:Key="OffBlack">#1f1f1f</Color>
 
+    <!-- Semantic app colors -->
+    <Color x:Key="Danger">#E74C3C</Color>
+    <Color x:Key="Warning">#E67E22</Color>
+    <Color x:Key="CardSelectedLight">#EDE7F6</Color>
+
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>
     <Color x:Key="Gray300">#ACACAC</Color>

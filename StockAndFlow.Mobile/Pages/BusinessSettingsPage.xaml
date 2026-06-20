@@ -38,7 +38,7 @@
             <Image Source="{Binding LogoPath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasLogo}" HeightRequest="120" Aspect="AspectFit" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
             </Grid>
 

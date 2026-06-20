@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:beh="clr-namespace:StockAndFlow.Mobile.Behaviors"
              x:Class="StockAndFlow.Mobile.Pages.RecordAdjustmentPage"
              Title="Record Adjustment">
 
@@ -21,7 +22,11 @@
                     SelectedIndexChanged="OnReasonSelected" />
 
             <Label Text="Quantity change (negative reduces stock)" />
-            <Entry Text="{Binding QuantityChange}" Keyboard="Numeric" />
+            <Entry Text="{Binding QuantityChange}" Keyboard="Numeric">
+                <Entry.Behaviors>
+                    <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="True" />
+                </Entry.Behaviors>
+            </Entry>
 
             <Label Text="Date" />
             <DatePicker Date="{Binding AdjustmentDate}" />
@@ -51,7 +56,7 @@
             </Border>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Record" Command="{Binding RecordCommand}" />
             </Grid>
 

@@ -26,7 +26,7 @@
             </Grid>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                <Button Grid.Column="0" Text="Close" Command="{Binding CloseCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="0" Text="Close" Command="{Binding CloseCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Save Date" Command="{Binding SaveCommand}" />
             </Grid>
 
