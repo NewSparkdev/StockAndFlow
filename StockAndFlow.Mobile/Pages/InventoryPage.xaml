@@ -23,8 +23,7 @@
                      IsRefreshing="{Binding IsLoading}"
                      Command="{Binding RefreshCommand}">
             <CollectionView ItemsSource="{Binding Items}"
-                            SelectionMode="Single"
-                            SelectedItem="{Binding SelectedItem}">
+                            SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No inventory items yet. Tap Add to create one."
                            HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" />

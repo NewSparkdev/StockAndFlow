@@ -21,8 +21,7 @@
 
         <RefreshView Grid.Row="1" IsRefreshing="{Binding IsLoading}" Command="{Binding RefreshCommand}">
             <CollectionView ItemsSource="{Binding Expenses}"
-                            SelectionMode="Single"
-                            SelectedItem="{Binding SelectedExpense}">
+                            SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No expenses recorded yet."
                            HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" />

@@ -21,8 +21,7 @@
 
         <RefreshView Grid.Row="1" IsRefreshing="{Binding IsLoading}" Command="{Binding RefreshCommand}">
             <CollectionView ItemsSource="{Binding Adjustments}"
-                            SelectionMode="Single"
-                            SelectedItem="{Binding SelectedAdjustment}">
+                            SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No adjustments recorded yet."
                            HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" />
