@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <!--
+        Android 15 (API 35) enforces edge-to-edge, which made the app's purple bar draw behind the
+        system status bar and clip the clock/battery/signal icons. Opt out so the system reserves
+        the status-bar inset and lays the app out below it (classic behavior).
+    -->
+    <style name="Maui.MainTheme" parent="Maui.MainTheme.Base">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
