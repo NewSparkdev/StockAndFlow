@@ -6,7 +6,7 @@
              Title="Sale Details">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10">
+        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Center">
 
             <Label Text="{Binding Transaction.ItemSummary}" FontSize="20" FontAttributes="Bold" />
 

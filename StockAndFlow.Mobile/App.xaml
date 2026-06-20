@@ -17,24 +17,27 @@
             <!-- Card used for selectable list rows. The Selected visual state replaces the default
                  platform selection highlight (which otherwise bleeds orange around the rounded card). -->
             <Style x:Key="ListCard" TargetType="Border">
-                <Setter Property="Padding" Value="12" />
-                <Setter Property="Margin" Value="0,4" />
+                <Setter Property="Padding" Value="14" />
+                <Setter Property="Margin" Value="0,5" />
                 <Setter Property="StrokeThickness" Value="1" />
-                <Setter Property="StrokeShape" Value="RoundRectangle 10" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}" />
-                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceContainerLight}, Dark={StaticResource SurfaceContainerDark}}" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}" />
+                <Setter Property="Shadow">
+                    <Shadow Brush="Black" Opacity="{AppThemeBinding Light=0.06, Dark=0.35}" Radius="10" Offset="0,2" />
+                </Setter>
                 <Setter Property="VisualStateManager.VisualStateGroups">
                     <VisualStateGroupList>
                         <VisualStateGroup x:Name="CommonStates">
                             <VisualState x:Name="Normal">
                                 <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}" />
-                                    <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceContainerLight}, Dark={StaticResource SurfaceContainerDark}}" />
+                                    <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}" />
                                 </VisualState.Setters>
                             </VisualState>
                             <VisualState x:Name="Selected">
                                 <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardSelectedLight}, Dark={StaticResource Tertiary}}" />
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrimaryContainerLight}, Dark={StaticResource PrimaryContainerDark}}" />
                                     <Setter Property="Stroke" Value="{StaticResource Primary}" />
                                 </VisualState.Setters>
                             </VisualState>

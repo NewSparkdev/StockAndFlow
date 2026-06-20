@@ -19,9 +19,25 @@
     <Color x:Key="OffBlack">#1f1f1f</Color>
 
     <!-- Semantic app colors -->
-    <Color x:Key="Danger">#E74C3C</Color>
-    <Color x:Key="Warning">#E67E22</Color>
+    <Color x:Key="Danger">#E5484D</Color>
+    <Color x:Key="Warning">#E5901E</Color>
+    <Color x:Key="Success">#2E9E6B</Color>
+    <Color x:Key="Accent">#22B8CF</Color>
     <Color x:Key="CardSelectedLight">#EDE7F6</Color>
+
+    <!-- Modern surface / text tokens (Material-3 inspired), light + dark resolved at usage -->
+    <Color x:Key="SurfaceLight">#FFFFFF</Color>
+    <Color x:Key="SurfaceDark">#141218</Color>
+    <Color x:Key="SurfaceContainerLight">#F5F3FB</Color>
+    <Color x:Key="SurfaceContainerDark">#211F26</Color>
+    <Color x:Key="OnSurfaceLight">#1C1B1F</Color>
+    <Color x:Key="OnSurfaceDark">#E6E1E9</Color>
+    <Color x:Key="OnSurfaceVariantLight">#5E5C66</Color>
+    <Color x:Key="OnSurfaceVariantDark">#CAC4D0</Color>
+    <Color x:Key="OutlineLight">#E5E1EC</Color>
+    <Color x:Key="OutlineDark">#48464F</Color>
+    <Color x:Key="PrimaryContainerLight">#E9DDFF</Color>
+    <Color x:Key="PrimaryContainerDark">#4A3A8A</Color>
 
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>

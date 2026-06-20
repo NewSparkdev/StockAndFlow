@@ -12,7 +12,7 @@
     </ContentPage.ToolbarItems>
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="14">
+        <VerticalStackLayout Padding="16" Spacing="14" MaximumWidthRequest="860" HorizontalOptions="Fill">
 
             <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
                 <Label Text="From" VerticalOptions="Center"/>
@@ -23,9 +23,9 @@
 
             <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
 
-            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
+            <Border Style="{StaticResource Card}">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Sales" FontSize="20" FontAttributes="Bold" />
+                    <Label Text="Sales" Style="{StaticResource SectionTitle}" />
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Revenue" />
                         <Label Grid.Column="1" Text="{Binding TotalRevenue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
@@ -45,9 +45,9 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
+            <Border Style="{StaticResource Card}">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Profit &amp; Loss" FontSize="20" FontAttributes="Bold" />
+                    <Label Text="Profit &amp; Loss" Style="{StaticResource SectionTitle}" />
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Total expenses" />
                         <Label Grid.Column="1" Text="{Binding TotalExpenses, StringFormat='{0:C2}'}" FontAttributes="Bold" />
@@ -63,9 +63,9 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
+            <Border Style="{StaticResource Card}">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Inventory" FontSize="20" FontAttributes="Bold" />
+                    <Label Text="Inventory" Style="{StaticResource SectionTitle}" />
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Inventory value" />
                         <Label Grid.Column="1" Text="{Binding TotalInventoryValue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
@@ -77,7 +77,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="Low Stock" FontSize="18" FontAttributes="Bold" />
+            <Label Text="Low Stock" Style="{StaticResource SectionTitle}" />
             <VerticalStackLayout BindableLayout.ItemsSource="{Binding LowStockItems}" Spacing="4">
                 <BindableLayout.ItemTemplate>
                     <DataTemplate x:DataType="models:InventoryItem">
@@ -89,16 +89,16 @@
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
 
-            <Label Text="Sales Trend" FontSize="18" FontAttributes="Bold" />
+            <Label Text="Sales Trend" Style="{StaticResource SectionTitle}" />
             <lvc:CartesianChart Series="{Binding SalesTrendSeries}" XAxes="{Binding SalesTrendXAxes}" HeightRequest="240" />
 
-            <Label Text="Top Selling Items" FontSize="18" FontAttributes="Bold" />
+            <Label Text="Top Selling Items" Style="{StaticResource SectionTitle}" />
             <lvc:CartesianChart Series="{Binding TopItemsSeries}" XAxes="{Binding TopItemsXAxes}" HeightRequest="240" />
 
-            <Label Text="Expenses by Category" FontSize="18" FontAttributes="Bold" />
+            <Label Text="Expenses by Category" Style="{StaticResource SectionTitle}" />
             <lvc:PieChart Series="{Binding ExpensesPieSeries}" HeightRequest="240" />
 
-            <Label Text="Inventory Status" FontSize="18" FontAttributes="Bold" />
+            <Label Text="Inventory Status" Style="{StaticResource SectionTitle}" />
             <lvc:PieChart Series="{Binding InventoryStatusSeries}" HeightRequest="240" />
 
         </VerticalStackLayout>

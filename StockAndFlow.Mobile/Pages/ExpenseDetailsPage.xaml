@@ -5,7 +5,7 @@
              Title="Expense Details">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10">
+        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Center">
 
             <Label Text="{Binding Expense.Category}" FontSize="20" FontAttributes="Bold" />
 

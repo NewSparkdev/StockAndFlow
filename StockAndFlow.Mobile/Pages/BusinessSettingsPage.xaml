@@ -5,7 +5,7 @@
              Title="Business Settings">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12">
+        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Center">
 
             <Label Text="Business Name" />
             <Entry Text="{Binding BusinessName}" />
