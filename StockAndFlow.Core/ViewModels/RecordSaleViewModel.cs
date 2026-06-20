@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using StockAndFlow.Commands;
 using StockAndFlow.Models;
+using StockAndFlow.Platform;
 using StockAndFlow.Services;
 
 namespace StockAndFlow.ViewModels
@@ -26,6 +27,7 @@ namespace StockAndFlow.ViewModels
 
         public event EventHandler<bool>? CloseRequested;
         public event EventHandler<SaleTransaction>? SaleCompleted;
+        public event EventHandler<string>? SaleFailed;
 
         public ObservableCollection<CartItem> AllItems
         {
@@ -105,6 +107,7 @@ namespace StockAndFlow.ViewModels
             {
                 var items = await _inventoryService.GetAllItemsAsync();
 
+                var cartItems = new System.Collections.Generic.List<CartItem>();
                 foreach (var item in items.OrderBy(i => i.Name))
                 {
                     var cartItem = new CartItem
@@ -121,8 +124,11 @@ namespace StockAndFlow.ViewModels
                     // Subscribe to property changes to update cart totals
                     cartItem.PropertyChanged += (s, e) => UpdateCartProperties();
 
-                    AllItems.Add(cartItem);
+                    cartItems.Add(cartItem);
                 }
+
+                // Assign the bound collection on the UI thread.
+                UiDispatcher.Run(() => AllItems = new ObservableCollection<CartItem>(cartItems));
             }
             catch (Exception ex)
             {
@@ -145,6 +151,18 @@ namespace StockAndFlow.ViewModels
         {
             if (!HasSelectedItems)
                 return;
+
+            // Pre-validate quantities against available stock so we never partially commit a
+            // multi-item sale and then fail mid-loop.
+            var problem = AllItems
+                .Where(i => i.IsSelected)
+                .FirstOrDefault(i => i.Quantity <= 0 || i.Quantity > i.AvailableQuantity);
+            if (problem != null)
+            {
+                SaleFailed?.Invoke(this,
+                    $"Not enough stock for \"{problem.ItemName}\".\nAvailable: {problem.AvailableQuantity}, requested: {problem.Quantity}.");
+                return;
+            }
 
             try
             {
@@ -232,14 +250,14 @@ namespace StockAndFlow.ViewModels
                     var firstItem = AllItems.Where(i => i.IsSelected).FirstOrDefault();
                     LogWarning("Sale recording failed - insufficient inventory or item not found. Item: {ItemName}, Quantity: {Quantity}",
                         firstItem?.ItemName ?? "Unknown", firstItem?.Quantity);
-                    CloseRequested?.Invoke(this, false);
+                    SaleFailed?.Invoke(this, "The sale could not be completed. Inventory may have changed — please review and try again.");
                 }
             }
             catch (Exception ex)
             {
                 var firstItem = AllItems.Where(i => i.IsSelected).FirstOrDefault();
                 LogError(ex, "Failed to record sale for item: {ItemName}", firstItem?.ItemName ?? "Unknown");
-                CloseRequested?.Invoke(this, false);
+                SaleFailed?.Invoke(this, $"The sale could not be completed:\n\n{ex.Message}");
             }
         }
 

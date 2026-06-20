@@ -21,6 +21,13 @@ namespace StockAndFlow.ViewModels
         private Expense? _selectedExpense;
         private DateTime _startDate = DateTime.Now.AddMonths(-1);
         private DateTime _endDate = DateTime.Now;
+        private bool _isLoading;
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
         public ObservableCollection<Expense> Expenses
         {
@@ -93,14 +100,38 @@ namespace StockAndFlow.ViewModels
 
         private async Task LoadExpensesAsync()
         {
-            var expenses = await _expenseService.GetAllExpensesAsync();
-            Expenses = new ObservableCollection<Expense>(expenses.OrderByDescending(e => e.ExpenseDate));
+            IsLoading = true;
+            try
+            {
+                var expenses = await _expenseService.GetAllExpensesAsync();
+                UiDispatcher.Run(() => Expenses = new ObservableCollection<Expense>(expenses.OrderByDescending(e => e.ExpenseDate)));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load expenses: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task FilterExpensesAsync()
         {
-            var expenses = await _expenseService.GetExpensesByDateRangeAsync(StartDate, EndDate);
-            Expenses = new ObservableCollection<Expense>(expenses);
+            IsLoading = true;
+            try
+            {
+                var expenses = await _expenseService.GetExpensesByDateRangeAsync(StartDate, EndDate);
+                UiDispatcher.Run(() => Expenses = new ObservableCollection<Expense>(expenses));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load expenses: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task AddExpenseAsync()

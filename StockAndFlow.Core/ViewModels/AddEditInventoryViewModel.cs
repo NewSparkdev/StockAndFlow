@@ -12,6 +12,7 @@ namespace StockAndFlow.ViewModels
     {
         private readonly InventoryService _inventoryService;
         private readonly IFilePickerService _filePicker;
+        private readonly IDialogService _dialogService;
         private readonly InventoryItem _originalItem;
         private readonly bool _isEditMode;
 
@@ -143,10 +144,11 @@ namespace StockAndFlow.ViewModels
         public ICommand BrowseImageCommand { get; }
 
         // Constructor for adding new item
-        public AddEditInventoryViewModel(InventoryService inventoryService, IFilePickerService filePicker)
+        public AddEditInventoryViewModel(InventoryService inventoryService, IFilePickerService filePicker, IDialogService dialogService)
         {
             _inventoryService = inventoryService;
             _filePicker = filePicker;
+            _dialogService = dialogService;
             _originalItem = new InventoryItem();
             _isEditMode = false;
 
@@ -156,10 +158,11 @@ namespace StockAndFlow.ViewModels
         }
 
         // Constructor for editing existing item
-        public AddEditInventoryViewModel(InventoryService inventoryService, InventoryItem item, IFilePickerService filePicker)
+        public AddEditInventoryViewModel(InventoryService inventoryService, InventoryItem item, IFilePickerService filePicker, IDialogService dialogService)
         {
             _inventoryService = inventoryService;
             _filePicker = filePicker;
+            _dialogService = dialogService;
             _originalItem = item;
             _isEditMode = true;
 
@@ -205,7 +208,7 @@ namespace StockAndFlow.ViewModels
             catch (Exception ex)
             {
                 LogError(ex, "Failed to save inventory item: {ItemName}", Name);
-                CloseRequested?.Invoke(this, false);
+                await _dialogService.ShowAlertAsync("Save failed", $"Could not save the item:\n\n{ex.Message}");
             }
         }
 

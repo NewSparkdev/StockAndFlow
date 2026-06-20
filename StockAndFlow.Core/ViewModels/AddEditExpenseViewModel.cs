@@ -15,6 +15,7 @@ namespace StockAndFlow.ViewModels
         private readonly ExpenseService _expenseService;
         private readonly InventoryService _inventoryService;
         private readonly IFilePickerService _filePicker;
+        private readonly IDialogService _dialogService;
         private Expense? _expenseToEdit;
 
         private DateTime _expenseDate = DateTime.Now;
@@ -126,11 +127,12 @@ namespace StockAndFlow.ViewModels
         public ICommand CancelCommand { get; }
         public ICommand BrowseReceiptCommand { get; }
 
-        public AddEditExpenseViewModel(ExpenseService expenseService, InventoryService inventoryService, IFilePickerService filePicker)
+        public AddEditExpenseViewModel(ExpenseService expenseService, InventoryService inventoryService, IFilePickerService filePicker, IDialogService dialogService)
         {
             _expenseService = expenseService;
             _inventoryService = inventoryService;
             _filePicker = filePicker;
+            _dialogService = dialogService;
 
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => IsValid);
             CancelCommand = new RelayCommand(Cancel);
@@ -212,7 +214,7 @@ namespace StockAndFlow.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error saving expense: {ex.Message}");
-                CloseRequested?.Invoke(this, false);
+                await _dialogService.ShowAlertAsync("Save failed", $"Could not save the expense:\n\n{ex.Message}");
             }
         }
 

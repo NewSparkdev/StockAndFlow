@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using StockAndFlow.Commands;
@@ -19,6 +20,14 @@ namespace StockAndFlow.ViewModels
         private ObservableCollection<InventoryItem> _items = new();
         private InventoryItem? _selectedItem;
         private string _searchText = string.Empty;
+        private bool _isLoading;
+        private CancellationTokenSource? _searchCts;
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
         public ObservableCollection<InventoryItem> Items
         {
@@ -63,7 +72,9 @@ namespace StockAndFlow.ViewModels
             {
                 if (SetProperty(ref _searchText, value))
                 {
-                    _ = SearchAsync();
+                    _searchCts?.Cancel();
+                    _searchCts = new CancellationTokenSource();
+                    _ = DebouncedSearchAsync(_searchCts.Token);
                 }
             }
         }
@@ -94,22 +105,60 @@ namespace StockAndFlow.ViewModels
             _ = LoadItemsAsync();
         }
 
+        private async Task DebouncedSearchAsync(CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(350, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            await SearchAsync();
+        }
+
         private async Task LoadItemsAsync()
         {
-            var items = await _inventoryService.GetAllItemsAsync();
-            Items = new ObservableCollection<InventoryItem>(items.OrderBy(i => i.Name));
+            IsLoading = true;
+            try
+            {
+                var items = await _inventoryService.GetAllItemsAsync();
+                UiDispatcher.Run(() => Items = new ObservableCollection<InventoryItem>(items.OrderBy(i => i.Name)));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load inventory: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task SearchAsync()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
+            IsLoading = true;
+            try
             {
-                await LoadItemsAsync();
-                return;
-            }
+                if (string.IsNullOrWhiteSpace(SearchText))
+                {
+                    await LoadItemsAsync();
+                    return;
+                }
 
-            var results = await _inventoryService.SearchAsync(SearchText);
-            Items = new ObservableCollection<InventoryItem>(results.OrderBy(i => i.Name));
+                var results = await _inventoryService.SearchAsync(SearchText);
+                UiDispatcher.Run(() => Items = new ObservableCollection<InventoryItem>(results.OrderBy(i => i.Name)));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load inventory: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task AddItemAsync()

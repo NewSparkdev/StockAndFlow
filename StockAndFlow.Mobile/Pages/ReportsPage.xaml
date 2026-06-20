@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+             xmlns:models="clr-namespace:StockAndFlow.Models;assembly=StockAndFlow.Core"
              x:Class="StockAndFlow.Mobile.Pages.ReportsPage"
              Title="Reports">
 
@@ -12,6 +13,13 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="14">
+
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+                <Label Text="From" VerticalOptions="Center"/>
+                <DatePicker Grid.Column="1" Date="{Binding StartDate}"/>
+                <Label Grid.Column="2" Text="To" VerticalOptions="Center"/>
+                <DatePicker Grid.Column="3" Date="{Binding EndDate}"/>
+            </Grid>
 
             <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
 
@@ -68,6 +76,18 @@
                     </Grid>
                 </VerticalStackLayout>
             </Border>
+
+            <Label Text="Low Stock" FontSize="18" FontAttributes="Bold" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding LowStockItems}" Spacing="4">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="models:InventoryItem">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="{Binding Name}" />
+                            <Label Grid.Column="1" Text="{Binding QuantityOnHand, StringFormat='Qty: {0}'}" TextColor="{Binding StockStatusColor}" FontAttributes="Bold" />
+                        </Grid>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
 
             <Label Text="Sales Trend" FontSize="18" FontAttributes="Bold" />
             <lvc:CartesianChart Series="{Binding SalesTrendSeries}" XAxes="{Binding SalesTrendXAxes}" HeightRequest="240" />

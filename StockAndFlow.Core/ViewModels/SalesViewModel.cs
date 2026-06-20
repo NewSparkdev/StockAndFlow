@@ -21,6 +21,7 @@ namespace StockAndFlow.ViewModels
 
         private ObservableCollection<SaleTransaction> _sales = new();
         private SaleTransaction? _selectedSale;
+        private bool _isLoading;
         private DateTime _startDate = DateTime.Now.AddMonths(-1).Date; // Start of day
         private DateTime _endDate = DateTime.Now.Date.AddDays(1).AddTicks(-1); // End of day
 
@@ -40,6 +41,12 @@ namespace StockAndFlow.ViewModels
         {
             get => _selectedSale;
             set => SetProperty(ref _selectedSale, value);
+        }
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
         }
 
         public DateTime StartDate
@@ -101,16 +108,40 @@ namespace StockAndFlow.ViewModels
 
         private async Task LoadSalesAsync()
         {
-            var sales = await _salesService.GetAllSalesAsync();
-            var transactions = GroupSalesByTransaction(sales);
-            Sales = new ObservableCollection<SaleTransaction>(transactions.OrderByDescending(t => t.SaleDate));
+            IsLoading = true;
+            try
+            {
+                var sales = await _salesService.GetAllSalesAsync();
+                var transactions = GroupSalesByTransaction(sales);
+                UiDispatcher.Run(() => Sales = new ObservableCollection<SaleTransaction>(transactions.OrderByDescending(t => t.SaleDate)));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load sales: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task FilterSalesAsync()
         {
-            var sales = await _salesService.GetSalesByDateRangeAsync(StartDate, EndDate);
-            var transactions = GroupSalesByTransaction(sales);
-            Sales = new ObservableCollection<SaleTransaction>(transactions);
+            IsLoading = true;
+            try
+            {
+                var sales = await _salesService.GetSalesByDateRangeAsync(StartDate, EndDate);
+                var transactions = GroupSalesByTransaction(sales);
+                UiDispatcher.Run(() => Sales = new ObservableCollection<SaleTransaction>(transactions));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load sales: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private List<SaleTransaction> GroupSalesByTransaction(List<Sale> sales)
@@ -145,9 +176,8 @@ namespace StockAndFlow.ViewModels
             }
             catch (Exception ex)
             {
-                await _dialogService.ShowAlertAsync(
-                    "Error",
-                    $"Error viewing sale details:\n\n{ex.Message}\n\nStack Trace:\n{ex.StackTrace}");
+                LogError(ex, "Failed to open sale details");
+                await _dialogService.ShowAlertAsync("Error", "Could not open sale details. Please try again.");
             }
         }
 

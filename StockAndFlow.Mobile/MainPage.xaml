@@ -19,6 +19,13 @@
 
             <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
 
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+                <Label Text="From" VerticalOptions="Center"/>
+                <DatePicker Grid.Column="1" Date="{Binding StartDate}"/>
+                <Label Grid.Column="2" Text="To" VerticalOptions="Center"/>
+                <DatePicker Grid.Column="3" Date="{Binding EndDate}"/>
+            </Grid>
+
             <Border Stroke="#512BD4" StrokeThickness="1" Padding="16"
                     StrokeShape="RoundRectangle 12">
                 <VerticalStackLayout Spacing="10" BindingContext="{Binding CurrentMetrics}">

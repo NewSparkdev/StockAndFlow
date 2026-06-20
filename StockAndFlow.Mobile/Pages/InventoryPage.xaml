@@ -10,43 +10,51 @@
         <ToolbarItem Text="Refresh" Command="{Binding RefreshCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="10" RowSpacing="8">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="10" RowSpacing="8">
 
         <SearchBar Grid.Row="0" Placeholder="Search items..." Text="{Binding SearchText}" />
 
-        <CollectionView Grid.Row="1"
-                        ItemsSource="{Binding Items}"
-                        SelectionMode="Single"
-                        SelectedItem="{Binding SelectedItem}">
-            <CollectionView.EmptyView>
-                <Label Text="No inventory items yet. Tap Add to create one."
-                       HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" />
-            </CollectionView.EmptyView>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:InventoryItem">
-                    <Border Style="{StaticResource ListCard}">
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
-                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}"
-                                   FontSize="16" FontAttributes="Bold" />
-                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding StockStatus}"
-                                   FontSize="12" FontAttributes="Bold"
-                                   TextColor="{Binding StockStatusColor}" />
-                            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                   FontSize="12" TextColor="Gray"
-                                   Text="{Binding Sku, StringFormat='SKU: {0}'}" />
-                            <Label Grid.Row="2" Grid.Column="0"
-                                   FontSize="13"
-                                   Text="{Binding QuantityOnHand, StringFormat='Qty: {0}'}" />
-                            <Label Grid.Row="2" Grid.Column="1"
-                                   FontSize="13" FontAttributes="Bold"
-                                   Text="{Binding SalePrice, StringFormat='{0:C2}'}" />
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <Label Grid.Row="1"
+               Text="{Binding LowStockCount, StringFormat='⚠ {0} item(s) low or out of stock'}"
+               IsVisible="{Binding HasLowStock}"
+               TextColor="#E67E22" FontAttributes="Bold" Padding="4,0" />
 
-        <HorizontalStackLayout Grid.Row="2" Spacing="8" HorizontalOptions="Center">
+        <RefreshView Grid.Row="2"
+                     IsRefreshing="{Binding IsLoading}"
+                     Command="{Binding RefreshCommand}">
+            <CollectionView ItemsSource="{Binding Items}"
+                            SelectionMode="Single"
+                            SelectedItem="{Binding SelectedItem}">
+                <CollectionView.EmptyView>
+                    <Label Text="No inventory items yet. Tap Add to create one."
+                           HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:InventoryItem">
+                        <Border Style="{StaticResource ListCard}">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}"
+                                       FontSize="16" FontAttributes="Bold" />
+                                <Label Grid.Row="0" Grid.Column="1" Text="{Binding StockStatus}"
+                                       FontSize="12" FontAttributes="Bold"
+                                       TextColor="{Binding StockStatusColor}" />
+                                <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                       FontSize="12" TextColor="Gray"
+                                       Text="{Binding Sku, StringFormat='SKU: {0}'}" />
+                                <Label Grid.Row="2" Grid.Column="0"
+                                       FontSize="13"
+                                       Text="{Binding QuantityOnHand, StringFormat='Qty: {0}'}" />
+                                <Label Grid.Row="2" Grid.Column="1"
+                                       FontSize="13" FontAttributes="Bold"
+                                       Text="{Binding SalePrice, StringFormat='{0:C2}'}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <HorizontalStackLayout Grid.Row="3" Spacing="8" HorizontalOptions="Center">
             <Button Text="Details" Command="{Binding ViewDetailsCommand}" />
             <Button Text="Edit" Command="{Binding EditItemCommand}" />
             <Button Text="Delete" Command="{Binding DeleteItemCommand}" BackgroundColor="#E74C3C" />

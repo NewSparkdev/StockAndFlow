@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Mobile.Platform;
+using StockAndFlow.Platform;
 using StockAndFlow.Services;
 
 namespace StockAndFlow.Mobile;
@@ -9,6 +10,10 @@ public partial class App : Application
 	public App()
 	{
 		InitializeComponent();
+
+		// Marshal ViewModel UI-thread updates onto the MAUI main thread (service events and the
+		// metrics timer can fire on background threads).
+		UiDispatcher.Post = action => MainThread.BeginInvokeOnMainThread(action);
 
 		// Wire credential encryption to the platform SecureStorage-backed provider.
 		// Fire-and-forget: Shopify credentials are only needed after the dashboard has loaded.

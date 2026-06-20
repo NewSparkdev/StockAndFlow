@@ -19,6 +19,7 @@ namespace StockAndFlow.ViewModels
 
         private ObservableCollection<InventoryAdjustment> _adjustments = new();
         private InventoryAdjustment? _selectedAdjustment;
+        private bool _isLoading;
         private DateTime _startDate = DateTime.Now.AddMonths(-1).Date;
         private DateTime _endDate = DateTime.Now.Date.AddDays(1).AddTicks(-1);
 
@@ -43,6 +44,12 @@ namespace StockAndFlow.ViewModels
         {
             get => _selectedAdjustment;
             set => SetProperty(ref _selectedAdjustment, value);
+        }
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
         }
 
         public DateTime StartDate
@@ -108,8 +115,20 @@ namespace StockAndFlow.ViewModels
 
         private async Task FilterAdjustmentsAsync()
         {
-            var adjustments = await _adjustmentService.GetAdjustmentsByDateRangeAsync(StartDate, EndDate);
-            Adjustments = new ObservableCollection<InventoryAdjustment>(adjustments);
+            IsLoading = true;
+            try
+            {
+                var adjustments = await _adjustmentService.GetAdjustmentsByDateRangeAsync(StartDate, EndDate);
+                UiDispatcher.Run(() => Adjustments = new ObservableCollection<InventoryAdjustment>(adjustments));
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Failed to load adjustments: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task RecordAdjustmentAsync()
@@ -132,7 +151,7 @@ namespace StockAndFlow.ViewModels
 
             if (await _dialogService.ShowConfirmAsync(
                 "Confirm Delete Adjustment",
-                $"Are you sure you want to delete this adjustment?\\n\\nItem: {SelectedAdjustment.InventoryItemName}\\nReason: {SelectedAdjustment.ReasonDisplay}\\nChange: {SelectedAdjustment.QuantityChangeDisplay}\\n\\nThis will reverse the inventory change."))
+                $"Are you sure you want to delete this adjustment?\n\nItem: {SelectedAdjustment.InventoryItemName}\nReason: {SelectedAdjustment.ReasonDisplay}\nChange: {SelectedAdjustment.QuantityChangeDisplay}\n\nThis will reverse the inventory change."))
             {
                 await _adjustmentService.DeleteAdjustmentAsync(SelectedAdjustment.Id);
                 SelectedAdjustment = null;

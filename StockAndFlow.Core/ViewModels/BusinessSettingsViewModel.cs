@@ -12,6 +12,7 @@ namespace StockAndFlow.ViewModels
     {
         private readonly BusinessSettingsService _settingsService;
         private readonly IFilePickerService _filePicker;
+        private readonly IDialogService _dialogService;
         private BusinessSettings _settings;
 
         private string? _businessName;
@@ -107,10 +108,11 @@ namespace StockAndFlow.ViewModels
         public ICommand CancelCommand { get; }
         public ICommand BrowseLogoCommand { get; }
 
-        public BusinessSettingsViewModel(BusinessSettingsService settingsService, IFilePickerService filePicker)
+        public BusinessSettingsViewModel(BusinessSettingsService settingsService, IFilePickerService filePicker, IDialogService dialogService)
         {
             _settingsService = settingsService;
             _filePicker = filePicker;
+            _dialogService = dialogService;
             _settings = new BusinessSettings();
 
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => IsValid);
@@ -165,8 +167,7 @@ namespace StockAndFlow.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving settings: {ex.Message}");
-                CloseRequested?.Invoke(this, false);
+                await _dialogService.ShowAlertAsync("Save failed", $"Could not save business settings:\n\n{ex.Message}");
             }
         }
 

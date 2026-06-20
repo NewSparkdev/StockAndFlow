@@ -20,7 +20,7 @@
             <Editor Text="{Binding Description}" HeightRequest="80" />
 
             <Button Text="Choose Receipt" Command="{Binding BrowseReceiptCommand}" />
-            <Image Source="{Binding ReceiptImagePath}" IsVisible="{Binding HasReceipt}" HeightRequest="120" Aspect="AspectFit" />
+            <Image Source="{Binding ReceiptImagePath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasReceipt}" HeightRequest="120" Aspect="AspectFit" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
                 <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />

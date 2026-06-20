@@ -298,6 +298,10 @@ namespace StockAndFlow.ViewModels
                 var adjustments = await _adjustmentService.GetAdjustmentsByDateRangeAsync(StartDate, EndDate);
                 var inventory = await _inventoryService.GetAllItemsAsync();
 
+                // Apply all computed state on the UI thread (this method can be triggered by
+                // background service events).
+                UiDispatcher.Run(() =>
+                {
                 // Sales Summary - Count unique transactions, not individual sale records
                 TotalSalesCount = sales.Select(s => s.TransactionId).Distinct().Count();
                 TotalRevenue = sales.Sum(s => s.Revenue);
@@ -366,10 +370,15 @@ namespace StockAndFlow.ViewModels
                 GenerateTopItemsChart(topItems);
                 GenerateExpensesPieChart(expenseGroups);
                 GenerateInventoryStatusChart(inventory);
+                });
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "Failed to generate reports");
             }
             finally
             {
-                IsLoading = false;
+                UiDispatcher.Run(() => IsLoading = false);
             }
         }
 

@@ -37,6 +37,9 @@ namespace StockAndFlow
             // (AppSettings.MigrateToEncrypted relies on it during LoadSettingsAsync below).
             SecureCredentialService.Provider = new WpfCredentialProtector();
 
+            // Marshal ViewModel UI-thread updates through the WPF dispatcher.
+            UiDispatcher.Post = action => Current.Dispatcher.Invoke(action);
+
             try
             {
                 Log.Information("Application startup initiated");

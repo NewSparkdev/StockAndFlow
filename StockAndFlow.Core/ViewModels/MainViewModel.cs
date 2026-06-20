@@ -141,8 +141,20 @@ namespace StockAndFlow.ViewModels
         private async Task RefreshMetricsAsync()
         {
             IsLoading = true;
-            CurrentMetrics = await _calculationService.RecalculateMetricsAsync(StartDate, EndDate);
-            IsLoading = false;
+            try
+            {
+                var metrics = await _calculationService.RecalculateMetricsAsync(StartDate, EndDate);
+                UiDispatcher.Run(() => CurrentMetrics = metrics);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "Failed to refresh metrics");
+                UiDispatcher.Run(() => StatusMessage = "Failed to load metrics");
+            }
+            finally
+            {
+                UiDispatcher.Run(() => IsLoading = false);
+            }
         }
 
         private async Task SyncShopifyAsync()
@@ -209,12 +221,13 @@ namespace StockAndFlow.ViewModels
 
         private void OnMetricsUpdated(object? sender, BusinessMetrics metrics)
         {
-            CurrentMetrics = metrics;
+            // MetricsUpdated is raised from a background timer; marshal to the UI thread.
+            UiDispatcher.Run(() => CurrentMetrics = metrics);
         }
 
         private void OnShopifySyncStatusChanged(object? sender, string status)
         {
-            StatusMessage = status;
+            UiDispatcher.Run(() => StatusMessage = status);
         }
 
         protected override void Dispose(bool disposing)

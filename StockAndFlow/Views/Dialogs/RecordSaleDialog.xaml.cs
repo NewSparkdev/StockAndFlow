@@ -33,6 +33,12 @@ namespace StockAndFlow.Views.Dialogs
             {
                 await HandleSaleCompletedAsync(transaction);
             };
+
+            // Surface sale failures (e.g. insufficient stock) instead of silently closing.
+            viewModel.SaleFailed += (sender, message) =>
+            {
+                MessageBox.Show(message, "Sale not completed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            };
         }
 
         private async System.Threading.Tasks.Task HandleSaleCompletedAsync(SaleTransaction transaction)

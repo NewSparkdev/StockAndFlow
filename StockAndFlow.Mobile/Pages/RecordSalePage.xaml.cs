@@ -20,6 +20,7 @@ public partial class RecordSalePage : ContentPage
 				$"Recorded {transaction.ItemCount} item(s) totalling {transaction.Revenue:C2}.", "OK");
 			await CloseAsync();
 		};
+		viewModel.SaleFailed += async (_, message) => await DisplayAlert("Sale not completed", message, "OK");
 	}
 
 	private async Task CloseAsync()
