@@ -68,4 +68,13 @@
 		<ProjectReference Include="..\StockAndFlow.Core\StockAndFlow.Core.csproj" />
 	</ItemGroup>
 
+	<!--
+		Keep the shared Core assembly out of the trimmer. It contains the EF Core DbContext + models
+		(EF Core is reflection-heavy and not fully trim-safe) and ViewModelBase's reflection-based
+		command re-query. Rooting it guarantees correct behavior in Release/AOT (incl. iOS).
+	-->
+	<ItemGroup>
+		<TrimmerRootAssembly Include="StockAndFlow.Core" RootMode="all" />
+	</ItemGroup>
+
 </Project>
