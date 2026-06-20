@@ -22,8 +22,7 @@
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:InventoryAdjustment">
-                    <Border Padding="12" Margin="0,4" StrokeThickness="1" Stroke="#E0E0E0"
-                            StrokeShape="RoundRectangle 10">
+                    <Border Style="{StaticResource ListCard}">
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                             <Label Grid.Row="0" Grid.Column="0" Text="{Binding InventoryItemName}"
                                    FontSize="16" FontAttributes="Bold" />
