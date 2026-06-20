@@ -33,8 +33,9 @@ Status legend: [x] done · [ ] still required · [~] partially done
 - [x] Release/trimmed Android build verified (Core rooted so EF Core + reflection survive trim/AOT).
 - [x] Mobile: image picker, add/edit/delete, details, dashboard, charts, dark mode verified on emulator.
 - [x] Invoice generation wired into the mobile Record Sale flow (writes to app cache + Share sheet).
+- [x] Verified on emulator: **Excel Export → Share** (ClosedXML), **image picker** (system photo picker), dark mode.
 - [ ] **On real hardware** (at least one Android phone, one iPhone): full smoke test.
-- [ ] Verify on-device: Excel **Export/Import + Share**, a **complete sale with stock**, **invoice PDF** renders (QuestPDF on device), dark mode on every screen.
+- [ ] Verify on-device (not yet done): **Excel Import** round-trip, a **complete sale with stock**, **invoice PDF** renders (QuestPDF — wired with graceful fallback, but PDF rendering not yet confirmed on a device).
 - [ ] First-run on a clean device (DB seeding, no data) looks correct.
 - [ ] Security review of the mobile credential encryption (`MauiCredentialProtector`).
 
