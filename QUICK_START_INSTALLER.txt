@@ -1,0 +1,59 @@
+╔════════════════════════════════════════════════════════════════╗
+║          Stock & Flow - Create Installer EXE                   ║
+║                    QUICK START GUIDE                           ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────┐
+│ STEP 1: INSTALL INNO SETUP (ONE-TIME ONLY)                    │
+└────────────────────────────────────────────────────────────────┘
+
+1. Visit: https://jrsoftware.org/isdl.php
+2. Download "Inno Setup 6" (free)
+3. Install with default settings
+4. Done! (You only do this once)
+
+
+┌────────────────────────────────────────────────────────────────┐
+│ STEP 2: BUILD YOUR INSTALLER                                  │
+└────────────────────────────────────────────────────────────────┘
+
+1. Open Command Prompt or PowerShell
+2. Navigate to: C:\Dev\StockAndFlow
+3. Run: build-installer.cmd
+4. Wait 2-3 minutes...
+5. Done!
+
+
+┌────────────────────────────────────────────────────────────────┐
+│ YOUR INSTALLER IS READY!                                      │
+└────────────────────────────────────────────────────────────────┘
+
+Location: installer-output\StockAndFlow-Setup-1.0.0.exe
+Size: ~80-100 MB
+Ready to distribute!
+
+
+┌────────────────────────────────────────────────────────────────┐
+│ WHAT NOW?                                                     │
+└────────────────────────────────────────────────────────────────┘
+
+✓ Test it: Run the installer on your computer
+✓ Share it: Upload to Google Drive, Dropbox, etc.
+✓ Sell it: Upload to Gumroad.com and set a price!
+
+
+┌────────────────────────────────────────────────────────────────┐
+│ NEED HELP?                                                    │
+└────────────────────────────────────────────────────────────────┘
+
+Read: INSTALLER_INSTRUCTIONS.md (full documentation)
+
+Common issues:
+- "Inno Setup not found" → Install from link above
+- "Build failed" → Close running app and try again
+- Want custom icon → See INSTALLER_INSTRUCTIONS.md
+
+
+╔════════════════════════════════════════════════════════════════╗
+║  That's it! You're ready to distribute Stock & Flow! 🚀       ║
+╚════════════════════════════════════════════════════════════════╝

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.BusinessSettingsPage"
+             Title="Business Settings">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label Text="Business Name" />
+            <Entry Text="{Binding BusinessName}" />
+
+            <Label Text="Address" />
+            <Entry Text="{Binding Address}" />
+
+            <Label Text="City" />
+            <Entry Text="{Binding City}" />
+
+            <Label Text="State" />
+            <Entry Text="{Binding State}" />
+
+            <Label Text="Zip Code" />
+            <Entry Text="{Binding ZipCode}" />
+
+            <Label Text="Phone" />
+            <Entry Text="{Binding Phone}" Keyboard="Telephone" />
+
+            <Label Text="Email" />
+            <Entry Text="{Binding Email}" Keyboard="Email" />
+
+            <Label Text="Website" />
+            <Entry Text="{Binding Website}" Keyboard="Url" />
+
+            <Label Text="Tax ID" />
+            <Entry Text="{Binding TaxId}" />
+
+            <Button Text="Choose Logo" Command="{Binding BrowseLogoCommand}" />
+            <Image Source="{Binding LogoPath}" IsVisible="{Binding HasLogo}" HeightRequest="120" Aspect="AspectFit" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

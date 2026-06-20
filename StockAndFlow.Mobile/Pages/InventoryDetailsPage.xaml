@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.InventoryDetailsPage"
+             Title="Item Details">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Close" Clicked="OnCloseClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+
+            <Image Source="{Binding ImagePath}" IsVisible="{Binding HasImage}" HeightRequest="160" Aspect="AspectFit" />
+
+            <Label Text="{Binding Name}" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding StockStatus}" FontAttributes="Bold" TextColor="{Binding StockStatusColor}" />
+
+            <Grid ColumnDefinitions="*,Auto"><Label Text="SKU" /><Label Grid.Column="1" Text="{Binding Sku}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Category" /><Label Grid.Column="1" Text="{Binding Category}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Quantity on hand" /><Label Grid.Column="1" Text="{Binding QuantityOnHand}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Minimum stock level" /><Label Grid.Column="1" Text="{Binding MinimumStockLevel}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Cost / unit" /><Label Grid.Column="1" Text="{Binding CostPerUnit, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Sale price" /><Label Grid.Column="1" Text="{Binding SalePrice, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Profit / unit" /><Label Grid.Column="1" Text="{Binding ProfitPerUnit, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Total value" /><Label Grid.Column="1" Text="{Binding TotalValue, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Supplier" /><Label Grid.Column="1" Text="{Binding Supplier}" FontAttributes="Bold" /></Grid>
+
+            <Label Text="Notes" Margin="0,8,0,0" />
+            <Label Text="{Binding Notes}" />
+
+            <Button Text="Close" Clicked="OnCloseClicked" Margin="0,16,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

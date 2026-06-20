@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.AddEditInventoryPage"
+             Title="{Binding DialogTitle}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label Text="Name" />
+            <Entry Text="{Binding Name}" Placeholder="Item name" />
+
+            <Label Text="SKU" />
+            <Entry Text="{Binding Sku}" Placeholder="Optional" />
+
+            <Label Text="Category" />
+            <Entry Text="{Binding Category}" Placeholder="Optional" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <Label Text="Cost / unit" />
+                    <Entry Text="{Binding CostPerUnit}" Keyboard="Numeric" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                    <Label Text="Sale price" />
+                    <Entry Text="{Binding SalePrice}" Keyboard="Numeric" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <Label Text="Quantity on hand" />
+                    <Entry Text="{Binding QuantityOnHand}" Keyboard="Numeric" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                    <Label Text="Min. stock level" />
+                    <Entry Text="{Binding MinimumStockLevel}" Keyboard="Numeric" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <Label Text="{Binding ProfitMarginPerUnit, StringFormat='Profit / unit: {0:C2}'}" TextColor="Gray" />
+
+            <Label Text="Supplier" />
+            <Entry Text="{Binding Supplier}" Placeholder="Optional" />
+
+            <Label Text="Notes" />
+            <Editor Text="{Binding Notes}" HeightRequest="80" />
+
+            <Button Text="Choose Image" Command="{Binding BrowseImageCommand}" />
+            <Image Source="{Binding ImagePath}" IsVisible="{Binding HasImage}" HeightRequest="120" Aspect="AspectFit" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

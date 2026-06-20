@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.AdjustmentDetailsPage"
+             Title="Adjustment Details">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+
+            <Label Text="{Binding Adjustment.InventoryItemName}" FontSize="20" FontAttributes="Bold" />
+            <Label Text="{Binding Adjustment.ReasonDisplay}" TextColor="Gray" />
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Quantity change" />
+                <Label Grid.Column="1" Text="{Binding Adjustment.QuantityChangeDisplay}" FontAttributes="Bold" TextColor="{Binding Adjustment.QuantityChangeColor}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Quantity before" />
+                <Label Grid.Column="1" Text="{Binding QuantityBefore}" FontAttributes="Bold" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Quantity after" />
+                <Label Grid.Column="1" Text="{Binding QuantityAfter}" FontAttributes="Bold" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Cost lost" />
+                <Label Grid.Column="1" Text="{Binding CostLost, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Potential profit lost" />
+                <Label Grid.Column="1" Text="{Binding PotentialProfitLost, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+            </Grid>
+
+            <Label Text="Date" />
+            <DatePicker Date="{Binding AdjustmentDate}" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Button Grid.Column="0" Text="Close" Command="{Binding CloseCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="1" Text="Save Date" Command="{Binding SaveCommand}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

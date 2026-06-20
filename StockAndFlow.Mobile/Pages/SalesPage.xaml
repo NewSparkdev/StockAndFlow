@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:StockAndFlow.Models;assembly=StockAndFlow.Core"
+             x:Class="StockAndFlow.Mobile.Pages.SalesPage"
+             Title="Sales">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Record" Command="{Binding RecordSaleCommand}" />
+        <ToolbarItem Text="Refresh" Command="{Binding RefreshCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="*,Auto" Padding="10" RowSpacing="8">
+
+        <CollectionView Grid.Row="0"
+                        ItemsSource="{Binding Sales}"
+                        SelectionMode="Single"
+                        SelectedItem="{Binding SelectedSale}">
+            <CollectionView.EmptyView>
+                <Label Text="No sales recorded yet."
+                       HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SaleTransaction">
+                    <Border Padding="12" Margin="0,4" StrokeThickness="1" Stroke="#E0E0E0"
+                            StrokeShape="RoundRectangle 10">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding ItemSummary}"
+                                   FontSize="16" FontAttributes="Bold" />
+                            <Label Grid.Row="0" Grid.Column="1"
+                                   FontAttributes="Bold"
+                                   Text="{Binding Revenue, StringFormat='{0:C2}'}" />
+                            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                   FontSize="12" TextColor="Gray"
+                                   Text="{Binding SaleDate, StringFormat='{0:d}'}" />
+                            <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                   FontSize="13"
+                                   Text="{Binding CustomerName}" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <HorizontalStackLayout Grid.Row="1" Spacing="8" HorizontalOptions="Center">
+            <Button Text="Details" Command="{Binding ViewDetailsCommand}" />
+            <Button Text="Delete" Command="{Binding DeleteSaleCommand}" BackgroundColor="#E74C3C" />
+        </HorizontalStackLayout>
+
+    </Grid>
+
+</ContentPage>

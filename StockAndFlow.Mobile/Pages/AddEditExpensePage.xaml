@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.AddEditExpensePage"
+             Title="{Binding DialogTitle}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label Text="Date" />
+            <DatePicker Date="{Binding ExpenseDate}" />
+
+            <Label Text="Amount" />
+            <Entry Text="{Binding Amount}" Keyboard="Numeric" />
+
+            <Label Text="Category" />
+            <Picker ItemsSource="{Binding AvailableCategories}" SelectedItem="{Binding Category}" Title="Select a category" />
+
+            <Label Text="Description" />
+            <Editor Text="{Binding Description}" HeightRequest="80" />
+
+            <Button Text="Choose Receipt" Command="{Binding BrowseReceiptCommand}" />
+            <Image Source="{Binding ReceiptImagePath}" IsVisible="{Binding HasReceipt}" HeightRequest="120" Aspect="AspectFit" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

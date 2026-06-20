@@ -1,0 +1,39 @@
+Stock & Flow - Inventory Management Software
+Copyright (c) 2026 Your Company Name
+
+END-USER LICENSE AGREEMENT (EULA)
+
+IMPORTANT: PLEASE READ THIS LICENSE CAREFULLY BEFORE USING THIS SOFTWARE.
+
+1. LICENSE GRANT
+This software is licensed, not sold. You are granted a non-exclusive,
+non-transferable license to install and use Stock & Flow on a single computer.
+
+2. RESTRICTIONS
+You may not:
+- Distribute, sublicense, or sell copies of this software
+- Reverse engineer, decompile, or disassemble the software
+- Remove any proprietary notices or labels on the software
+
+3. OWNERSHIP
+All title, including but not limited to copyrights, in and to the software
+and any copies thereof are owned by the licensor.
+
+4. WARRANTY DISCLAIMER
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+5. LIMITATION OF LIABILITY
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DAMAGES WHATSOEVER
+(INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS,
+BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR OTHER PECUNIARY
+LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE.
+
+6. TERMINATION
+This license is effective until terminated. Your rights under this license
+will terminate automatically without notice if you fail to comply with any term(s)
+of this license.
+
+By installing this software, you acknowledge that you have read this agreement,
+understand it, and agree to be bound by its terms and conditions.

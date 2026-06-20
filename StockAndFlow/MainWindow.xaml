@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:StockAndFlow.ViewModels"
         xmlns:local="clr-namespace:StockAndFlow.Views"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Title="Stock &amp; Flow" Height="600" Width="1000">
 
     <!-- DataContext will be set via DI in App.xaml.cs -->
@@ -687,9 +688,13 @@
             </TabItem>
 
             <TabItem Header="Reports">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="ReportsScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              PanningMode="VerticalOnly"
+                              PreviewMouseWheel="ReportsScrollViewer_PreviewMouseWheel">
                     <Grid Margin="20">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -774,8 +779,19 @@
                             </Border>
                         </Grid>
 
+                        <!-- Sales Trend Chart -->
+                        <Border Grid.Row="2" Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="📈 Sales Trend" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <lvc:CartesianChart Series="{Binding ReportsViewModel.SalesTrendSeries}"
+                                                    XAxes="{Binding ReportsViewModel.SalesTrendXAxes}"
+                                                    Height="250"
+                                                    Focusable="False"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Detailed Reports Grid -->
-                        <Grid Grid.Row="2">
+                        <Grid Grid.Row="3">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
@@ -783,10 +799,21 @@
 
                             <!-- Left Column -->
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                <!-- Top Selling Items -->
+                                <!-- Top Selling Items Chart -->
                                 <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="🏆 Top Selling Items" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <TextBlock Text="🏆 Top 5 Items (Revenue)" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <lvc:CartesianChart Series="{Binding ReportsViewModel.TopItemsSeries}"
+                                                            XAxes="{Binding ReportsViewModel.TopItemsXAxes}"
+                                                            Height="250"
+                                                            Focusable="False"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Top Selling Items Table -->
+                                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="🏆 Top Selling Items (Detailed)" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
                                         <DataGrid ItemsSource="{Binding ReportsViewModel.TopSellingItems}"
                                                   AutoGenerateColumns="False"
                                                   IsReadOnly="True"
@@ -829,10 +856,30 @@
 
                             <!-- Right Column -->
                             <StackPanel Grid.Column="1">
-                                <!-- Expense Breakdown -->
+                                <!-- Expenses Pie Chart -->
                                 <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="💳 Expenses by Category" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <lvc:PieChart Series="{Binding ReportsViewModel.ExpensesPieSeries}"
+                                                      Height="250"
+                                                      Focusable="False"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Inventory Status Chart -->
+                                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="📦 Inventory Status" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                        <lvc:PieChart Series="{Binding ReportsViewModel.InventoryStatusSeries}"
+                                                      Height="250"
+                                                      Focusable="False"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Expense Breakdown Table -->
+                                <Border Background="White" Padding="15" Margin="0,0,0,20" BorderBrush="#BDC3C7" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="💳 Expenses (Detailed)" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
                                         <DataGrid ItemsSource="{Binding ReportsViewModel.ExpensesByCategory}"
                                                   AutoGenerateColumns="False"
                                                   IsReadOnly="True"

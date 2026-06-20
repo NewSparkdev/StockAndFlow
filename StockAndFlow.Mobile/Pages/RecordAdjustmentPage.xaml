@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.RecordAdjustmentPage"
+             Title="Record Adjustment">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label Text="Item" />
+            <Picker ItemsSource="{Binding InventoryItems}"
+                    SelectedItem="{Binding SelectedItem}"
+                    ItemDisplayBinding="{Binding Name}"
+                    Title="Select an item" />
+
+            <Label Text="Reason" />
+            <Picker x:Name="ReasonPicker"
+                    ItemsSource="{Binding AdjustmentReasons}"
+                    ItemDisplayBinding="{Binding Display}"
+                    Title="Select a reason"
+                    SelectedIndexChanged="OnReasonSelected" />
+
+            <Label Text="Quantity change (negative reduces stock)" />
+            <Entry Text="{Binding QuantityChange}" Keyboard="Numeric" />
+
+            <Label Text="Date" />
+            <DatePicker Date="{Binding AdjustmentDate}" />
+
+            <Label Text="Notes" />
+            <Editor Text="{Binding Notes}" HeightRequest="80" />
+
+            <Border Stroke="#E0E0E0" StrokeThickness="1" Padding="12" StrokeShape="RoundRectangle 10">
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Current quantity" />
+                        <Label Grid.Column="1" Text="{Binding CurrentQuantity}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="New quantity" />
+                        <Label Grid.Column="1" Text="{Binding NewQuantity}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Cost lost" />
+                        <Label Grid.Column="1" Text="{Binding CostLost, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Potential profit lost" />
+                        <Label Grid.Column="1" Text="{Binding PotentialProfitLost, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#95A5A6" />
+                <Button Grid.Column="1" Text="Record" Command="{Binding RecordCommand}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

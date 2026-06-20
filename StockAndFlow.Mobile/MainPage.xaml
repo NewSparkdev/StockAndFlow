@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.MainPage"
+             Title="Stock &amp; Flow">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Settings" Clicked="OnSettingsClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <Label Text="{Binding AppName}"
+                   FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" />
+
+            <Label Text="{Binding StatusMessage}"
+                   FontSize="14" TextColor="Gray" HorizontalOptions="Center" />
+
+            <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
+
+            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16"
+                    StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="10" BindingContext="{Binding CurrentMetrics}">
+                    <Label Text="Overview" FontSize="20" FontAttributes="Bold" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Total Revenue" />
+                        <Label Grid.Column="1" Text="{Binding TotalRevenue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Gross Profit" />
+                        <Label Grid.Column="1" Text="{Binding GrossProfit, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Total Expenses" />
+                        <Label Grid.Column="1" Text="{Binding TotalExpenses, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Net Profit" />
+                        <Label Grid.Column="1" Text="{Binding NetProfit, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Inventory Value" />
+                        <Label Grid.Column="1" Text="{Binding TotalInventoryValue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Sales Count" />
+                        <Label Grid.Column="1" Text="{Binding TotalSalesCount}" FontAttributes="Bold" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Refresh" Command="{Binding RefreshMetricsCommand}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

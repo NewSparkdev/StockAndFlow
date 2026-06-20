@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Models;
 using StockAndFlow.Services;
 using StockAndFlow.ViewModels;
@@ -113,7 +114,7 @@ namespace StockAndFlow.Views.Dialogs
                     // Show business settings dialog if needed
                     if (shouldEditSettings)
                     {
-                        var settingsViewModel = new BusinessSettingsViewModel(settingsService);
+                        var settingsViewModel = App.Services.GetRequiredService<BusinessSettingsViewModel>();
                         var settingsDialog = new BusinessSettingsDialog(settingsViewModel);
                         var settingsResult = settingsDialog.ShowDialog();
 

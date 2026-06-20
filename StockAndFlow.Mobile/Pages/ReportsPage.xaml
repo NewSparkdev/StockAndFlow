@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+             x:Class="StockAndFlow.Mobile.Pages.ReportsPage"
+             Title="Reports">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Export/Import" Command="{Binding ExportImportCommand}" />
+        <ToolbarItem Text="Refresh" Command="{Binding RefreshCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+
+            <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
+
+            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Sales" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Revenue" />
+                        <Label Grid.Column="1" Text="{Binding TotalRevenue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Cost of goods sold" />
+                        <Label Grid.Column="1" Text="{Binding TotalCOGS, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Sales count" />
+                        <Label Grid.Column="1" Text="{Binding TotalSalesCount}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Avg. sale value" />
+                        <Label Grid.Column="1" Text="{Binding AverageSaleValue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Profit &amp; Loss" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Total expenses" />
+                        <Label Grid.Column="1" Text="{Binding TotalExpenses, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Net profit" />
+                        <Label Grid.Column="1" Text="{Binding NetProfit, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Profit margin" />
+                        <Label Grid.Column="1" Text="{Binding ProfitMargin, StringFormat='{0:F1}%'}" FontAttributes="Bold" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Inventory" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Inventory value" />
+                        <Label Grid.Column="1" Text="{Binding TotalInventoryValue, StringFormat='{0:C2}'}" FontAttributes="Bold" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Items in stock" />
+                        <Label Grid.Column="1" Text="{Binding TotalItemsInStock}" FontAttributes="Bold" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Sales Trend" FontSize="18" FontAttributes="Bold" />
+            <lvc:CartesianChart Series="{Binding SalesTrendSeries}" XAxes="{Binding SalesTrendXAxes}" HeightRequest="240" />
+
+            <Label Text="Top Selling Items" FontSize="18" FontAttributes="Bold" />
+            <lvc:CartesianChart Series="{Binding TopItemsSeries}" XAxes="{Binding TopItemsXAxes}" HeightRequest="240" />
+
+            <Label Text="Expenses by Category" FontSize="18" FontAttributes="Bold" />
+            <lvc:PieChart Series="{Binding ExpensesPieSeries}" HeightRequest="240" />
+
+            <Label Text="Inventory Status" FontSize="18" FontAttributes="Bold" />
+            <lvc:PieChart Series="{Binding InventoryStatusSeries}" HeightRequest="240" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
