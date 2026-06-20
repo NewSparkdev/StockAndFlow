@@ -1,19 +1,28 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.Controls.Shapes;
 using StockAndFlow.Mobile.Pages;
 
 namespace StockAndFlow.Mobile;
 
 /// <summary>
-/// Hybrid navigation: a bottom tab bar gives one-tap access to the five primary sections, while the
-/// hamburger flyout drawer lists everything (including the secondary Adjustments section). Pages are
-/// DI-resolved because each has a constructor dependency on its ViewModel.
+/// Hybrid navigation: a bottom tab bar gives one-tap access to the five primary sections, while a
+/// Material-3 styled hamburger flyout drawer lists everything (including the secondary Adjustments
+/// section). Pages are DI-resolved because each has a constructor dependency on its ViewModel.
 /// </summary>
 public class AppShell : Shell
 {
 	public AppShell(IServiceProvider services)
 	{
 		FlyoutBehavior = FlyoutBehavior.Flyout;
+		FlyoutWidth = 304;
 		FlyoutHeader = BuildHeader();
+
+		// Modern pill-style flyout items + a surface-colored drawer that adapts to light/dark.
+		var itemTemplate = (DataTemplate)Application.Current!.Resources["AppFlyoutItem"];
+		ItemTemplate = itemTemplate;
+		MenuItemTemplate = itemTemplate;
+		this.SetAppThemeColor(FlyoutBackgroundColorProperty,
+			Color.FromArgb("#FFFFFF"), Color.FromArgb("#141218"));
 
 		// Primary sections -> bottom tab bar (and listed individually in the drawer).
 		var primary = new FlyoutItem
@@ -44,23 +53,56 @@ public class AppShell : Shell
 		return tab;
 	}
 
-	private static View BuildHeader() => new Grid
+	private static View BuildHeader()
 	{
-		HeightRequest = 140,
-		BackgroundColor = Color.FromArgb("#512BD4"),
-		Children =
+		var header = new Grid
 		{
-			new VerticalStackLayout
+			HeightRequest = 184,
+			Background = new LinearGradientBrush
 			{
-				Padding = new Thickness(20),
-				VerticalOptions = LayoutOptions.End,
-				Spacing = 2,
-				Children =
+				StartPoint = new Point(0, 0),
+				EndPoint = new Point(1, 1),
+				GradientStops =
 				{
-					new Label { Text = "Stock & Flow", FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
-					new Label { Text = "Inventory & sales", FontSize = 13, TextColor = Color.FromArgb("#D9D2F5") }
+					new GradientStop(Color.FromArgb("#6242DD"), 0f),
+					new GradientStop(Color.FromArgb("#2B0B98"), 1f)
 				}
 			}
-		}
-	};
+		};
+
+		var avatar = new Border
+		{
+			WidthRequest = 54,
+			HeightRequest = 54,
+			StrokeThickness = 0,
+			BackgroundColor = Color.FromArgb("#33FFFFFF"),
+			StrokeShape = new RoundRectangle { CornerRadius = 27 },
+			HorizontalOptions = LayoutOptions.Start,
+			Content = new Label
+			{
+				Text = "S&F",
+				TextColor = Colors.White,
+				FontFamily = "OpenSansSemibold",
+				FontAttributes = FontAttributes.Bold,
+				FontSize = 18,
+				HorizontalOptions = LayoutOptions.Center,
+				VerticalOptions = LayoutOptions.Center
+			}
+		};
+
+		header.Add(new VerticalStackLayout
+		{
+			Padding = new Thickness(22, 0, 22, 22),
+			VerticalOptions = LayoutOptions.End,
+			Spacing = 10,
+			Children =
+			{
+				avatar,
+				new Label { Text = "Stock & Flow", FontFamily = "OpenSansSemibold", FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
+				new Label { Text = "Inventory & sales", FontSize = 13, TextColor = Color.FromArgb("#DCD4F7") }
+			}
+		});
+
+		return header;
+	}
 }

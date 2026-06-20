@@ -45,6 +45,36 @@
                     </VisualStateGroupList>
                 </Setter>
             </Style>
+
+            <!-- Material-3 style flyout (drawer) item: pill-shaped selected state, roomy spacing. -->
+            <DataTemplate x:Key="AppFlyoutItem">
+                <Border x:Name="Pill" Margin="12,3" Padding="18,14" StrokeThickness="0"
+                        StrokeShape="RoundRectangle 26" BackgroundColor="Transparent">
+                    <Grid ColumnDefinitions="26,*" ColumnSpacing="18" VerticalOptions="Center">
+                        <Image Source="{Binding FlyoutIcon}" WidthRequest="22" HeightRequest="22"
+                               VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center"
+                               FontSize="15" FontFamily="OpenSansSemibold"
+                               TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                    </Grid>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroupList>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrimaryContainerLight}, Dark={StaticResource PrimaryContainerDark}}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateGroupList>
+                    </VisualStateManager.VisualStateGroups>
+                </Border>
+            </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
