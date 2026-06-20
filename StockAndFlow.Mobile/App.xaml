@@ -55,7 +55,7 @@
                                VerticalOptions="Center" />
                         <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center"
                                FontSize="15" FontFamily="OpenSansSemibold"
-                               TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                               TextColor="#ECE8F5" />
                     </Grid>
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroupList>
@@ -67,7 +67,7 @@
                                 </VisualState>
                                 <VisualState x:Name="Selected">
                                     <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrimaryContainerLight}, Dark={StaticResource PrimaryContainerDark}}" />
+                                        <Setter Property="BackgroundColor" Value="#4A6242DD" />
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

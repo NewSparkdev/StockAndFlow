@@ -266,7 +266,7 @@ namespace StockAndFlow.ViewModels
             CloseRequested?.Invoke(this, false);
         }
 
-        public async Task<string?> GenerateInvoiceAsync(SaleTransaction transaction)
+        public async Task<string?> GenerateInvoiceAsync(SaleTransaction transaction, string? outputPath = null)
         {
             try
             {
@@ -277,8 +277,9 @@ namespace StockAndFlow.ViewModels
                     return null; // Caller should prompt for business settings
                 }
 
-                // Generate the invoice
-                var invoicePath = await _invoiceService.GenerateInvoiceAsync(transaction);
+                // Generate the invoice (outputPath lets mobile target a sandbox-writable location;
+                // desktop passes null and the service uses the user's Downloads folder).
+                var invoicePath = await _invoiceService.GenerateInvoiceAsync(transaction, outputPath);
                 return invoicePath;
             }
             catch (Exception ex)

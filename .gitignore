@@ -64,3 +64,11 @@ startup.log
 # OS files
 .DS_Store
 Thumbs.db
+
+# Release signing secrets (never commit)
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest

@@ -17,12 +17,12 @@ public class AppShell : Shell
 		FlyoutWidth = 304;
 		FlyoutHeader = BuildHeader();
 
-		// Modern pill-style flyout items + a surface-colored drawer that adapts to light/dark.
+		// Modern pill-style flyout items on a fixed dark "sidebar" that flows from the gradient
+		// header and stays consistent (and legible) in both light and dark app themes.
 		var itemTemplate = (DataTemplate)Application.Current!.Resources["AppFlyoutItem"];
 		ItemTemplate = itemTemplate;
 		MenuItemTemplate = itemTemplate;
-		this.SetAppThemeColor(FlyoutBackgroundColorProperty,
-			Color.FromArgb("#FFFFFF"), Color.FromArgb("#141218"));
+		FlyoutBackgroundColor = Color.FromArgb("#1A1622");
 
 		// Primary sections -> bottom tab bar (and listed individually in the drawer).
 		var primary = new FlyoutItem
