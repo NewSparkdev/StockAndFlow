@@ -28,9 +28,24 @@ public class LoadTests : IDisposable
     public void Dispose()
     {
         _dataService?.Dispose();
-        if (File.Exists(_testDbPath))
+
+        // Microsoft.Data.Sqlite pools connections, which keeps the file handle open even after the
+        // DbContext is disposed. Clear the pool (and force finalization) before deleting the temp db,
+        // and tolerate a residual lock since it's only a throwaway temp file.
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        try
         {
-            File.Delete(_testDbPath);
+            if (File.Exists(_testDbPath))
+            {
+                File.Delete(_testDbPath);
+            }
+        }
+        catch (IOException)
+        {
+            // Temp file still locked by the SQLite native layer; the OS will reclaim it.
         }
     }
 
