@@ -1,19 +1,42 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
+using SkiaSharp;
 using StockAndFlow.Models;
 
 namespace StockAndFlow.Services
 {
+    /// <summary>
+    /// Generates PDF invoices using SkiaSharp's <see cref="SKDocument"/> PDF backend.
+    ///
+    /// We render with SkiaSharp (not QuestPDF) on purpose: QuestPDF ships its own native Skia
+    /// build (libQuestPdfSkia) that depends on libstdc++ and fails to load on Android/iOS, so it
+    /// is desktop/server-only. SkiaSharp's libSkiaSharp is already present and proven on every head
+    /// in this solution (it renders the LiveCharts charts), so the same invoice code path works on
+    /// Windows, Android, and iOS.
+    /// </summary>
     public class InvoiceService
     {
         private readonly BusinessSettingsService _settingsService;
 
-        private static bool _licenseInitialized;
+        // US Letter at 72 dpi (PDF points).
+        private const float PageWidth = 612f;
+        private const float PageHeight = 792f;
+        private const float Margin = 40f;
+        private const float ContentLeft = Margin;
+        private const float ContentRight = PageWidth - Margin;
+        private const float ContentWidth = ContentRight - ContentLeft;
+        private const float RowHeight = 26f;
+
+        // Palette mirrors the previous QuestPDF design.
+        private static readonly SKColor Brand = new(0x15, 0x65, 0xC0);      // Blue Darken-2
+        private static readonly SKColor Ink = new(0x21, 0x21, 0x21);
+        private static readonly SKColor GreyDark = new(0x75, 0x75, 0x75);
+        private static readonly SKColor GreyMedium = new(0x9E, 0x9E, 0x9E);
+        private static readonly SKColor GreyLight = new(0xEE, 0xEE, 0xEE);
+        private static readonly SKColor White = SKColors.White;
 
         public InvoiceService(BusinessSettingsService settingsService)
         {
@@ -21,37 +44,20 @@ namespace StockAndFlow.Services
         }
 
         /// <summary>
-        /// Sets the QuestPDF Community license exactly once, on first invoice generation.
-        /// Deferred out of the constructor because touching QuestPDF.Settings runs QuestPDF's static
-        /// initializer, which is unavailable on some platforms (e.g. Android) and must not break
-        /// service construction / app startup.
-        /// </summary>
-        private static void EnsureQuestPdfLicense()
-        {
-            if (_licenseInitialized)
-                return;
-
-            // Community license is free for non-commercial use.
-            QuestPDF.Settings.License = LicenseType.Community;
-            _licenseInitialized = true;
-        }
-
-        /// <summary>
         /// Generates a PDF invoice for a sale transaction.
         /// </summary>
-        /// <param name="transaction">The sale transaction to generate an invoice for</param>
-        /// <param name="outputPath">The path where the PDF will be saved. If null, uses default path.</param>
-        /// <returns>The path to the generated PDF file</returns>
+        /// <param name="transaction">The sale transaction to generate an invoice for.</param>
+        /// <param name="outputPath">
+        /// Where the PDF is written. If null, a file is created in the user's Downloads folder
+        /// (desktop). Mobile callers pass a sandbox-writable path (e.g. the app cache directory).
+        /// </param>
+        /// <returns>The path to the generated PDF file.</returns>
         public async Task<string> GenerateInvoiceAsync(SaleTransaction transaction, string? outputPath = null)
         {
-            EnsureQuestPdfLicense();
-
             var settings = await _settingsService.GetSettingsAsync();
 
-            // Generate default filename if not provided
             if (string.IsNullOrWhiteSpace(outputPath))
             {
-                // Use the user's Downloads folder
                 var downloadsFolder = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                     "Downloads");
@@ -66,199 +72,302 @@ namespace StockAndFlow.Services
                 outputPath = Path.Combine(downloadsFolder, fileName);
             }
 
-            // Generate the PDF
-            Document.Create(container =>
-            {
-                container.Page(page =>
-                {
-                    page.Size(PageSizes.Letter);
-                    page.Margin(40);
-                    page.DefaultTextStyle(x => x.FontSize(11));
+            // Skia drawing is synchronous; keep it off the UI thread.
+            await Task.Run(() => Render(transaction, settings, outputPath!));
 
-                    page.Header().Element(c => ComposeHeader(c, settings, transaction));
-                    page.Content().Element(c => ComposeContent(c, transaction));
-                    page.Footer().Element(c => ComposeFooter(c, settings));
-                });
-            }).GeneratePdf(outputPath);
-
-            return outputPath;
+            return outputPath!;
         }
 
-        private void ComposeHeader(IContainer container, BusinessSettings settings, SaleTransaction transaction)
+        private void Render(SaleTransaction transaction, BusinessSettings settings, string outputPath)
         {
-            container.Column(column =>
+            using var regular = SKTypeface.FromFamilyName(null, SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+                                ?? SKTypeface.Default;
+            using var bold = SKTypeface.FromFamilyName(null, SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+                             ?? regular;
+            using var italic = SKTypeface.FromFamilyName(null, SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, SKFontStyleSlant.Italic)
+                               ?? regular;
+
+            using var stream = new SKFileWStream(outputPath);
+            using var document = SKDocument.CreatePdf(stream);
+
+            var ctx = new RenderContext(document, regular, bold, italic);
+            ctx.BeginPage();
+
+            DrawHeader(ctx, settings, transaction);
+            DrawItemsTable(ctx, transaction);
+            DrawTotals(ctx, transaction);
+            DrawNotes(ctx, transaction);
+            DrawThankYou(ctx);
+            DrawFooter(ctx, settings);
+
+            ctx.EndPage();
+            document.Close();
+        }
+
+        private void DrawHeader(RenderContext ctx, BusinessSettings settings, SaleTransaction transaction)
+        {
+            float topY = Margin + 16f;
+
+            // Left column: business identity.
+            float leftY = topY;
+            if (!string.IsNullOrWhiteSpace(settings.BusinessName))
             {
-                // Business info and invoice title
-                column.Item().Row(row =>
+                ctx.Text(settings.BusinessName!, ContentLeft, leftY, 18, ctx.Bold, Brand);
+                leftY += 22f;
+            }
+            if (!string.IsNullOrWhiteSpace(settings.Address))
+            {
+                ctx.Text(settings.Address!, ContentLeft, leftY, 9, ctx.Regular, Ink);
+                leftY += 12f;
+            }
+            if (!string.IsNullOrWhiteSpace(settings.City))
+            {
+                ctx.Text($"{settings.City}, {settings.State} {settings.ZipCode}", ContentLeft, leftY, 9, ctx.Regular, Ink);
+                leftY += 12f;
+            }
+            if (!string.IsNullOrWhiteSpace(settings.Phone))
+            {
+                leftY += 3f;
+                ctx.Text($"Phone: {settings.Phone}", ContentLeft, leftY, 9, ctx.Regular, Ink);
+                leftY += 12f;
+            }
+            if (!string.IsNullOrWhiteSpace(settings.Email))
+            {
+                ctx.Text($"Email: {settings.Email}", ContentLeft, leftY, 9, ctx.Regular, Ink);
+                leftY += 12f;
+            }
+            if (!string.IsNullOrWhiteSpace(settings.Website))
+            {
+                ctx.Text($"Web: {settings.Website}", ContentLeft, leftY, 9, ctx.Regular, Ink);
+                leftY += 12f;
+            }
+
+            // Right column: invoice title + meta, right-aligned.
+            float rightY = topY;
+            ctx.Text("INVOICE", ContentRight, rightY, 28, ctx.Bold, Brand, SKTextAlign.Right);
+            rightY += 26f;
+            var invoiceNumber = transaction.TransactionId.ToString().Substring(0, 8).ToUpper();
+            ctx.Text($"Invoice #: {invoiceNumber}", ContentRight, rightY, 10, ctx.Regular, Ink, SKTextAlign.Right);
+            rightY += 14f;
+            ctx.Text($"Date: {transaction.SaleDate:MMMM dd, yyyy}", ContentRight, rightY, 10, ctx.Regular, Ink, SKTextAlign.Right);
+            rightY += 14f;
+            ctx.Text($"Time: {transaction.SaleDate:hh:mm tt}", ContentRight, rightY, 10, ctx.Regular, Ink, SKTextAlign.Right);
+            rightY += 14f;
+
+            float y = Math.Max(leftY, rightY) + 12f;
+
+            // Brand separator.
+            ctx.Line(ContentLeft, y, ContentRight, y, 2, Brand);
+            y += 18f;
+
+            // Bill To.
+            ctx.Text("Bill To:", ContentLeft, y, 12, ctx.Bold, Ink);
+            y += 16f;
+            if (!string.IsNullOrWhiteSpace(transaction.CustomerName))
+            {
+                ctx.Text(transaction.CustomerName!, ContentLeft, y, 11, ctx.Regular, Ink);
+            }
+            else
+            {
+                ctx.Text("Walk-in Customer", ContentLeft, y, 11, ctx.Italic, Ink);
+            }
+            y += 14f;
+            if (!string.IsNullOrWhiteSpace(transaction.CustomerEmail))
+            {
+                ctx.Text(transaction.CustomerEmail!, ContentLeft, y, 10, ctx.Regular, Ink);
+                y += 14f;
+            }
+
+            ctx.Y = y + 16f;
+        }
+
+        // Column geometry (relative widths 3 : 1 : 1.5 : 1.5 over the content width).
+        private const float ColItemX = ContentLeft;                       // left edge, item name
+        private static readonly float ColQtyEnd = ContentLeft + ContentWidth * (3f + 1f) / 7f;
+        private static readonly float ColUnitEnd = ContentLeft + ContentWidth * (3f + 1f + 1.5f) / 7f;
+        private static readonly float ColTotalEnd = ContentRight;
+        private static readonly float ColQtyCenter = (ContentLeft + ContentWidth * 3f / 7f + ColQtyEnd) / 2f;
+        private const float CellPad = 8f;
+
+        private void DrawItemsTable(RenderContext ctx, SaleTransaction transaction)
+        {
+            DrawTableHeader(ctx);
+
+            foreach (var item in transaction.Items.OrderBy(i => i.ItemName))
+            {
+                if (ctx.Y + RowHeight > PageHeight - Margin - 40f)
                 {
-                    // Left side - Business info
-                    row.RelativeItem().Column(leftColumn =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(settings.BusinessName))
-                        {
-                            leftColumn.Item().Text(settings.BusinessName)
-                                .FontSize(18)
-                                .Bold()
-                                .FontColor(Colors.Blue.Darken2);
-                        }
+                    ctx.EndPage();
+                    ctx.BeginPage();
+                    ctx.Y = Margin + 16f;
+                    DrawTableHeader(ctx);
+                }
 
-                        if (!string.IsNullOrWhiteSpace(settings.Address))
-                        {
-                            leftColumn.Item().PaddingTop(5).Text(settings.Address).FontSize(9);
-                        }
+                float baseline = ctx.Y + RowHeight - CellPad;
+                ctx.Text(item.ItemName ?? string.Empty, ColItemX + CellPad, baseline, 11, ctx.Regular, Ink);
+                ctx.Text(item.Quantity.ToString(), ColQtyCenter, baseline, 11, ctx.Regular, Ink, SKTextAlign.Center);
+                ctx.Text($"${item.SalePricePerUnit:N2}", ColUnitEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
+                ctx.Text($"${item.Revenue:N2}", ColTotalEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
 
-                        if (!string.IsNullOrWhiteSpace(settings.City))
-                        {
-                            leftColumn.Item().Text($"{settings.City}, {settings.State} {settings.ZipCode}").FontSize(9);
-                        }
+                ctx.Y += RowHeight;
+                ctx.Line(ContentLeft, ctx.Y, ContentRight, ctx.Y, 1, GreyLight);
+            }
+        }
 
-                        if (!string.IsNullOrWhiteSpace(settings.Phone))
-                        {
-                            leftColumn.Item().PaddingTop(5).Text($"Phone: {settings.Phone}").FontSize(9);
-                        }
+        private void DrawTableHeader(RenderContext ctx)
+        {
+            ctx.Rect(ContentLeft, ctx.Y, ContentWidth, RowHeight, Brand);
+            float baseline = ctx.Y + RowHeight - CellPad;
+            ctx.Text("Item", ColItemX + CellPad, baseline, 11, ctx.Bold, White);
+            ctx.Text("Qty", ColQtyCenter, baseline, 11, ctx.Bold, White, SKTextAlign.Center);
+            ctx.Text("Unit Price", ColUnitEnd - CellPad, baseline, 11, ctx.Bold, White, SKTextAlign.Right);
+            ctx.Text("Total", ColTotalEnd - CellPad, baseline, 11, ctx.Bold, White, SKTextAlign.Right);
+            ctx.Y += RowHeight;
+        }
 
-                        if (!string.IsNullOrWhiteSpace(settings.Email))
-                        {
-                            leftColumn.Item().Text($"Email: {settings.Email}").FontSize(9);
-                        }
+        private void DrawTotals(RenderContext ctx, SaleTransaction transaction)
+        {
+            var subtotal = transaction.Items.Sum(i => i.Subtotal);
+            var tax = transaction.Items.Sum(i => i.TaxAmount);
+            var total = transaction.Revenue; // subtotal + tax
 
-                        if (!string.IsNullOrWhiteSpace(settings.Website))
-                        {
-                            leftColumn.Item().Text($"Web: {settings.Website}").FontSize(9);
-                        }
-                    });
+            const float labelRight = ContentRight - 120f;
+            float y = ctx.Y + 24f;
 
-                    // Right side - Invoice title and number
-                    row.RelativeItem().AlignRight().Column(rightColumn =>
-                    {
-                        rightColumn.Item().Text("INVOICE")
-                            .FontSize(28)
-                            .Bold()
-                            .FontColor(Colors.Blue.Darken2);
+            ctx.Text("Subtotal:", labelRight, y, 12, ctx.Regular, Ink, SKTextAlign.Right);
+            ctx.Text($"${subtotal:N2}", ContentRight, y, 12, ctx.Regular, Ink, SKTextAlign.Right);
+            y += 18f;
 
-                        var invoiceNumber = transaction.TransactionId.ToString().Substring(0, 8).ToUpper();
-                        rightColumn.Item().PaddingTop(10).Text($"Invoice #: {invoiceNumber}").FontSize(10);
-                        rightColumn.Item().Text($"Date: {transaction.SaleDate:MMMM dd, yyyy}").FontSize(10);
-                        rightColumn.Item().Text($"Time: {transaction.SaleDate:hh:mm tt}").FontSize(10);
-                    });
-                });
+            if (tax > 0)
+            {
+                ctx.Text("Tax:", labelRight, y, 12, ctx.Regular, Ink, SKTextAlign.Right);
+                ctx.Text($"${tax:N2}", ContentRight, y, 12, ctx.Regular, Ink, SKTextAlign.Right);
+                y += 18f;
+            }
 
-                // Separator
-                column.Item().PaddingVertical(20).LineHorizontal(2).LineColor(Colors.Blue.Darken2);
+            ctx.Text("Total:", labelRight, y, 14, ctx.Bold, Ink, SKTextAlign.Right);
+            ctx.Text($"${total:N2}", ContentRight, y, 14, ctx.Bold, Brand, SKTextAlign.Right);
 
-                // Customer information
-                column.Item().Column(customerColumn =>
+            ctx.Y = y + 8f;
+        }
+
+        private void DrawNotes(RenderContext ctx, SaleTransaction transaction)
+        {
+            if (string.IsNullOrWhiteSpace(transaction.Notes))
+                return;
+
+            float y = ctx.Y + 28f;
+            ctx.Text("Notes:", ContentLeft, y, 11, ctx.Bold, Ink);
+            y += 14f;
+            foreach (var line in WrapText(ctx, transaction.Notes!, ctx.Regular, 10, ContentWidth))
+            {
+                ctx.Text(line, ContentLeft, y, 10, ctx.Regular, Ink);
+                y += 13f;
+            }
+            ctx.Y = y;
+        }
+
+        private void DrawThankYou(RenderContext ctx)
+        {
+            float y = ctx.Y + 30f;
+            ctx.Text("Thank you for your business!", PageWidth / 2f, y, 12, ctx.Italic, GreyDark, SKTextAlign.Center);
+            ctx.Y = y;
+        }
+
+        private void DrawFooter(RenderContext ctx, BusinessSettings settings)
+        {
+            float y = PageHeight - Margin - 28f;
+            ctx.Line(ContentLeft, y, ContentRight, y, 1, GreyLight);
+            y += 12f;
+            ctx.Text($"Generated on: {DateTime.Now:MMMM dd, yyyy 'at' hh:mm tt}", PageWidth / 2f, y, 8, ctx.Regular, GreyMedium, SKTextAlign.Center);
+            y += 11f;
+            if (!string.IsNullOrWhiteSpace(settings.TaxId))
+            {
+                ctx.Text($"Tax ID: {settings.TaxId}", PageWidth / 2f, y, 8, ctx.Regular, GreyMedium, SKTextAlign.Center);
+            }
+        }
+
+        private static IEnumerable<string> WrapText(RenderContext ctx, string text, SKTypeface typeface, float size, float maxWidth)
+        {
+            using var paint = new SKPaint { Typeface = typeface, TextSize = size, IsAntialias = true };
+            foreach (var rawLine in text.Replace("\r", string.Empty).Split('\n'))
+            {
+                var words = rawLine.Split(' ');
+                var current = string.Empty;
+                foreach (var word in words)
                 {
-                    customerColumn.Item().Text("Bill To:").FontSize(12).Bold();
-
-                    if (!string.IsNullOrWhiteSpace(transaction.CustomerName))
+                    var candidate = current.Length == 0 ? word : current + " " + word;
+                    if (paint.MeasureText(candidate) > maxWidth && current.Length > 0)
                     {
-                        customerColumn.Item().PaddingTop(5).Text(transaction.CustomerName).FontSize(11);
+                        yield return current;
+                        current = word;
                     }
                     else
                     {
-                        customerColumn.Item().PaddingTop(5).Text("Walk-in Customer").FontSize(11).Italic();
+                        current = candidate;
                     }
-
-                    if (!string.IsNullOrWhiteSpace(transaction.CustomerEmail))
-                    {
-                        customerColumn.Item().Text(transaction.CustomerEmail).FontSize(10);
-                    }
-                });
-
-                column.Item().PaddingBottom(20);
-            });
+                }
+                yield return current;
+            }
         }
 
-        private void ComposeContent(IContainer container, SaleTransaction transaction)
+        /// <summary>Tracks the active PDF page/canvas and the running vertical cursor.</summary>
+        private sealed class RenderContext
         {
-            container.Column(column =>
+            private readonly SKDocument _document;
+            public SKCanvas Canvas { get; private set; } = null!;
+            public SKTypeface Regular { get; }
+            public SKTypeface Bold { get; }
+            public SKTypeface Italic { get; }
+            public float Y { get; set; }
+
+            public RenderContext(SKDocument document, SKTypeface regular, SKTypeface bold, SKTypeface italic)
             {
-                // Items table
-                column.Item().Table(table =>
-                {
-                    // Define columns
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.RelativeColumn(3); // Item name
-                        columns.RelativeColumn(1); // Quantity
-                        columns.RelativeColumn(1.5f); // Unit Price
-                        columns.RelativeColumn(1.5f); // Total
-                    });
+                _document = document;
+                Regular = regular;
+                Bold = bold;
+                Italic = italic;
+            }
 
-                    // Header
-                    table.Header(header =>
-                    {
-                        header.Cell().Background(Colors.Blue.Darken2).Padding(8).Text("Item").FontColor(Colors.White).Bold();
-                        header.Cell().Background(Colors.Blue.Darken2).Padding(8).AlignCenter().Text("Qty").FontColor(Colors.White).Bold();
-                        header.Cell().Background(Colors.Blue.Darken2).Padding(8).AlignRight().Text("Unit Price").FontColor(Colors.White).Bold();
-                        header.Cell().Background(Colors.Blue.Darken2).Padding(8).AlignRight().Text("Total").FontColor(Colors.White).Bold();
-                    });
-
-                    // Items
-                    foreach (var item in transaction.Items.OrderBy(i => i.ItemName))
-                    {
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(8).Text(item.ItemName ?? "");
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(8).AlignCenter().Text(item.Quantity.ToString());
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(8).AlignRight().Text($"${item.SalePricePerUnit:N2}");
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(8).AlignRight().Text($"${item.Revenue:N2}");
-                    }
-                });
-
-                // Summary section
-                column.Item().PaddingTop(20).AlignRight().Column(summaryColumn =>
-                {
-                    summaryColumn.Item().Row(row =>
-                    {
-                        row.AutoItem().Width(150).Text("Subtotal:").FontSize(12);
-                        row.AutoItem().Width(100).AlignRight().Text($"${transaction.Revenue:N2}").FontSize(12);
-                    });
-
-                    summaryColumn.Item().PaddingTop(10).Row(row =>
-                    {
-                        row.AutoItem().Width(150).Text("Total:").FontSize(14).Bold();
-                        row.AutoItem().Width(100).AlignRight().Text($"${transaction.Revenue:N2}")
-                            .FontSize(14)
-                            .Bold()
-                            .FontColor(Colors.Blue.Darken2);
-                    });
-                });
-
-                // Notes section
-                if (!string.IsNullOrWhiteSpace(transaction.Notes))
-                {
-                    column.Item().PaddingTop(30).Column(notesColumn =>
-                    {
-                        notesColumn.Item().Text("Notes:").FontSize(11).Bold();
-                        notesColumn.Item().PaddingTop(5).Text(transaction.Notes).FontSize(10);
-                    });
-                }
-
-                // Thank you message
-                column.Item().PaddingTop(30).AlignCenter().Text("Thank you for your business!")
-                    .FontSize(12)
-                    .Italic()
-                    .FontColor(Colors.Grey.Darken1);
-            });
-        }
-
-        private void ComposeFooter(IContainer container, BusinessSettings settings)
-        {
-            container.AlignCenter().Column(column =>
+            public void BeginPage()
             {
-                column.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+                Canvas = _document.BeginPage(PageWidth, PageHeight);
+                Y = Margin;
+            }
 
-                column.Item().PaddingTop(10).Text(text =>
-                {
-                    text.Span("Generated on: ").FontSize(8).FontColor(Colors.Grey.Medium);
-                    text.Span(DateTime.Now.ToString("MMMM dd, yyyy 'at' hh:mm tt")).FontSize(8).FontColor(Colors.Grey.Medium);
-                });
+            public void EndPage() => _document.EndPage();
 
-                if (!string.IsNullOrWhiteSpace(settings.TaxId))
+            public void Text(string text, float x, float baseline, float size, SKTypeface typeface, SKColor color,
+                SKTextAlign align = SKTextAlign.Left)
+            {
+                using var paint = new SKPaint
                 {
-                    column.Item().Text($"Tax ID: {settings.TaxId}").FontSize(8).FontColor(Colors.Grey.Medium);
-                }
-            });
+                    Typeface = typeface,
+                    TextSize = size,
+                    Color = color,
+                    IsAntialias = true,
+                    TextAlign = align
+                };
+                Canvas.DrawText(text, x, baseline, paint);
+            }
+
+            public void Line(float x1, float y1, float x2, float y2, float thickness, SKColor color)
+            {
+                using var paint = new SKPaint
+                {
+                    Color = color,
+                    StrokeWidth = thickness,
+                    IsAntialias = true,
+                    Style = SKPaintStyle.Stroke
+                };
+                Canvas.DrawLine(x1, y1, x2, y2, paint);
+            }
+
+            public void Rect(float x, float y, float width, float height, SKColor color)
+            {
+                using var paint = new SKPaint { Color = color, IsAntialias = true, Style = SKPaintStyle.Fill };
+                Canvas.DrawRect(x, y, width, height, paint);
+            }
         }
     }
 }

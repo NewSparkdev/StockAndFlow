@@ -32,10 +32,11 @@ Status legend: [x] done · [ ] still required · [~] partially done
 - [x] Tests: 36/37 pass (1 is an env-sensitive 10k-row perf threshold).
 - [x] Release/trimmed Android build verified (Core rooted so EF Core + reflection survive trim/AOT).
 - [x] Mobile: image picker, add/edit/delete, details, dashboard, charts, dark mode verified on emulator.
-- [x] Invoice generation wired into the mobile Record Sale flow (writes to app cache + Share sheet).
+- [x] Invoice generation works on mobile: rendered via **SkiaSharp** `SKDocument` (QuestPDF removed — its native Skia build does not load on Android/iOS). Writes to app cache + Share sheet.
 - [x] Verified on emulator: **Excel Export → Share** (ClosedXML), **image picker** (system photo picker), dark mode.
+- [x] Verified on emulator: **complete sale with stock** + **invoice PDF** generates and opens the Share sheet (PDF pulled & confirmed: correct layout, selectable text). Desktop invoice rendering covered by `InvoiceServiceTests`.
 - [ ] **On real hardware** (at least one Android phone, one iPhone): full smoke test.
-- [ ] Verify on-device (not yet done): **Excel Import** round-trip, a **complete sale with stock**, **invoice PDF** renders (QuestPDF — wired with graceful fallback, but PDF rendering not yet confirmed on a device).
+- [ ] Verify on-device (not yet done): **Excel Import** round-trip; **iOS invoice** render (same SkiaSharp code path, but only testable on a Mac).
 - [ ] First-run on a clean device (DB seeding, no data) looks correct.
 - [ ] Security review of the mobile credential encryption (`MauiCredentialProtector`).
 

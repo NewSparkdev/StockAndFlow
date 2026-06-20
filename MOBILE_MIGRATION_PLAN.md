@@ -35,7 +35,12 @@ Namespaces stay `StockAndFlow.*` (namespace need not match assembly), so most fi
 | Charts `LiveChartsCore.SkiaSharpView.WPF` | WPF views only | MAUI uses `LiveChartsCore.SkiaSharpView.Maui` (same API) |
 
 Already portable (no change): all Models, EF Core + SQLite data layer, `ObservableCollection`,
-`ICommand`, `HttpClient` (ShopifyService), Serilog, QuestPDF, ClosedXML.
+`ICommand`, `HttpClient` (ShopifyService), Serilog, ClosedXML.
+
+> **Invoices:** QuestPDF was replaced with a SkiaSharp `SKDocument` renderer (`InvoiceService`).
+> QuestPDF bundles its own native Skia build (`libQuestPdfSkia`) that depends on `libstdc++` and
+> fails to load on Android/iOS — it is desktop/server-only. SkiaSharp's `libSkiaSharp` is present on
+> every head (it renders the charts), so one renderer now serves Windows + Android + iOS.
 
 ---
 

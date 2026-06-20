@@ -61,7 +61,7 @@ Stock & Flow is a Windows desktop application designed to help small to medium-s
 - **Architecture**: MVVM (Model-View-ViewModel)
 - **Dependency Injection**: Microsoft.Extensions.DependencyInjection
 - **Data Storage**: JSON-based local storage
-- **PDF Generation**: QuestPDF
+- **PDF Generation**: SkiaSharp (`SKDocument`) — cross-platform (Windows/Android/iOS)
 - **Excel Export**: ClosedXML
 - **API Integration**: Shopify Admin API
 
@@ -222,7 +222,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - Built with [WPF](https://github.com/dotnet/wpf)
-- PDF generation by [QuestPDF](https://www.questpdf.com/)
+- PDF generation by [SkiaSharp](https://github.com/mono/SkiaSharp)
 - Excel export by [ClosedXML](https://github.com/ClosedXML/ClosedXML)
 - Icons from [Material Design Icons](https://materialdesignicons.com/)
 
