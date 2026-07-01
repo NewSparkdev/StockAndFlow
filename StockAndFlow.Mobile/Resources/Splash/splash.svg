@@ -5,6 +5,6 @@
         <rect x="206" y="196" width="44" height="132" rx="11"/>
         <rect x="262" y="142" width="44" height="186" rx="11"/>
     </g>
-    <path d="M 156 196 L 228 150 L 300 116" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
-    <path d="M 300 116 l -30 2 l 16 24 z" fill="#ffffff" opacity="0.85"/>
+    <path d="M 156 196 L 228 150 L 266 131" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 300 116 L 268 147 L 256 121 Z" fill="#ffffff"/>
 </svg>

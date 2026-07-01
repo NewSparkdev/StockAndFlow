@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.SettingsPage"
+             Title="Settings"
+             BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Close" Clicked="OnCloseClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <Style x:Key="SettingsRow" TargetType="Border" BasedOn="{StaticResource ListCard}">
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,5" />
+        </Style>
+        <Style x:Key="SectionHeader" TargetType="Label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+            <Setter Property="Margin" Value="4,16,0,2" />
+        </Style>
+        <Style x:Key="RowTitle" TargetType="Label">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+        </Style>
+        <Style x:Key="RowSubtitle" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+        </Style>
+        <Style x:Key="IconChip" TargetType="Border">
+            <Setter Property="WidthRequest" Value="44" />
+            <Setter Property="HeightRequest" Value="44" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+        <Style x:Key="RowIcon" TargetType="Image">
+            <Setter Property="WidthRequest" Value="22" />
+            <Setter Property="HeightRequest" Value="22" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+        <Style x:Key="Chevron" TargetType="Label">
+            <Setter Property="Text" Value="›" />
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16,8,16,24">
+
+            <!-- BUSINESS -->
+            <Label Text="BUSINESS" Style="{StaticResource SectionHeader}" />
+
+            <Border Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Image Source="settings_business.png" Style="{StaticResource RowIcon}" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label Text="Business Settings" Style="{StaticResource RowTitle}" />
+                        <Label Text="Business name, address, and tax info" Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBusinessSettingsTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
+            <!-- DATA -->
+            <Label Text="DATA" Style="{StaticResource SectionHeader}" />
+
+            <Border Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Image Source="settings_data.png" Style="{StaticResource RowIcon}" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label Text="Export &amp; Import" Style="{StaticResource RowTitle}" />
+                        <Label Text="Back up or restore your data as Excel" Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnExportImportTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
+            <!-- ABOUT -->
+            <Label Text="ABOUT" Style="{StaticResource SectionHeader}" />
+
+            <Border Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Image Source="settings_about.png" Style="{StaticResource RowIcon}" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label Text="About Stock &amp; Flow" Style="{StaticResource RowTitle}" />
+                        <Label x:Name="VersionLabel" Text="Version" Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAboutTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

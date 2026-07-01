@@ -13,7 +13,7 @@
             <Border Stroke="#512BD4" StrokeThickness="1" Padding="16" StrokeShape="RoundRectangle 12">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Export" FontSize="18" FontAttributes="Bold" />
-                    <Label Text="Creates an .xlsx file and opens the share sheet." TextColor="Gray" FontSize="13" />
+                    <Label Text="Saves an .xlsx to your Downloads folder (in a &quot;Stock &amp; Flow&quot; folder), with the option to share a copy." TextColor="Gray" FontSize="13" />
                     <Button x:Name="ExportButton" Text="Export to Excel" Clicked="OnExportClicked" />
                 </VerticalStackLayout>
             </Border>
@@ -22,6 +22,8 @@
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Import" FontSize="18" FontAttributes="Bold" />
                     <Label Text="Pick a previously exported .xlsx file to import." TextColor="Gray" FontSize="13" />
+                    <Label Text="This opens your phone's file browser. Tap the ☰ menu, go to Downloads › Stock &amp; Flow to find your export. Press Back to cancel and return here."
+                           TextColor="Gray" FontSize="12" />
                     <Button x:Name="ImportButton" Text="Import from Excel" Clicked="OnImportClicked" />
                 </VerticalStackLayout>
             </Border>

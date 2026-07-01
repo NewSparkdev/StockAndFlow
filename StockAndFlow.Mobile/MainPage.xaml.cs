@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Mobile.Pages;
 using StockAndFlow.ViewModels;
 
@@ -14,8 +13,6 @@ public partial class MainPage : ContentPage
 
 	private async void OnSettingsClicked(object? sender, EventArgs e)
 	{
-		var services = IPlatformApplication.Current!.Services;
-		var vm = services.GetRequiredService<BusinessSettingsViewModel>();
-		await Navigation.PushModalAsync(new NavigationPage(new BusinessSettingsPage(vm)));
+		await Navigation.PushModalAsync(new NavigationPage(new SettingsPage()));
 	}
 }

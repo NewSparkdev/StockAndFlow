@@ -36,11 +36,30 @@ public partial class App : Application
 		{
 			VerticalOptions = LayoutOptions.Center,
 			HorizontalOptions = LayoutOptions.Center,
-			Spacing = 16,
+			Spacing = 24,
 			Children =
 			{
-				new ActivityIndicator { IsRunning = true, Color = Colors.White },
-				new Label { Text = "Loading Stock & Flow…", TextColor = Colors.White }
+				new Image
+				{
+					Source = "logo.png",
+					WidthRequest = 128,
+					HeightRequest = 128,
+					HorizontalOptions = LayoutOptions.Center
+				},
+				new Label
+				{
+					Text = "Stock & Flow",
+					TextColor = Colors.White,
+					FontSize = 28,
+					FontAttributes = FontAttributes.Bold,
+					HorizontalTextAlignment = TextAlignment.Center
+				},
+				new ActivityIndicator
+				{
+					IsRunning = true,
+					Color = Colors.White,
+					Margin = new Thickness(0, 16, 0, 0)
+				}
 			}
 		}
 	};

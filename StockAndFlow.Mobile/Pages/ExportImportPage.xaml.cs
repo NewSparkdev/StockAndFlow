@@ -26,14 +26,28 @@ public partial class ExportImportPage : ContentPage
 		try
 		{
 			SetBusy(true);
-			var path = Path.Combine(FileSystem.CacheDirectory,
-				$"StockAndFlow_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
-			await _service.ExportToExcelAsync(path);
-			await Share.Default.RequestAsync(new ShareFileRequest
+			var fileName = $"StockAndFlow_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+			var cachePath = Path.Combine(FileSystem.CacheDirectory, fileName);
+			await _service.ExportToExcelAsync(cachePath);
+
+			// Save a copy to a predictable Downloads/Stock & Flow folder so it's easy to find
+			// again when importing. Returns null on platforms without a public Downloads folder.
+			var savedLocation = TrySaveToDownloads(cachePath, fileName);
+
+			if (savedLocation != null)
 			{
-				Title = "Stock & Flow Export",
-				File = new ShareFile(path)
-			});
+				var share = await DisplayAlert(
+					"Export saved",
+					$"Saved to {savedLocation}\n\nYou can find it there when importing, or share a copy now.",
+					"Share", "Done");
+				if (share)
+					await ShareFileAsync(cachePath);
+			}
+			else
+			{
+				// No public Downloads folder (e.g. iOS) — fall back to the share sheet.
+				await ShareFileAsync(cachePath);
+			}
 		}
 		catch (Exception ex)
 		{
@@ -45,13 +59,72 @@ public partial class ExportImportPage : ContentPage
 		}
 	}
 
+	private static Task ShareFileAsync(string path) =>
+		Share.Default.RequestAsync(new ShareFileRequest
+		{
+			Title = "Stock & Flow Export",
+			File = new ShareFile(path)
+		});
+
+	/// <summary>
+	/// Copies the exported file into the platform's public Downloads folder (under a "Stock and Flow"
+	/// subfolder) and returns a user-facing location string, or null if that isn't supported.
+	/// </summary>
+	private static string? TrySaveToDownloads(string sourcePath, string fileName)
+	{
+#if ANDROID
+		// Android 10+ (API 29): write into the public Downloads collection via MediaStore — no
+		// storage permission required, and the file is visible in the Files app under Downloads.
+		if (Android.OS.Build.VERSION.SdkInt < Android.OS.BuildVersionCodes.Q)
+			return null;
+
+		var resolver = Android.App.Application.Context.ContentResolver!;
+		var values = new Android.Content.ContentValues();
+		values.Put(Android.Provider.MediaStore.IMediaColumns.DisplayName, fileName);
+		values.Put(Android.Provider.MediaStore.IMediaColumns.MimeType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+		values.Put(Android.Provider.MediaStore.IMediaColumns.RelativePath, $"{Android.OS.Environment.DirectoryDownloads}/Stock & Flow");
+
+		var uri = resolver.Insert(Android.Provider.MediaStore.Downloads.ExternalContentUri!, values);
+		if (uri == null)
+			return null;
+
+		using (var dest = resolver.OpenOutputStream(uri)!)
+		using (var src = File.OpenRead(sourcePath))
+			src.CopyTo(dest);
+
+		return $"Downloads › Stock & Flow › {fileName}";
+#elif WINDOWS
+		var folder = Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "Stock & Flow");
+		Directory.CreateDirectory(folder);
+		File.Copy(sourcePath, Path.Combine(folder, fileName), overwrite: true);
+		return $"Downloads\\Stock & Flow\\{fileName}";
+#else
+		return null;
+#endif
+	}
+
 	private async void OnImportClicked(object? sender, EventArgs e)
 	{
 		try
 		{
-			var file = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Select an exported .xlsx file" });
+			// Filter to Excel files so the picker opens a proper, navigable document browser
+			// (rather than a dead-end empty "Recent" view) that returns to the app on cancel.
+			var xlsxType = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+			{
+				[DevicePlatform.Android] = new[] { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+				[DevicePlatform.iOS] = new[] { "org.openxmlformats.spreadsheetml.sheet" },
+				[DevicePlatform.MacCatalyst] = new[] { "xlsx" },
+				[DevicePlatform.WinUI] = new[] { ".xlsx" },
+			});
+
+			var file = await FilePicker.Default.PickAsync(new PickOptions
+			{
+				PickerTitle = "Select an exported .xlsx file",
+				FileTypes = xlsxType
+			});
 			if (file == null)
-				return;
+				return; // user cancelled — stay on this page
 
 			SetBusy(true);
 			var result = await _service.ImportFromExcelAsync(file.FullPath);

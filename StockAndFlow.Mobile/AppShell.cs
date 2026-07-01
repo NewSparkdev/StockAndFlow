@@ -57,7 +57,7 @@ public class AppShell : Shell
 	{
 		var header = new Grid
 		{
-			HeightRequest = 184,
+			HeightRequest = 150,
 			Background = new LinearGradientBrush
 			{
 				StartPoint = new Point(0, 0),
@@ -70,37 +70,44 @@ public class AppShell : Shell
 			}
 		};
 
-		var avatar = new Border
+		// A rounded app-tile badge with a soft ring, so the logo reads as an icon rather than a
+		// floating glyph.
+		var badge = new Border
 		{
-			WidthRequest = 54,
-			HeightRequest = 54,
-			StrokeThickness = 0,
-			BackgroundColor = Color.FromArgb("#33FFFFFF"),
-			StrokeShape = new RoundRectangle { CornerRadius = 27 },
-			HorizontalOptions = LayoutOptions.Start,
-			Content = new Label
+			WidthRequest = 60,
+			HeightRequest = 60,
+			Stroke = Color.FromArgb("#40FFFFFF"),
+			StrokeThickness = 1,
+			BackgroundColor = Color.FromArgb("#512BD4"),
+			StrokeShape = new RoundRectangle { CornerRadius = 16 },
+			VerticalOptions = LayoutOptions.Center,
+			Content = new Image
 			{
-				Text = "S&F",
-				TextColor = Colors.White,
-				FontFamily = "OpenSansSemibold",
-				FontAttributes = FontAttributes.Bold,
-				FontSize = 18,
+				Source = "logo.png",
+				WidthRequest = 38,
+				HeightRequest = 38,
 				HorizontalOptions = LayoutOptions.Center,
 				VerticalOptions = LayoutOptions.Center
 			}
 		};
 
-		header.Add(new VerticalStackLayout
+		var text = new VerticalStackLayout
 		{
-			Padding = new Thickness(22, 0, 22, 22),
-			VerticalOptions = LayoutOptions.End,
-			Spacing = 10,
+			VerticalOptions = LayoutOptions.Center,
+			Spacing = 3,
 			Children =
 			{
-				avatar,
-				new Label { Text = "Stock & Flow", FontFamily = "OpenSansSemibold", FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
+				new Label { Text = "Stock & Flow", FontFamily = "OpenSansSemibold", FontSize = 21, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
 				new Label { Text = "Inventory & sales", FontSize = 13, TextColor = Color.FromArgb("#DCD4F7") }
 			}
+		};
+
+		header.Add(new HorizontalStackLayout
+		{
+			Spacing = 15,
+			HorizontalOptions = LayoutOptions.Center,
+			VerticalOptions = LayoutOptions.Center,
+			Children = { badge, text }
 		});
 
 		return header;

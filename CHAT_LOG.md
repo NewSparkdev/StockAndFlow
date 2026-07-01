@@ -2,7 +2,7 @@
 
 > Running log of what's been done on this project, so it can be referenced later.
 > Branch for all this work: **`maui-migration`** (base: `main`).
-> Last updated: **2026-06-20**.
+> Last updated: **2026-07-01**.
 
 ---
 
@@ -124,6 +124,57 @@ existing WPF app. Both apps reference the same Core.
   → "Generate invoice? Yes" → 55 KB PDF generated in app cache → **Share sheet opened**. Pulled
   the PDF off the device and confirmed correct, professional layout with **selectable text**.
 - Added `InvoiceServiceTests` (2 tests, passing) covering desktop rendering.
+
+### 4.6 Branding polish — icon, splash & loading screen (2026-07-01)
+- **Root-caused a "shows .NET" report on the emulator:** the app on the device was a *stale build
+  under the default template id* `com.companyname.stockandflow.mobile` (generic ".NET" launcher
+  icon). The current build uses `com.stockandflow.app` with the branded icon, so a plain redeploy
+  would install *alongside* the old one. Fix = uninstall the old package, `rm -rf bin obj` (so the
+  resizetizer regenerates mipmaps), rebuild. Icon source (`Resources/AppIcon/appiconfg.svg`, bars +
+  arrow on `#512BD4`) was already correct — this was purely a stale-install / launcher-icon cache.
+- **Sharpened the growth arrow** in the logo glyph: the old arrowhead was a small crude triangle
+  not aligned to the line direction, drawn at `opacity="0.85"` (which read as blunt/faint). Replaced
+  with a properly aligned, full-opacity arrowhead (shaft trimmed so the point forms a clean tip).
+  Applied to both `Resources/AppIcon/appiconfg.svg` and `Resources/Splash/splash.svg`.
+- **Branded the DB-init loading page** (`App.xaml.cs` → `BuildLoadingPage`): was a bare spinner +
+  "Loading Stock & Flow…" label; now a centered logo (128×128) + bold "Stock & Flow" wordmark +
+  spinner. New `Resources/Images/logo.svg` (glyph cropped to a square viewBox) flows through the
+  `MauiImage` pipeline like the tab icons.
+- **Native splash** (`Resources/Splash/splash.svg`) already had the glyph but with the old blunt
+  arrow — updated to the sharpened arrow so branding is consistent across all three cold-start
+  moments: **native splash → loading page → launcher icon**.
+- Emulator-verified all three (screenshots): sharp logo on the native splash (no blank-purple
+  flash), the branded loading page, and "Stock & Flow" + branded icon in the app drawer.
+- **Drawer flyout header** (`AppShell.cs` → `BuildHeader`): replaced the "S&F" text avatar with the
+  logo in a rounded app-tile badge (60px, subtle ring), and reworked the layout — was a 184px header
+  with everything jammed at the bottom (dead space up top); now a 150px header with the badge +
+  "Stock & Flow" title + "Inventory & sales" subtitle in a horizontal row, centered.
+
+### 4.7 Settings restructure + Export/Import UX (2026-07-01)
+- **Problem:** tapping the dashboard "Settings" toolbar item opened the Business-info form directly;
+  it should be a menu. **Fix:** new `Pages/SettingsPage.xaml(.cs)` — a settings menu with grouped,
+  tappable rows (icon chip + title + subtitle + chevron), themed with the shared tokens
+  (`SurfaceLight/Dark`, `OnSurface`, `ListCard`) for light/dark. Sections: **BUSINESS** → Business
+  Settings, **DATA** → Export & Import, **ABOUT** → About (shows `AppInfo` version). `MainPage`'s
+  Settings toolbar now opens this menu; each sub-page is pushed as its own modal (Export/Import is
+  also reached from Reports, so its open/close was left untouched).
+- **Row icons:** started as emoji, then swapped for **monochrome white SVGs** on solid `#512BD4`
+  tiles (`settings_business.svg`, `settings_data.svg`, `settings_about.svg`) — a single-color SVG
+  can't contrast both the light and dark chip backgrounds, so white-on-purple (matching the drawer
+  badge / app icon) reads cleanly in both themes.
+- **Export/Import "no way back" report:** tapping *Import from Excel* opens Android's system file
+  picker (Google's DocumentsUI), which lands on an empty "Recent / No items" screen with **no
+  on-screen Cancel** — users felt stranded. The system back gesture *does* return to the app
+  (verified: focus returns to `MainActivity`), but it's not discoverable, and **an app cannot add a
+  Cancel button to the system picker.** Mitigations in `Pages/ExportImportPage.xaml(.cs)`:
+  - **File-type filter** (`FilePickerFileType`, xlsx MIME) so the picker browses spreadsheets only.
+  - **Export now saves to a predictable `Downloads/Stock & Flow` folder** (Android 10+ via MediaStore
+    — no permission; Windows via `%USERPROFILE%\Downloads`; iOS/older falls back to the Share sheet),
+    and shows an "Export saved" dialog with the location + **Share**/**Done** options.
+  - **Import hint text** telling users to use the picker's ☰ menu → Downloads › Stock & Flow, and
+    that **Back** cancels and returns.
+  - Emulator-verified the full round-trip: export writes to `/sdcard/Download/Stock & Flow/…xlsx`,
+    and that file is then findable in the import picker.
 
 ---
 
