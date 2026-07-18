@@ -1,28 +1,60 @@
+using SkiaSharp;
+using ZXing;
+using ZXing.Common;
+
 namespace StockAndFlow.Mobile.Pages;
 
-// Camera-based barcode scanning requires a net10.0-compatible ZXing package.
-// Until one ships, this page lets the user type or paste the barcode value so
-// all downstream plumbing (SKU lookup, SelectItemBySku) is fully functional.
+// Barcode scanning via MediaPicker: the user taps the shutter button, the OS
+// camera UI opens, they frame the barcode and take the shot, and we decode it
+// with ZXing.Net + SkiaSharp (both already in the project).  A live viewfinder
+// can be added later without touching any of the callers — same BarcodeDetected
+// event contract.
 public class BarcodeScanPage : ContentPage
 {
     public event EventHandler<string>? BarcodeDetected;
 
+    private readonly ActivityIndicator _spinner;
+    private readonly Label _statusLabel;
+    private readonly Button _scanBtn;
+
     public BarcodeScanPage()
     {
-        Title = "Enter Barcode";
+        Title = "Scan Barcode";
         NavigationPage.SetHasNavigationBar(this, true);
 
-        var entry = new Entry
+        _spinner = new ActivityIndicator { IsRunning = false, IsVisible = false, Color = Colors.DodgerBlue };
+
+        _statusLabel = new Label
         {
-            Placeholder = "Type or paste barcode / SKU",
-            Keyboard = Keyboard.Plain,
-            Margin = new Thickness(0, 0, 0, 8),
+            Text = "Point your camera at a barcode and take a photo.",
+            FontSize = 14,
+            TextColor = Color.FromArgb("#888"),
+            HorizontalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(16, 0),
         };
 
-        var useBtn = new Button { Text = "Use this code" };
-        useBtn.Clicked += async (_, _) =>
+        _scanBtn = new Button
         {
-            var val = entry.Text?.Trim();
+            Text = "📷  Open Camera",
+            FontSize = 15,
+            HeightRequest = 52,
+        };
+        _scanBtn.Clicked += OnScanClicked;
+
+        var manualEntry = new Entry
+        {
+            Placeholder = "Or type / paste a barcode here",
+            Keyboard = Keyboard.Plain,
+        };
+
+        var useManualBtn = new Button
+        {
+            Text = "Use this code",
+            BackgroundColor = Color.FromArgb("#555"),
+        };
+        useManualBtn.Clicked += async (_, _) =>
+        {
+            var val = manualEntry.Text?.Trim();
             if (!string.IsNullOrEmpty(val))
             {
                 BarcodeDetected?.Invoke(this, val);
@@ -30,39 +62,127 @@ public class BarcodeScanPage : ContentPage
             }
         };
 
-        var cancelBtn = new Button
-        {
-            Text = "Cancel",
-            BackgroundColor = Colors.Transparent,
-            TextColor = Color.FromArgb("#888"),
-        };
-        cancelBtn.Clicked += async (_, _) => await Navigation.PopAsync();
-
         Content = new ScrollView
         {
             Content = new VerticalStackLayout
             {
                 Padding = new Thickness(24, 32),
-                Spacing = 12,
+                Spacing = 16,
                 Children =
                 {
                     new Label
                     {
-                        Text = "📷  Camera scanning coming soon",
-                        FontSize = 15,
+                        Text = "Scan a Barcode",
+                        FontSize = 20,
                         FontAttributes = FontAttributes.Bold,
+                        HorizontalTextAlignment = TextAlignment.Center,
                     },
+                    _statusLabel,
+                    _scanBtn,
+                    _spinner,
+                    new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#DDD"), Margin = new Thickness(0, 8) },
                     new Label
                     {
-                        Text = "For now, type or paste the barcode or SKU value below.",
+                        Text = "Manual entry",
                         FontSize = 13,
                         TextColor = Color.FromArgb("#888"),
+                        FontAttributes = FontAttributes.Bold,
                     },
-                    entry,
-                    useBtn,
-                    cancelBtn,
+                    manualEntry,
+                    useManualBtn,
                 }
             }
         };
     }
+
+    private async void OnScanClicked(object? sender, EventArgs e)
+    {
+        SetScanning(true);
+        try
+        {
+            var photo = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+            {
+                Title = "Photo the barcode"
+            });
+
+            if (photo == null)
+            {
+                SetScanning(false);
+                return;
+            }
+
+            var barcode = await Task.Run(async () =>
+            {
+                await using var stream = await photo.OpenReadAsync();
+                using var bitmap = SKBitmap.Decode(stream);
+                if (bitmap == null) return null;
+
+                // ZXing needs raw pixels in BGRA32 format
+                var bytes = bitmap.Bytes;
+                var src = new RGBLuminanceSource(bytes, bitmap.Width, bitmap.Height,
+                    RGBLuminanceSource.BitmapFormat.BGRA32);
+
+                var reader = new BarcodeReaderGeneric
+                {
+                    AutoRotate = true,
+                    Options = new DecodingOptions
+                    {
+                        TryHarder = true,
+                        PossibleFormats = new List<BarcodeFormat>
+                        {
+                            BarcodeFormat.QR_CODE,
+                            BarcodeFormat.CODE_128,
+                            BarcodeFormat.CODE_39,
+                            BarcodeFormat.EAN_13,
+                            BarcodeFormat.EAN_8,
+                            BarcodeFormat.UPC_A,
+                            BarcodeFormat.UPC_E,
+                            BarcodeFormat.ITF,
+                            BarcodeFormat.DATA_MATRIX,
+                            BarcodeFormat.PDF_417,
+                            BarcodeFormat.AZTEC,
+                        }
+                    }
+                };
+
+                return reader.Decode(src)?.Text;
+            });
+
+            if (!string.IsNullOrEmpty(barcode))
+            {
+                BarcodeDetected?.Invoke(this, barcode!);
+                await Navigation.PopAsync();
+            }
+            else
+            {
+                SetScanning(false);
+                SetStatus("No barcode found — try again with the barcode filling the frame.");
+            }
+        }
+        catch (FeatureNotSupportedException)
+        {
+            SetScanning(false);
+            SetStatus("Camera not available on this device.");
+        }
+        catch (PermissionException)
+        {
+            SetScanning(false);
+            SetStatus("Camera permission was denied. Enable it in device settings.");
+        }
+        catch (Exception ex)
+        {
+            SetScanning(false);
+            SetStatus($"Scan failed: {ex.Message}");
+        }
+    }
+
+    private void SetScanning(bool active)
+    {
+        _scanBtn.IsEnabled = !active;
+        _spinner.IsVisible = active;
+        _spinner.IsRunning = active;
+        if (active) _statusLabel.Text = "Decoding…";
+    }
+
+    private void SetStatus(string msg) => _statusLabel.Text = msg;
 }
