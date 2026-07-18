@@ -1,56 +1,150 @@
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.Shapes;
 using StockAndFlow.Mobile.Pages;
+using StockAndFlow.Services;
 
 namespace StockAndFlow.Mobile;
 
 /// <summary>
-/// Hybrid navigation: a bottom tab bar gives one-tap access to the five primary sections, while a
-/// Material-3 styled hamburger flyout drawer lists everything (including the secondary Adjustments
-/// section). Pages are DI-resolved because each has a constructor dependency on its ViewModel.
+/// The Shell hosts a single <see cref="HostPage"/> (persistent bottom bar + swappable sections).
+/// The hamburger flyout drawer lists everything and drives the same host, so navigation never
+/// re-creates the bar. Adjustments is a secondary section reached only from the drawer (pushed).
 /// </summary>
 public class AppShell : Shell
 {
+	private readonly IServiceProvider _services;
+	private readonly HostPage _host;
+	private readonly BusinessSettingsService _settings;
+	private readonly Dictionary<string, Border> _drawerRows = new();
+	private Image? _drawerLogo;
+
 	public AppShell(IServiceProvider services)
 	{
+		_services = services;
 		FlyoutBehavior = FlyoutBehavior.Flyout;
 		FlyoutWidth = 304;
-		FlyoutHeader = BuildHeader();
-
-		// Modern pill-style flyout items on a fixed dark "sidebar" that flows from the gradient
-		// header and stays consistent (and legible) in both light and dark app themes.
-		var itemTemplate = (DataTemplate)Application.Current!.Resources["AppFlyoutItem"];
-		ItemTemplate = itemTemplate;
-		MenuItemTemplate = itemTemplate;
 		FlyoutBackgroundColor = Color.FromArgb("#1A1622");
 
-		// Primary sections -> bottom tab bar (and listed individually in the drawer).
-		var primary = new FlyoutItem
-		{
-			Title = "Stock & Flow",
-			FlyoutDisplayOptions = FlyoutDisplayOptions.AsMultipleItems
-		};
-		primary.Items.Add(MakeTab("Dashboard", "tab_dashboard.png", services.GetRequiredService<MainPage>()));
-		primary.Items.Add(MakeTab("Inventory", "tab_inventory.png", services.GetRequiredService<InventoryPage>()));
-		primary.Items.Add(MakeTab("Sales", "tab_sales.png", services.GetRequiredService<SalesPage>()));
-		primary.Items.Add(MakeTab("Expenses", "tab_expenses.png", services.GetRequiredService<ExpensesPage>()));
-		primary.Items.Add(MakeTab("Reports", "tab_reports.png", services.GetRequiredService<ReportsPage>()));
-		Items.Add(primary);
+		_host = services.GetRequiredService<HostPage>();
+		_host.SectionChanged += HighlightDrawer;
 
-		// Secondary section -> drawer only (keeps the bottom bar at 5, avoiding the "More" overflow).
-		Items.Add(new ShellContent
-		{
-			Title = "Adjustments",
-			Icon = "tab_adjustments.png",
-			Content = services.GetRequiredService<AdjustmentsPage>()
-		});
+		_settings = services.GetRequiredService<BusinessSettingsService>();
+		_settings.SettingsChanged += (_, _) => MainThread.BeginInvokeOnMainThread(() => _ = RefreshDrawerLogoAsync());
+
+		FlyoutHeader = BuildHeader();
+		FlyoutContent = BuildFlyout();
+
+		Items.Add(new ShellContent { Title = "Stock & Flow", Content = _host });
+
+		HighlightDrawer(_host.CurrentSection);
+		_ = RefreshDrawerLogoAsync();
 	}
 
-	private static Tab MakeTab(string title, string icon, Page page)
+	private View BuildFlyout()
 	{
-		var tab = new Tab { Title = title, Icon = icon };
-		tab.Items.Add(new ShellContent { Title = title, Icon = icon, Content = page });
-		return tab;
+		var list = new VerticalStackLayout { Padding = new Thickness(10, 12), Spacing = 4 };
+
+		list.Add(MakeRow("dashboard", "Dashboard", "tab_dashboard.png", () => _host.SelectSection("dashboard")));
+		list.Add(MakeRow("inventory", "Inventory", "tab_inventory.png", () => _host.SelectSection("inventory")));
+		list.Add(MakeRow("sales", "Sales", "tab_sales.png", () => _host.SelectSection("sales")));
+		list.Add(MakeRow("expenses", "Expenses", "tab_expenses.png", () => _host.SelectSection("expenses")));
+		list.Add(MakeRow("reports", "Reports", "tab_reports.png", () => _host.SelectSection("reports")));
+
+		list.Add(new BoxView { HeightRequest = 1, Color = Color.FromArgb("#33FFFFFF"), Margin = new Thickness(8, 8) });
+
+		list.Add(MakeRow("adjustments", "Adjustments", "tab_adjustments.png", PushAdjustments));
+
+		// Business logo (set in Settings > Business Settings), shown under the menu items.
+		_drawerLogo = new Image
+		{
+			Aspect = Aspect.AspectFit,
+			HeightRequest = 90,
+			Margin = new Thickness(14, 24, 14, 0),
+			HorizontalOptions = LayoutOptions.Center,
+			IsVisible = false
+		};
+		list.Add(_drawerLogo);
+
+		return new ScrollView { Content = list };
+	}
+
+	private async Task RefreshDrawerLogoAsync()
+	{
+		if (_drawerLogo == null)
+			return;
+		try
+		{
+			var settings = await _settings.GetSettingsAsync();
+			var path = ResolveImagePath(settings.LogoPath);
+			_drawerLogo.Source = path;
+			_drawerLogo.IsVisible = path != null;
+		}
+		catch
+		{
+			_drawerLogo.IsVisible = false;
+		}
+	}
+
+	// Mirrors ImagePathConverter: re-base a stored logo path to the current app Images directory.
+	private static string? ResolveImagePath(string? stored)
+	{
+		if (string.IsNullOrWhiteSpace(stored))
+			return null;
+		try
+		{
+			var fileName = System.IO.Path.GetFileName(stored);
+			if (!string.IsNullOrEmpty(fileName))
+			{
+				var rebased = System.IO.Path.Combine(FileSystem.AppDataDirectory, "Images", fileName);
+				if (File.Exists(rebased))
+					return rebased;
+			}
+		}
+		catch
+		{
+			// fall through
+		}
+		return File.Exists(stored) ? stored : null;
+	}
+
+	private Border MakeRow(string id, string title, string icon, Action onTap)
+	{
+		var row = new Border
+		{
+			StrokeThickness = 0,
+			BackgroundColor = Colors.Transparent,
+			StrokeShape = new RoundRectangle { CornerRadius = 14 },
+			Padding = new Thickness(14, 12),
+			Content = new HorizontalStackLayout
+			{
+				Spacing = 16,
+				Children =
+				{
+					new Image { Source = icon, WidthRequest = 22, HeightRequest = 22, VerticalOptions = LayoutOptions.Center },
+					new Label { Text = title, TextColor = Colors.White, FontSize = 15, VerticalOptions = LayoutOptions.Center }
+				}
+			}
+		};
+		row.GestureRecognizers.Add(new TapGestureRecognizer
+		{
+			Command = new Command(() =>
+			{
+				onTap();
+				FlyoutIsPresented = false;
+			})
+		});
+		_drawerRows[id] = row;
+		return row;
+	}
+
+	private async void PushAdjustments() =>
+		await Navigation.PushAsync(_services.GetRequiredService<AdjustmentsPage>());
+
+	private void HighlightDrawer(string activeId)
+	{
+		foreach (var (id, row) in _drawerRows)
+			row.BackgroundColor = id == activeId ? Color.FromArgb("#3B2E6B") : Colors.Transparent;
 	}
 
 	private static View BuildHeader()
@@ -70,8 +164,6 @@ public class AppShell : Shell
 			}
 		};
 
-		// A rounded app-tile badge with a soft ring, so the logo reads as an icon rather than a
-		// floating glyph.
 		var badge = new Border
 		{
 			WidthRequest = 60,

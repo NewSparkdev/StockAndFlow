@@ -1,15 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
              xmlns:models="clr-namespace:StockAndFlow.Models;assembly=StockAndFlow.Core"
-             x:Class="StockAndFlow.Mobile.Pages.ReportsPage"
-             Title="Reports">
-
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Export/Import" Command="{Binding ExportImportCommand}" />
-        <ToolbarItem Text="Refresh" Command="{Binding RefreshCommand}" />
-    </ContentPage.ToolbarItems>
+             x:Class="StockAndFlow.Mobile.Pages.ReportsPage">
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="14" MaximumWidthRequest="860" HorizontalOptions="Fill">
@@ -104,4 +98,4 @@
         </VerticalStackLayout>
     </ScrollView>
 
-</ContentPage>
+</ContentView>

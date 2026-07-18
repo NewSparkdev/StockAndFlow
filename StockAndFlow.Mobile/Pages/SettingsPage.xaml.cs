@@ -15,7 +15,8 @@ public partial class SettingsPage : ContentPage
 	private async void OnBusinessSettingsTapped(object? sender, TappedEventArgs e)
 	{
 		var vm = IPlatformApplication.Current!.Services.GetRequiredService<BusinessSettingsViewModel>();
-		await Navigation.PushModalAsync(new NavigationPage(new BusinessSettingsPage(vm)));
+		// Pushed (not modal) so it gets a top back arrow returning to this Settings menu.
+		await Navigation.PushAsync(new BusinessSettingsPage(vm));
 	}
 
 	private async void OnExportImportTapped(object? sender, TappedEventArgs e)

@@ -1,9 +1,10 @@
+using StockAndFlow.Mobile.Controls;
 using StockAndFlow.Models;
 using StockAndFlow.ViewModels;
 
 namespace StockAndFlow.Mobile.Pages;
 
-public partial class SalesPage : ContentPage
+public partial class SalesPage : ContentView, ISectionView
 {
 	private readonly SalesViewModel _viewModel;
 
@@ -12,7 +13,16 @@ public partial class SalesPage : ContentPage
 		InitializeComponent();
 		BindingContext = viewModel;
 		_viewModel = viewModel;
+		Actions = new[]
+		{
+			new NavAction("Record", viewModel.RecordSaleCommand),
+			new NavAction("Refresh", viewModel.RefreshCommand),
+		};
 	}
+
+	public string SectionId => "sales";
+	public string SectionTitle => "Sales";
+	public IReadOnlyList<NavAction> Actions { get; }
 
 	private void Select(object sender)
 	{

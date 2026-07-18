@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="StockAndFlow.Mobile.MainPage"
-             Title="Stock &amp; Flow">
-
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Settings" Clicked="OnSettingsClicked" />
-    </ContentPage.ToolbarItems>
+             x:Class="StockAndFlow.Mobile.MainPage">
 
     <ScrollView>
         <!-- Adaptive: fills on phone, centers with a max width on desktop/tablet -->
@@ -81,7 +76,13 @@
 
             <Button Text="Refresh" Command="{Binding RefreshMetricsCommand}" />
 
+            <!-- Business logo (set in Settings > Business Settings) -->
+            <Image Source="{Binding LogoPath, Converter={StaticResource ImagePathConverter}}"
+                   IsVisible="{Binding HasLogo}"
+                   HeightRequest="140" Aspect="AspectFit"
+                   Margin="0,16,0,0" HorizontalOptions="Center" />
+
         </VerticalStackLayout>
     </ScrollView>
 
-</ContentPage>
+</ContentView>

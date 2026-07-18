@@ -8,6 +8,7 @@ public partial class BusinessSettingsPage : ContentPage
 	{
 		InitializeComponent();
 		BindingContext = viewModel;
-		viewModel.CloseRequested += async (_, _) => await Navigation.PopModalAsync();
+		// Pushed onto the Settings nav stack, so Save/Cancel pop back to the Settings menu.
+		viewModel.CloseRequested += async (_, _) => await Navigation.PopAsync();
 	}
 }

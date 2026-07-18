@@ -2,47 +2,110 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="StockAndFlow.Mobile.Pages.BusinessSettingsPage"
-             Title="Business Settings">
+             Title="Business Settings"
+             BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Center">
+    <ContentPage.Resources>
+        <Style x:Key="FieldLabel" TargetType="Label" BasedOn="{StaticResource Caption}">
+            <Setter Property="Margin" Value="2,0,0,2" />
+        </Style>
+        <Style x:Key="FieldEntry" TargetType="Entry">
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceContainerDark}}" />
+        </Style>
+    </ContentPage.Resources>
 
-            <Label Text="Business Name" />
-            <Entry Text="{Binding BusinessName}" />
+    <Grid RowDefinitions="*,Auto">
 
-            <Label Text="Address" />
-            <Entry Text="{Binding Address}" />
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="16" Spacing="16" MaximumWidthRequest="720" HorizontalOptions="Fill">
 
-            <Label Text="City" />
-            <Entry Text="{Binding City}" />
+                <!-- Business details -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Business details" Style="{StaticResource SectionTitle}" />
 
-            <Label Text="State" />
-            <Entry Text="{Binding State}" />
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Business name" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding BusinessName}" Placeholder="e.g. Acme Supplies" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
 
-            <Label Text="Zip Code" />
-            <Entry Text="{Binding ZipCode}" />
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Address" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding Address}" Placeholder="Street address" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
 
-            <Label Text="Phone" />
-            <Entry Text="{Binding Phone}" Keyboard="Telephone" />
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="City" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding City}" Placeholder="City" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
 
-            <Label Text="Email" />
-            <Entry Text="{Binding Email}" Keyboard="Email" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="State" Style="{StaticResource FieldLabel}" />
+                                <Entry Text="{Binding State}" Placeholder="State" Style="{StaticResource FieldEntry}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                <Label Text="Zip code" Style="{StaticResource FieldLabel}" />
+                                <Entry Text="{Binding ZipCode}" Placeholder="Zip" Keyboard="Numeric" Style="{StaticResource FieldEntry}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
 
-            <Label Text="Website" />
-            <Entry Text="{Binding Website}" Keyboard="Url" />
+                <!-- Contact -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Contact" Style="{StaticResource SectionTitle}" />
 
-            <Label Text="Tax ID" />
-            <Entry Text="{Binding TaxId}" />
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Phone" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding Phone}" Placeholder="(555) 555-5555" Keyboard="Telephone" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
 
-            <Button Text="Choose Logo" Command="{Binding BrowseLogoCommand}" />
-            <Image Source="{Binding LogoPath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasLogo}" HeightRequest="120" Aspect="AspectFit" />
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Email" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding Email}" Placeholder="you@business.com" Keyboard="Email" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
-                <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
-            </Grid>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Website" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding Website}" Placeholder="www.business.com" Keyboard="Url" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
 
-        </VerticalStackLayout>
-    </ScrollView>
+                <!-- Tax &amp; branding -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Tax &amp; branding" Style="{StaticResource SectionTitle}" />
+
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Tax ID" Style="{StaticResource FieldLabel}" />
+                            <Entry Text="{Binding TaxId}" Placeholder="Tax / EIN number" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Logo" Style="{StaticResource FieldLabel}" />
+                            <Label Text="Shown on customer invoices." Style="{StaticResource Caption}" />
+                            <Image Source="{Binding LogoPath, Converter={StaticResource ImagePathConverter}}"
+                                   IsVisible="{Binding HasLogo}" HeightRequest="120" Aspect="AspectFit"
+                                   HorizontalOptions="Start" Margin="0,4" />
+                            <Button Text="Choose Logo" Command="{Binding BrowseLogoCommand}"
+                                    Style="{StaticResource SecondaryButton}" HorizontalOptions="Start" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Pinned action bar -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="16,10"
+              BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+            <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
+            <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
+        </Grid>
+
+    </Grid>
 
 </ContentPage>

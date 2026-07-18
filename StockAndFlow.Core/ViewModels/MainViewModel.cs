@@ -13,10 +13,12 @@ namespace StockAndFlow.ViewModels
         private readonly CalculationService _calculationService;
         private readonly ShopifyService _shopifyService;
         private readonly IDialogService _dialogService;
+        private readonly BusinessSettingsService _settingsService;
 
         private BusinessMetrics? _currentMetrics;
         private string _statusMessage = "Ready";
         private bool _isLoading;
+        private string? _logoPath;
         private DateTime _startDate;
         private DateTime _endDate;
 
@@ -39,6 +41,19 @@ namespace StockAndFlow.ViewModels
             get => _isLoading;
             set => SetProperty(ref _isLoading, value);
         }
+
+        /// <summary>Stored path of the business logo (shown on the dashboard). Empty if none set.</summary>
+        public string? LogoPath
+        {
+            get => _logoPath;
+            set
+            {
+                if (SetProperty(ref _logoPath, value))
+                    OnPropertyChanged(nameof(HasLogo));
+            }
+        }
+
+        public bool HasLogo => !string.IsNullOrWhiteSpace(_logoPath);
 
         public DateTime StartDate
         {
@@ -83,6 +98,7 @@ namespace StockAndFlow.ViewModels
             CalculationService calculationService,
             ShopifyService shopifyService,
             IDialogService dialogService,
+            BusinessSettingsService settingsService,
             InventoryViewModel inventoryViewModel,
             SalesViewModel salesViewModel,
             ExpensesViewModel expensesViewModel,
@@ -92,6 +108,7 @@ namespace StockAndFlow.ViewModels
             _calculationService = calculationService;
             _shopifyService = shopifyService;
             _dialogService = dialogService;
+            _settingsService = settingsService;
 
             InventoryViewModel = inventoryViewModel;
             SalesViewModel = salesViewModel;
@@ -113,6 +130,9 @@ namespace StockAndFlow.ViewModels
             // Subscribe to Shopify events
             _shopifyService.SyncStatusChanged += OnShopifySyncStatusChanged;
 
+            // Keep the dashboard logo in sync with Business Settings.
+            _settingsService.SettingsChanged += OnBusinessSettingsChanged;
+
             // Initial load
             _ = InitializeAsync();
         }
@@ -126,6 +146,7 @@ namespace StockAndFlow.ViewModels
             {
                 await _shopifyService.InitializeAsync();
                 await RefreshMetricsAsync();
+                await LoadBusinessLogoAsync();
                 StatusMessage = "Ready";
             }
             catch (Exception ex)
@@ -219,6 +240,21 @@ namespace StockAndFlow.ViewModels
             }
         }
 
+        private async Task LoadBusinessLogoAsync()
+        {
+            try
+            {
+                var settings = await _settingsService.GetSettingsAsync();
+                UiDispatcher.Run(() => LogoPath = settings.LogoPath);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "Failed to load business logo");
+            }
+        }
+
+        private void OnBusinessSettingsChanged(object? sender, EventArgs e) => _ = LoadBusinessLogoAsync();
+
         private void OnMetricsUpdated(object? sender, BusinessMetrics metrics)
         {
             // MetricsUpdated is raised from a background timer; marshal to the UI thread.
@@ -237,6 +273,7 @@ namespace StockAndFlow.ViewModels
                 // Unsubscribe from events to prevent memory leaks
                 _calculationService.MetricsUpdated -= OnMetricsUpdated;
                 _shopifyService.SyncStatusChanged -= OnShopifySyncStatusChanged;
+                _settingsService.SettingsChanged -= OnBusinessSettingsChanged;
 
                 // Dispose of services
                 _calculationService?.Dispose();

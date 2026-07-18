@@ -23,6 +23,7 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
 
+
 		var services = builder.Services;
 
 		// Platform abstractions (MAUI implementations of the Core interfaces)
@@ -64,6 +65,9 @@ public static class MauiProgram
 		services.AddSingleton<Pages.ExpensesPage>();
 		services.AddSingleton<Pages.AdjustmentsPage>();
 		services.AddSingleton<Pages.ReportsPage>();
+
+		// Single host page: persistent bottom bar + swappable section views.
+		services.AddSingleton<HostPage>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

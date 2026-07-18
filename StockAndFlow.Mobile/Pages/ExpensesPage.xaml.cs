@@ -1,9 +1,10 @@
+using StockAndFlow.Mobile.Controls;
 using StockAndFlow.Models;
 using StockAndFlow.ViewModels;
 
 namespace StockAndFlow.Mobile.Pages;
 
-public partial class ExpensesPage : ContentPage
+public partial class ExpensesPage : ContentView, ISectionView
 {
 	private readonly ExpensesViewModel _viewModel;
 
@@ -12,7 +13,16 @@ public partial class ExpensesPage : ContentPage
 		InitializeComponent();
 		BindingContext = viewModel;
 		_viewModel = viewModel;
+		Actions = new[]
+		{
+			new NavAction("Add", viewModel.AddExpenseCommand),
+			new NavAction("Refresh", viewModel.RefreshCommand),
+		};
 	}
+
+	public string SectionId => "expenses";
+	public string SectionTitle => "Expenses";
+	public IReadOnlyList<NavAction> Actions { get; }
 
 	private void Select(object sender)
 	{
