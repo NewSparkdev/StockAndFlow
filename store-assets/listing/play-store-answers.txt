@@ -1,0 +1,64 @@
+GOOGLE PLAY — CONTENT RATING QUESTIONNAIRE ANSWERS
+====================================================
+
+When Play Store asks these questions, answer as follows:
+
+VIOLENCE
+- Does your app contain references to or depictions of violence? NO
+
+SEXUAL CONTENT
+- Does your app contain sexual content? NO
+
+LANGUAGE
+- Does your app contain profanity or crude humor? NO
+
+CONTROLLED SUBSTANCES
+- Does your app contain references to drugs, alcohol, or tobacco? NO
+
+USER GENERATED CONTENT
+- Does your app allow users to post content that other users can see? NO
+
+LOCATION SHARING
+- Does your app share the user's location with other users? NO
+
+PERSONAL INFORMATION SHARING
+- Does your app collect personal information?
+  → Select "No, I do not collect personal information"
+
+→ Final rating will be: EVERYONE
+
+
+====================================================
+GOOGLE PLAY — DATA SAFETY FORM ANSWERS
+====================================================
+
+Does your app collect or share any of the required user data types?
+→ Select: NO for all categories
+
+Specific answers:
+- Location data: NOT COLLECTED
+- Personal info (name, email, etc.): NOT COLLECTED
+- Financial info: NOT COLLECTED
+- Health & fitness: NOT COLLECTED
+- Messages: NOT COLLECTED
+- Photos/videos: NOT COLLECTED
+- Audio files: NOT COLLECTED
+- Files/docs: NOT COLLECTED
+- Calendar: NOT COLLECTED
+- Contacts: NOT COLLECTED
+- App activity: NOT COLLECTED
+- Web browsing: NOT COLLECTED
+- App info: NOT COLLECTED
+- Device identifiers: NOT COLLECTED
+
+Is data encrypted in transit? → N/A (no data transmitted)
+Can users request data deletion? → N/A (data is local only, user deletes app)
+
+Data safety summary to show users:
+"No data collected. All data stays on your device."
+
+
+====================================================
+APP PRICING
+====================================================
+Free (no in-app purchases, no ads, no subscriptions)
