@@ -72,7 +72,10 @@ public partial class App : Application
 			// InitializeAsync offloads the heavy EnsureDatabaseCreated work to the thread pool,
 			// so awaiting it here keeps the UI thread responsive.
 			await services.GetRequiredService<IDataService>().InitializeAsync();
-			window.Page = new AppShell(services);
+			var seenOnboarding = Preferences.Default.Get("onboarding_done", false);
+			window.Page = seenOnboarding
+				? new AppShell(services)
+				: new StockAndFlow.Mobile.Pages.OnboardingPage(services);
 		}
 		catch (Exception ex)
 		{
