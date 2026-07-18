@@ -1,27 +1,51 @@
+using Microsoft.Maui.Controls.Shapes;
+
 namespace StockAndFlow.Mobile.Pages;
 
 /// <summary>
-/// Shown once on first launch. Four swipeable feature cards, then routes to the main shell.
+/// Shown once on first launch. Four swipeable how-to cards, then routes to the main shell.
 /// Writes "onboarding_done" to Preferences before navigating so it never shows again.
 /// </summary>
 public class OnboardingPage : ContentPage
 {
-    private sealed record SlideData(string Icon, string Heading, string Body);
+    private sealed record SlideData(string Icon, string Heading, string Body, string[] Steps)
+    {
+        public SlideData(string Icon, string Heading, string Body)
+            : this(Icon, Heading, Body, []) { }
+    }
 
     private static readonly SlideData[] Slides =
     [
         new("logo.png",
             "Welcome to Stock & Flow",
-            "The simple way to manage inventory, record sales, and understand your business — right from your phone."),
+            "Your simple tool for inventory, sales, and business insight — right from your phone."),
         new("tab_inventory.png",
-            "Track your inventory",
-            "Add products, monitor quantities, and get instant alerts when stock runs low so you never miss a sale."),
+            "Add your inventory",
+            "",
+            [
+                "Tap Inventory in the bottom bar",
+                "Tap Add in the top-right corner",
+                "Enter product name, price, and quantity",
+                "Tap Save — it appears in your list instantly",
+            ]),
         new("tab_sales.png",
-            "Record sales & expenses",
-            "Log every transaction in seconds. Watch your revenue, costs, and profit update in real time."),
+            "Record a sale",
+            "",
+            [
+                "Tap Sales in the bottom bar",
+                "Tap Record in the top-right corner",
+                "Select items from your inventory",
+                "Tap Complete Sale to log it",
+            ]),
         new("tab_reports.png",
-            "Reports & invoices",
-            "Generate profit & loss reports and send professional PDF invoices to customers — all from one place."),
+            "Reports & expenses",
+            "",
+            [
+                "Tap Expenses → Add to log a business cost",
+                "Tap Reports to see revenue and profit",
+                "Tap any sale to generate a PDF invoice",
+                "Tap Export to share or print a report",
+            ]),
     ];
 
     private readonly IServiceProvider _services;
@@ -61,6 +85,14 @@ public class OnboardingPage : ContentPage
         _nextBtn.Clicked += OnNextClicked;
         _skipBtn.Clicked += (_, _) => Finish();
 
+        var dots = BuildDots();
+        var btnStack = new VerticalStackLayout
+        {
+            Spacing = 12,
+            Margin = new Thickness(0, 0, 0, 48),
+            Children = { _nextBtn, _skipBtn }
+        };
+
         var grid = new Grid
         {
             RowDefinitions =
@@ -70,19 +102,13 @@ public class OnboardingPage : ContentPage
                 new RowDefinition { Height = GridLength.Auto },
             }
         };
-        Grid.SetRow(_carousel, 0);
-        Grid.SetRow(BuildDots(), 1);
 
-        var btnStack = new VerticalStackLayout
-        {
-            Spacing = 12,
-            Margin = new Thickness(0, 0, 0, 48),
-            Children = { _nextBtn, _skipBtn }
-        };
+        Grid.SetRow(_carousel, 0);
+        Grid.SetRow(dots, 1);
         Grid.SetRow(btnStack, 2);
 
         grid.Add(_carousel);
-        grid.Add(BuildDots());
+        grid.Add(dots);
         grid.Add(btnStack);
 
         Content = grid;
@@ -98,7 +124,7 @@ public class OnboardingPage : ContentPage
             ItemsSource = Slides,
             Loop = false,
             IsSwipeEnabled = true,
-            ItemTemplate = new DataTemplate(SlideTemplate),
+            ItemTemplate = new DataTemplate(() => new SlideView()),
         };
         cv.CurrentItemChanged += (_, e) =>
         {
@@ -108,43 +134,116 @@ public class OnboardingPage : ContentPage
         return cv;
     }
 
-    private static View SlideTemplate()
+    // ── slide view ────────────────────────────────────────────────────────────
+
+    // ContentView subclass: OnBindingContextChanged gives direct access to SlideData,
+    // avoiding the MAUI reflection issues that break static DataTemplate binding on records.
+    private sealed class SlideView : ContentView
     {
-        var icon = new Image
+        protected override void OnBindingContextChanged()
         {
-            WidthRequest = 110,
-            HeightRequest = 110,
-            HorizontalOptions = LayoutOptions.Center,
-            Margin = new Thickness(0, 0, 0, 40),
-        };
-        icon.SetBinding(Image.SourceProperty, nameof(SlideData.Icon));
+            base.OnBindingContextChanged();
+            if (BindingContext is SlideData slide)
+                Content = BuildSlide(slide);
+        }
 
-        var heading = new Label
+        private static View BuildSlide(SlideData slide)
         {
-            TextColor = Colors.White,
-            FontSize = 26,
-            FontAttributes = FontAttributes.Bold,
-            HorizontalTextAlignment = TextAlignment.Center,
-            Margin = new Thickness(0, 0, 0, 16),
-        };
-        heading.SetBinding(Label.TextProperty, nameof(SlideData.Heading));
+            var icon = new Image
+            {
+                Source = slide.Icon,
+                WidthRequest = 100,
+                HeightRequest = 100,
+                HorizontalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, 0, 0, 28),
+            };
 
-        var body = new Label
-        {
-            TextColor = Color.FromArgb("#DCD4F7"),
-            FontSize = 16,
-            HorizontalTextAlignment = TextAlignment.Center,
-            LineBreakMode = LineBreakMode.WordWrap,
-        };
-        body.SetBinding(Label.TextProperty, nameof(SlideData.Body));
+            var heading = new Label
+            {
+                Text = slide.Heading,
+                TextColor = Colors.White,
+                FontSize = 24,
+                FontAttributes = FontAttributes.Bold,
+                HorizontalTextAlignment = TextAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 24),
+            };
 
-        return new VerticalStackLayout
+            View body;
+            if (slide.Steps.Length > 0)
+            {
+                var steps = new VerticalStackLayout { Spacing = 16 };
+                for (var i = 0; i < slide.Steps.Length; i++)
+                    steps.Add(StepRow(i + 1, slide.Steps[i]));
+                body = steps;
+            }
+            else
+            {
+                body = new Label
+                {
+                    Text = slide.Body,
+                    TextColor = Color.FromArgb("#DCD4F7"),
+                    FontSize = 16,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    LineBreakMode = LineBreakMode.WordWrap,
+                };
+            }
+
+            return new VerticalStackLayout
+            {
+                VerticalOptions = LayoutOptions.Center,
+                Padding = new Thickness(40, 0),
+                Spacing = 0,
+                Children = { icon, heading, body }
+            };
+        }
+
+        private static View StepRow(int num, string text)
         {
-            VerticalOptions = LayoutOptions.Center,
-            Padding = new Thickness(44, 0),
-            Spacing = 0,
-            Children = { icon, heading, body }
-        };
+            var grid = new Grid
+            {
+                ColumnSpacing = 14,
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition { Width = GridLength.Auto },
+                    new ColumnDefinition { Width = GridLength.Star },
+                }
+            };
+
+            var badge = new Border
+            {
+                WidthRequest = 32,
+                HeightRequest = 32,
+                BackgroundColor = Color.FromArgb("#40FFFFFF"),
+                StrokeThickness = 0,
+                StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                VerticalOptions = LayoutOptions.Start,
+                Content = new Label
+                {
+                    Text = num.ToString(),
+                    TextColor = Colors.White,
+                    FontAttributes = FontAttributes.Bold,
+                    FontSize = 13,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    VerticalTextAlignment = TextAlignment.Center,
+                }
+            };
+
+            var label = new Label
+            {
+                Text = text,
+                TextColor = Colors.White,
+                FontSize = 15,
+                VerticalOptions = LayoutOptions.Center,
+                LineBreakMode = LineBreakMode.WordWrap,
+            };
+
+            Grid.SetColumn(badge, 0);
+            Grid.SetColumn(label, 1);
+            grid.Add(badge);
+            grid.Add(label);
+
+            return grid;
+        }
     }
 
     // ── dots ──────────────────────────────────────────────────────────────────
