@@ -82,6 +82,7 @@ public class CustomersPage : ContentPage
     {
         var name = new Label { FontAttributes = FontAttributes.Bold, FontSize = 15 };
         name.SetBinding(Label.TextProperty, nameof(Customer.Name));
+        name.SetAppThemeColor(Label.TextColorProperty, Colors.Black, Colors.White);
 
         var email = new Label { FontSize = 13, TextColor = Color.FromArgb("#888888") };
         email.SetBinding(Label.TextProperty, nameof(Customer.Email));
@@ -109,7 +110,6 @@ public class CustomersPage : ContentPage
             StrokeShape = new RoundRectangle { CornerRadius = 12 },
             Padding = new Thickness(14, 10),
             Margin = new Thickness(0, 4),
-            BackgroundColor = Color.FromArgb("{AppThemeBinding Light=#F5F5F5, Dark=#2A2A2A}"),
             Content = new Grid
             {
                 ColumnDefinitions =
@@ -124,6 +124,8 @@ public class CustomersPage : ContentPage
                 }
             }
         };
+
+        card.SetAppThemeColor(Border.BackgroundColorProperty, Color.FromArgb("#F5F5F5"), Color.FromArgb("#2A2A2A"));
 
         card.GestureRecognizers.Add(new TapGestureRecognizer
         {
