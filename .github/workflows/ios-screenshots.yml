@@ -1,0 +1,91 @@
+name: iOS Simulator Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-ios
+
+      - name: Build for simulator
+        run: |
+          dotnet build StockAndFlow.Mobile/StockAndFlow.Mobile.csproj \
+            -f net10.0-ios \
+            -c Debug \
+            -r iossimulator-arm64 \
+            -p:ApplicationId=dev.newspark.stockandflow
+
+      - name: Boot iPhone 16 Pro Max simulator
+        run: |
+          UDID=$(xcrun simctl list devices available | grep "iPhone 16 Pro Max" | head -1 | grep -oE '[A-F0-9-]{36}')
+          if [ -z "$UDID" ]; then
+            UDID=$(xcrun simctl create "iPhone 16 Pro Max" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max")
+          fi
+          echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot $UDID || true
+          xcrun simctl bootstatus $UDID -b
+
+      - name: Install app on simulator
+        run: |
+          APP_PATH=$(find . -name "*.app" -path "*/iossimulator-arm64/*" | head -1)
+          echo "Found app at: $APP_PATH"
+          xcrun simctl install $SIMULATOR_UDID "$APP_PATH"
+
+      - name: Take screenshots of all screens
+        run: |
+          mkdir -p screenshots
+          BUNDLE_ID=dev.newspark.stockandflow
+
+          # Launch app
+          xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
+          sleep 4
+
+          # 1. Dashboard
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/01_dashboard.png
+          sleep 1
+
+          # 2. Inventory tab — tap bottom nav (5 tabs, device points 393×852 for iPhone 16 Pro Max)
+          xcrun simctl io $SIMULATOR_UDID tap 79 820
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/02_inventory.png
+
+          # 3. Sales tab
+          xcrun simctl io $SIMULATOR_UDID tap 196 820
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/03_sales.png
+
+          # 4. Expenses tab
+          xcrun simctl io $SIMULATOR_UDID tap 314 820
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
+
+          # 5. Reports tab
+          xcrun simctl io $SIMULATOR_UDID tap 432 820
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
+
+          # 6. Open sidebar drawer (tap hamburger at top-left)
+          xcrun simctl io $SIMULATOR_UDID tap 30 70
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/06_navigation.png
+
+          ls -lh screenshots/
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: screenshots/
+          if-no-files-found: error

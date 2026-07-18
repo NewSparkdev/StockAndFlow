@@ -1,0 +1,101 @@
+APPLE APP STORE LISTING
+=======================
+
+APP NAME (max 30 chars)
+------------------------
+Stock & Flow
+
+
+SUBTITLE (max 30 chars)
+------------------------
+Inventory & Sales Tracker
+
+
+DESCRIPTION (max 4000 chars)
+-----------------------------
+Stock & Flow is the all-in-one business management app built for small business owners who need real results without the complexity.
+
+Track your inventory, record sales, log expenses, and view profit & loss reports — all from your phone.
+
+INVENTORY MANAGEMENT
+• Add, edit, and search stock items
+• Track quantity, cost, and sale price per item
+• Barcode scanner support for fast lookup
+• Low stock alerts so you never run out
+
+SALES
+• Record sales in seconds
+• Attach sales to customers for history tracking
+• Automatic profit calculation on every transaction
+• Generate PDF invoices directly from the app
+
+EXPENSES
+• Log business expenses by category
+• Date-range filtering to review spending periods
+• Tracks total expenses against revenue for accurate P&L
+
+REPORTS & INSIGHTS
+• Real-time dashboard: revenue, net profit, gross profit, inventory value
+• Detailed P&L report with sales breakdown
+• Sales trend tracking over any date range
+• Export data for your accountant or records
+
+CUSTOMERS
+• Maintain a customer list with contact info
+• Attach purchases to customers for relationship tracking
+
+BUSINESS SETTINGS
+• Set your business name, address, tax rate, and contact info
+• Business info automatically fills into generated invoices
+
+WORKS OFFLINE
+• No internet connection required — your data stays on your device
+• No subscription fees, no monthly charges
+
+Stock & Flow is designed for retail shops, resellers, market vendors, freelancers, and any small business owner who needs a fast, reliable way to stay on top of their numbers.
+
+
+KEYWORDS (max 100 chars, comma-separated)
+------------------------------------------
+inventory,sales tracker,expense tracker,small business,stock,profit,invoice,barcode,pos,report
+
+
+PRIMARY CATEGORY
+----------------
+Business
+
+
+SECONDARY CATEGORY
+------------------
+Productivity
+
+
+PRICING
+-------
+Free (no in-app purchases)
+
+
+SUPPORT URL
+-----------
+https://newspark.dev
+
+
+PRIVACY POLICY URL
+------------------
+https://newspark.dev/privacy
+
+
+MARKETING URL (optional)
+-------------------------
+https://newspark.dev
+
+
+AGE RATING ANSWERS
+------------------
+When App Store Connect asks the content rating questions, answer NO to all of them.
+Final rating: 4+
+
+
+WHAT'S NEW (Version 1.0.0)
+---------------------------
+Initial release of Stock & Flow.
