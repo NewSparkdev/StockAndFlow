@@ -98,7 +98,31 @@ namespace StockAndFlow.ViewModels
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => HasSelectedItems);
             CancelCommand = new RelayCommand(Cancel);
 
-            _ = LoadItemsAsync();
+            _ = InitializeAsync();
+        }
+
+        private async Task InitializeAsync()
+        {
+            await LoadItemsAsync();
+            await LoadDefaultTaxStateAsync();
+        }
+
+        private async Task LoadDefaultTaxStateAsync()
+        {
+            try
+            {
+                var settings = await _businessSettingsService.GetSettingsAsync();
+                if (!string.IsNullOrWhiteSpace(settings.DefaultTaxStateCode))
+                {
+                    var defaultState = States.FirstOrDefault(s => s.StateCode == settings.DefaultTaxStateCode);
+                    if (defaultState != null)
+                        UiDispatcher.Run(() => SelectedState = defaultState);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "Failed to load default tax state");
+            }
         }
 
         private async Task LoadItemsAsync()
@@ -114,6 +138,7 @@ namespace StockAndFlow.ViewModels
                     {
                         InventoryItemId = item.Id,
                         ItemName = item.Name,
+                        Sku = item.Sku,
                         SalePricePerUnit = item.SalePrice,
                         CostPerUnit = item.CostPerUnit,
                         AvailableQuantity = item.QuantityOnHand,
@@ -259,6 +284,26 @@ namespace StockAndFlow.ViewModels
                 LogError(ex, "Failed to record sale for item: {ItemName}", firstItem?.ItemName ?? "Unknown");
                 SaleFailed?.Invoke(this, $"The sale could not be completed:\n\n{ex.Message}");
             }
+        }
+
+        // Called by the barcode scan button — finds the item whose SKU matches and selects it.
+        public void SelectItemBySku(string barcode)
+        {
+            UiDispatcher.Run(() =>
+            {
+                var match = AllItems.FirstOrDefault(i =>
+                    !string.IsNullOrWhiteSpace(i.Sku) &&
+                    string.Equals(i.Sku, barcode, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    match.IsSelected = true;
+                    UpdateCartProperties();
+                }
+                else
+                {
+                    SaleFailed?.Invoke(this, $"No item found with barcode: {barcode}");
+                }
+            });
         }
 
         private void Cancel()

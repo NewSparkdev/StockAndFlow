@@ -38,6 +38,7 @@ bld/
 Data/
 *.json
 !StockAndFlow/Data/.gitkeep
+!StockAndFlow.Core/Data/
 
 # Images uploaded by users (WPF app runtime folder only — NOT MAUI Resources/Images assets)
 /StockAndFlow/Images/

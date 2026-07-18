@@ -85,6 +85,15 @@
                         </VerticalStackLayout>
 
                         <VerticalStackLayout Spacing="2">
+                            <Label Text="Default sales tax state" Style="{StaticResource FieldLabel}" />
+                            <Label Text="Pre-selected when recording a sale." Style="{StaticResource Caption}" />
+                            <Picker ItemsSource="{Binding AllStates}"
+                                    SelectedItem="{Binding SelectedDefaultState}"
+                                    ItemDisplayBinding="{Binding DisplayName}"
+                                    Title="No default (select per sale)" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="2">
                             <Label Text="Logo" Style="{StaticResource FieldLabel}" />
                             <Label Text="Shown on customer invoices." Style="{StaticResource Caption}" />
                             <Image Source="{Binding LogoPath, Converter={StaticResource ImagePathConverter}}"

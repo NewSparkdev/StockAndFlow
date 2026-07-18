@@ -14,6 +14,7 @@ public partial class RecordSalePage : ContentPage
 		InitializeComponent();
 		_viewModel = viewModel;
 		BindingContext = viewModel;
+		ScanItemButton.Clicked += OnScanItemClicked;
 
 		viewModel.CloseRequested += async (_, _) => await CloseAsync();
 		viewModel.SaleCompleted += async (_, transaction) =>
@@ -60,6 +61,13 @@ public partial class RecordSalePage : ContentPage
 		{
 			await DisplayAlert("Invoice failed", ex.Message, "OK");
 		}
+	}
+
+	private async void OnScanItemClicked(object? sender, EventArgs e)
+	{
+		var scanPage = new BarcodeScanPage();
+		scanPage.BarcodeDetected += (_, barcode) => _viewModel.SelectItemBySku(barcode);
+		await Navigation.PushAsync(scanPage);
 	}
 
 	private async Task CloseAsync()

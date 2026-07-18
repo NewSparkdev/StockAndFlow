@@ -12,6 +12,7 @@ namespace StockAndFlow.Models
 
         public Guid InventoryItemId { get; set; }
         public string ItemName { get; set; } = string.Empty;
+        public string? Sku { get; set; }
         public decimal CostPerUnit { get; set; }
         public int AvailableQuantity { get; set; }
 

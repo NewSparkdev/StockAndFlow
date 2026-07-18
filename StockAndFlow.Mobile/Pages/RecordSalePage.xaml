@@ -23,7 +23,11 @@
                         ItemDisplayBinding="{Binding DisplayName}"
                         Title="Select tax state" />
 
-                <Label Text="Items" FontAttributes="Bold" FontSize="16" Margin="0,6,0,0" />
+                <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                    <Label Text="Items" FontAttributes="Bold" FontSize="16" VerticalOptions="Center" />
+                    <Button Grid.Column="1" Text="📷 Scan item" x:Name="ScanItemButton"
+                            FontSize="13" HeightRequest="36" Padding="10,0" />
+                </Grid>
                 <CollectionView ItemsSource="{Binding AllItems}">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:CartItem">

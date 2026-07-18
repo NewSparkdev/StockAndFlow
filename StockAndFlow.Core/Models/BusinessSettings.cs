@@ -15,6 +15,7 @@ namespace StockAndFlow.Models
         public string? Email { get; set; }
         public string? Website { get; set; }
         public string? TaxId { get; set; }
+        public string? DefaultTaxStateCode { get; set; }
         public string? LogoPath { get; set; }
         public DateTime LastModified { get; set; } = DateTime.Now;
 

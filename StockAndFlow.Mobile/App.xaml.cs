@@ -72,6 +72,19 @@ public partial class App : Application
 			// InitializeAsync offloads the heavy EnsureDatabaseCreated work to the thread pool,
 			// so awaiting it here keeps the UI thread responsive.
 			await services.GetRequiredService<IDataService>().InitializeAsync();
+
+			// Alert the user when any sale drops an item below its minimum stock level.
+			services.GetRequiredService<InventoryService>().LowStockDetected += async (_, item) =>
+			{
+				await MainThread.InvokeOnMainThreadAsync(async () =>
+				{
+					if (Current?.Windows is { Count: > 0 } wins && wins[0].Page is Page page)
+						await page.DisplayAlert("Low stock",
+							$"{item.Name} is running low — {item.QuantityOnHand} remaining (minimum: {item.MinimumStockLevel}).",
+							"OK");
+				});
+			};
+
 			var seenOnboarding = Preferences.Default.Get("onboarding_done", false);
 			window.Page = seenOnboarding
 				? new AppShell(services)
