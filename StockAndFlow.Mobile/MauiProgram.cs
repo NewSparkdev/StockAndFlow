@@ -6,7 +6,6 @@ using StockAndFlow.Mobile.Platform;
 using StockAndFlow.Platform;
 using StockAndFlow.Services;
 using StockAndFlow.ViewModels;
-
 namespace StockAndFlow.Mobile;
 
 public static class MauiProgram
@@ -48,6 +47,7 @@ public static class MauiProgram
 		services.AddSingleton<BusinessSettingsService>();
 		services.AddSingleton<InvoiceService>();
 		services.AddSingleton<InventoryAdjustmentService>();
+		services.AddSingleton<CustomerService>();
 
 		// ViewModels
 		services.AddSingleton<MainViewModel>();
@@ -56,7 +56,9 @@ public static class MauiProgram
 		services.AddSingleton<ExpensesViewModel>();
 		services.AddSingleton<ReportsViewModel>();
 		services.AddSingleton<AdjustmentsViewModel>();
+		services.AddSingleton<CustomersViewModel>();
 		services.AddTransient<BusinessSettingsViewModel>();
+		services.AddTransient<AddEditCustomerViewModel>();
 
 		// Pages
 		services.AddSingleton<MainPage>();
@@ -65,6 +67,7 @@ public static class MauiProgram
 		services.AddSingleton<Pages.ExpensesPage>();
 		services.AddSingleton<Pages.AdjustmentsPage>();
 		services.AddSingleton<Pages.ReportsPage>();
+		services.AddSingleton<Pages.CustomersPage>();
 
 		// Single host page: persistent bottom bar + swappable section views.
 		services.AddSingleton<HostPage>();

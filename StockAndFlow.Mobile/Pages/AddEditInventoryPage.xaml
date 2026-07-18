@@ -11,8 +11,11 @@
             <Label Text="Name" />
             <Entry Text="{Binding Name}" Placeholder="Item name" />
 
-            <Label Text="SKU" />
-            <Entry Text="{Binding Sku}" Placeholder="Optional" />
+            <Label Text="SKU / Barcode" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry Grid.Column="0" Text="{Binding Sku}" Placeholder="Optional — or scan →" />
+                <Button Grid.Column="1" Text="📷 Scan" x:Name="ScanSkuButton" WidthRequest="90" />
+            </Grid>
 
             <Label Text="Category" />
             <Entry Text="{Binding Category}" Placeholder="Optional" />

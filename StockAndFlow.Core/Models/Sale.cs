@@ -49,6 +49,7 @@ namespace StockAndFlow.Models
         // Customer info (optional)
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
+        public Guid? CustomerId { get; set; }
 
         public string? Notes { get; set; }
 

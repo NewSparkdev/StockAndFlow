@@ -12,6 +12,7 @@ namespace StockAndFlow.Services
         private readonly IDataService _dataService;
 
         public event EventHandler? InventoryChanged;
+        public event EventHandler<InventoryItem>? LowStockDetected;
 
         public InventoryService(IDataService dataService)
         {
@@ -124,6 +125,11 @@ namespace StockAndFlow.Services
 
             item.QuantityOnHand = newQuantity;
             await CreateOrUpdateItemAsync(item);
+
+            // Fire low-stock alert if the item just crossed below its minimum threshold
+            if (item.MinimumStockLevel > 0 && item.QuantityOnHand <= item.MinimumStockLevel)
+                LowStockDetected?.Invoke(this, item);
+
             return true;
         }
 

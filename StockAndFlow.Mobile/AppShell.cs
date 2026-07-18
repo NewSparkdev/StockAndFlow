@@ -53,6 +53,7 @@ public class AppShell : Shell
 
 		list.Add(new BoxView { HeightRequest = 1, Color = Color.FromArgb("#33FFFFFF"), Margin = new Thickness(8, 8) });
 
+		list.Add(MakeRow("customers", "Customers", "tab_sales.png", PushCustomers));
 		list.Add(MakeRow("adjustments", "Adjustments", "tab_adjustments.png", PushAdjustments));
 
 		// Business logo (set in Settings > Business Settings), shown under the menu items.
@@ -137,6 +138,9 @@ public class AppShell : Shell
 		_drawerRows[id] = row;
 		return row;
 	}
+
+	private async void PushCustomers() =>
+		await Navigation.PushAsync(_services.GetRequiredService<Pages.CustomersPage>());
 
 	private async void PushAdjustments() =>
 		await Navigation.PushAsync(_services.GetRequiredService<AdjustmentsPage>());

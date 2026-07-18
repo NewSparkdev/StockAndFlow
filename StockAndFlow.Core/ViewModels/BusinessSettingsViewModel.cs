@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using StockAndFlow.Commands;
@@ -24,6 +26,7 @@ namespace StockAndFlow.ViewModels
         private string? _email;
         private string? _website;
         private string? _taxId;
+        private string? _defaultTaxStateCode;
         private string? _logoPath;
 
         public event EventHandler<bool>? CloseRequested;
@@ -88,6 +91,25 @@ namespace StockAndFlow.ViewModels
             set => SetProperty(ref _taxId, value);
         }
 
+        public string? DefaultTaxStateCode
+        {
+            get => _defaultTaxStateCode;
+            set => SetProperty(ref _defaultTaxStateCode, value);
+        }
+
+        public List<StateTaxInfo> AllStates { get; } = StateTaxInfo.GetAllStates();
+
+        private StateTaxInfo? _selectedDefaultState;
+        public StateTaxInfo? SelectedDefaultState
+        {
+            get => _selectedDefaultState;
+            set
+            {
+                if (SetProperty(ref _selectedDefaultState, value))
+                    DefaultTaxStateCode = value?.StateCode;
+            }
+        }
+
         public string? LogoPath
         {
             get => _logoPath;
@@ -138,6 +160,8 @@ namespace StockAndFlow.ViewModels
                 Email = _settings.Email;
                 Website = _settings.Website;
                 TaxId = _settings.TaxId;
+                DefaultTaxStateCode = _settings.DefaultTaxStateCode;
+                SelectedDefaultState = AllStates.FirstOrDefault(s => s.StateCode == _settings.DefaultTaxStateCode);
                 LogoPath = _settings.LogoPath;
             }
             catch (Exception ex)
@@ -160,6 +184,7 @@ namespace StockAndFlow.ViewModels
                 _settings.Email = Email;
                 _settings.Website = Website;
                 _settings.TaxId = TaxId;
+                _settings.DefaultTaxStateCode = DefaultTaxStateCode;
                 _settings.LogoPath = LogoPath;
 
                 await _settingsService.SaveSettingsAsync(_settings);

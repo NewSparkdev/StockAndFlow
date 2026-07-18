@@ -18,6 +18,18 @@ public partial class MainPage : ContentView, ISectionView
 	public string SectionTitle => "Stock & Flow";
 	public IReadOnlyList<NavAction> Actions { get; }
 
-	private static async void OpenSettings() =>
-		await Shell.Current.Navigation.PushModalAsync(new NavigationPage(new SettingsPage()));
+	private static async void OpenSettings()
+	{
+		try
+		{
+			var nav = Shell.Current?.Navigation ?? Application.Current?.MainPage?.Navigation;
+			if (nav != null)
+				await nav.PushModalAsync(new NavigationPage(new SettingsPage()));
+		}
+		catch (Exception ex)
+		{
+			if (Application.Current?.MainPage != null)
+				await Application.Current.MainPage.DisplayAlert("Settings error", ex.Message, "OK");
+		}
+	}
 }

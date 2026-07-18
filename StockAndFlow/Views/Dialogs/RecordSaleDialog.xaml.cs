@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Models;
 using StockAndFlow.Services;
@@ -39,6 +40,20 @@ namespace StockAndFlow.Views.Dialogs
             {
                 MessageBox.Show(message, "Sale not completed", MessageBoxButton.OK, MessageBoxImage.Warning);
             };
+        }
+
+        // USB barcode scanners send keystrokes followed by Enter. The BarcodeSearchBox
+        // grabs focus so scanner input lands here; Enter fires the SKU lookup.
+        private void BarcodeSearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+
+            var raw = BarcodeSearchBox.Text.Trim();
+            BarcodeSearchBox.Clear();
+
+            if (!string.IsNullOrEmpty(raw))
+                _viewModel?.SelectItemBySku(raw);
         }
 
         private async System.Threading.Tasks.Task HandleSaleCompletedAsync(SaleTransaction transaction)
