@@ -33,6 +33,17 @@ jobs:
           fi
           xcodebuild -version
           sudo xcodebuild -runFirstLaunch
+          DEV=$(xcode-select -p)
+          SDKS="$DEV/Platforms/MacOSX.platform/Developer/SDKs"
+          echo "macOS SDKs: $(ls $SDKS 2>/dev/null || echo none)"
+          if [ ! -e "$SDKS/MacOSX.sdk" ]; then
+            SRC=$(ls -d /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk 2>/dev/null | sort -V | head -1)
+            if [ -n "$SRC" ]; then
+              sudo mkdir -p "$SDKS"
+              sudo ln -sf "$SRC" "$SDKS/MacOSX.sdk"
+              echo "Created MacOSX.sdk -> $SRC"
+            fi
+          fi
 
       - name: Import distribution certificate
         env:
