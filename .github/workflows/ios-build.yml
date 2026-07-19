@@ -37,15 +37,28 @@ jobs:
           SDKS="$DEV/Platforms/MacOSX.platform/Developer/SDKs"
           echo "macOS SDKs before fix:"
           ls -la "$SDKS" 2>/dev/null || echo none
-          SRC=$(ls -d /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX[0-9]*.sdk 2>/dev/null | sort -V | head -1)
-          if [ -n "$SRC" ]; then
+          OLDER_XCODES=$(ls -d /Applications/Xcode_26.5*.app /Applications/Xcode_26.4*.app /Applications/Xcode_26.3*.app 2>/dev/null | sort -rV)
+          GOOD_SDK=""
+          for APP in $OLDER_XCODES; do
+            SDK_DIR="$APP/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs"
+            REAL_SDK=$(find "$SDK_DIR" -maxdepth 1 -name "MacOSX*.sdk" -not -type l -type d 2>/dev/null | sort -V | tail -1)
+            if [ -n "$REAL_SDK" ]; then
+              GOOD_SDK="$REAL_SDK"
+              break
+            fi
+          done
+          if [ -n "$GOOD_SDK" ]; then
+            echo "Replacing broken SDK with: $GOOD_SDK"
             sudo mkdir -p "$SDKS"
-            sudo rm -f "$SDKS/MacOSX.sdk"
-            sudo ln -sf "$SRC" "$SDKS/MacOSX.sdk"
-            echo "Linked MacOSX.sdk -> $SRC"
+            sudo rm -rf "$SDKS/MacOSX.sdk"
+            sudo ln -sf "$GOOD_SDK" "$SDKS/MacOSX.sdk"
+            echo "Linked MacOSX.sdk -> $GOOD_SDK"
+          else
+            echo "WARNING: No older Xcode macOS SDK found"
           fi
           echo "macOS SDKs after fix:"
           ls -la "$SDKS"
+          echo "actool test:"
           xcodebuild -sdk "$SDKS/MacOSX.sdk" -find actool 2>&1 || echo "WARNING: actool not found"
 
       - name: Import distribution certificate
