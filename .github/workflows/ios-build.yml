@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout
+      - name: Checkouth
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -20,7 +20,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Install MAUI workload
-        run: dotnet workload install maui-ios
+        run: dotnet workload install maui-ios maui-android
 
       - name: Import distribution certificate
         env:
