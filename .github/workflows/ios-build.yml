@@ -32,6 +32,7 @@ jobs:
             sudo xcode-select -switch "$LATEST/Contents/Developer"
           fi
           xcodebuild -version
+          sudo xcodebuild -runFirstLaunch
 
       - name: Import distribution certificate
         env:
