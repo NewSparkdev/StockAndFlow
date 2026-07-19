@@ -65,3 +65,32 @@ jobs:
           name: stockandflow-ios-${{ github.sha }}
           path: '**/*.ipa'
           if-no-files-found: error
+
+      - name: Upload to TestFlight
+        env:
+          PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          IPA_PATH=$(find . -name "*.ipa" | head -1)
+          echo "Uploading: $IPA_PATH"
+          mkdir -p /tmp/asc
+          python3 - <<'PYEOF'
+          import json, base64, os
+          key = base64.b64decode(os.environ['PRIVATE_KEY_BASE64']).decode('utf-8')
+          data = {
+              "key_id": os.environ['KEY_ID'],
+              "issuer_id": os.environ['ISSUER_ID'],
+              "key": key,
+              "is_key_content_base64": False,
+              "duration": 1200,
+              "in_house": False
+          }
+          with open('/tmp/asc/api_key.json', 'w') as f:
+              json.dump(data, f)
+          PYEOF
+          fastlane pilot upload \
+            --api_key_path /tmp/asc/api_key.json \
+            --ipa "$IPA_PATH" \
+            --skip_submission true \
+            --skip_waiting_for_build_processing true
