@@ -1,4 +1,4 @@
-name: iOS Release Build
+﻿name: iOS Release Build
 
 on:
   workflow_dispatch:
@@ -35,15 +35,18 @@ jobs:
           sudo xcodebuild -runFirstLaunch
           DEV=$(xcode-select -p)
           SDKS="$DEV/Platforms/MacOSX.platform/Developer/SDKs"
-          echo "macOS SDKs: $(ls $SDKS 2>/dev/null || echo none)"
-          if [ ! -e "$SDKS/MacOSX.sdk" ]; then
-            SRC=$(ls -d /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk 2>/dev/null | sort -V | head -1)
-            if [ -n "$SRC" ]; then
-              sudo mkdir -p "$SDKS"
-              sudo ln -sf "$SRC" "$SDKS/MacOSX.sdk"
-              echo "Created MacOSX.sdk -> $SRC"
-            fi
+          echo "macOS SDKs before fix:"
+          ls -la "$SDKS" 2>/dev/null || echo none
+          SRC=$(ls -d /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX[0-9]*.sdk 2>/dev/null | sort -V | head -1)
+          if [ -n "$SRC" ]; then
+            sudo mkdir -p "$SDKS"
+            sudo rm -f "$SDKS/MacOSX.sdk"
+            sudo ln -sf "$SRC" "$SDKS/MacOSX.sdk"
+            echo "Linked MacOSX.sdk -> $SRC"
           fi
+          echo "macOS SDKs after fix:"
+          ls -la "$SDKS"
+          xcodebuild -sdk "$SDKS/MacOSX.sdk" -find actool 2>&1 || echo "WARNING: actool not found"
 
       - name: Import distribution certificate
         env:
@@ -117,3 +120,4 @@ jobs:
             --ipa "$IPA_PATH" \
             --skip_submission true \
             --skip_waiting_for_build_processing true
+
