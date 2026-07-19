@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkouth
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -21,6 +21,17 @@ jobs:
 
       - name: Install MAUI workload
         run: dotnet workload install maui-ios maui-android
+
+      - name: Select Xcode
+        run: |
+          echo "Available Xcodes:"
+          ls /Applications/ | grep -i xcode || true
+          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then
+            echo "Selecting: $LATEST"
+            sudo xcode-select -switch "$LATEST/Contents/Developer"
+          fi
+          xcodebuild -version
 
       - name: Import distribution certificate
         env:
