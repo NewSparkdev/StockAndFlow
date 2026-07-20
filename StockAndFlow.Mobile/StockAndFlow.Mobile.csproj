@@ -80,4 +80,15 @@
 		<TrimmerRootAssembly Include="StockAndFlow.Core" RootMode="all" />
 	</ItemGroup>
 
+	<!--
+		EF Core compiled model: skip the 10 MB worker-thread initialization path.
+		iOS silently caps worker thread stacks, causing thread.Join() to block forever.
+		With this switch the model initializes inline on the calling thread instead.
+	-->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+		<RuntimeHostConfigurationOption Include="Microsoft.EntityFrameworkCore.Issue31751"
+		                                Value="true"
+		                                Trim="true" />
+	</ItemGroup>
+
 </Project>

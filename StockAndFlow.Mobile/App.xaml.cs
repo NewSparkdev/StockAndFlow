@@ -29,49 +29,82 @@ public partial class App : Application
 		return window;
 	}
 
-	private static ContentPage BuildLoadingPage() => new()
+	private static Label? _statusLabel;
+
+	private static ContentPage BuildLoadingPage()
 	{
-		BackgroundColor = Color.FromArgb("#512BD4"),
-		Content = new VerticalStackLayout
+		_statusLabel = new Label
 		{
-			VerticalOptions = LayoutOptions.Center,
-			HorizontalOptions = LayoutOptions.Center,
-			Spacing = 24,
-			Children =
+			Text = "Starting...",
+			TextColor = Color.FromArgb("#AAFFFFFF"),
+			FontSize = 13,
+			HorizontalTextAlignment = TextAlignment.Center,
+		};
+		return new ContentPage
+		{
+			BackgroundColor = Color.FromArgb("#512BD4"),
+			Content = new VerticalStackLayout
 			{
-				new Image
+				VerticalOptions = LayoutOptions.Center,
+				HorizontalOptions = LayoutOptions.Center,
+				Spacing = 24,
+				Children =
 				{
-					Source = "logo.png",
-					WidthRequest = 128,
-					HeightRequest = 128,
-					HorizontalOptions = LayoutOptions.Center
-				},
-				new Label
-				{
-					Text = "Stock & Flow",
-					TextColor = Colors.White,
-					FontSize = 28,
-					FontAttributes = FontAttributes.Bold,
-					HorizontalTextAlignment = TextAlignment.Center
-				},
-				new ActivityIndicator
-				{
-					IsRunning = true,
-					Color = Colors.White,
-					Margin = new Thickness(0, 16, 0, 0)
+					new Image
+					{
+						Source = "logo.png",
+						WidthRequest = 128,
+						HeightRequest = 128,
+						HorizontalOptions = LayoutOptions.Center
+					},
+					new Label
+					{
+						Text = "Stock & Flow",
+						TextColor = Colors.White,
+						FontSize = 28,
+						FontAttributes = FontAttributes.Bold,
+						HorizontalTextAlignment = TextAlignment.Center
+					},
+					new ActivityIndicator
+					{
+						IsRunning = true,
+						Color = Colors.White,
+						Margin = new Thickness(0, 16, 0, 0)
+					},
+					_statusLabel
 				}
 			}
-		}
-	};
+		};
+	}
+
+	private static void SetStatus(string message) =>
+		MainThread.BeginInvokeOnMainThread(() => { if (_statusLabel != null) _statusLabel.Text = message; });
 
 	private async Task InitializeAsync(Window window)
 	{
 		var services = IPlatformApplication.Current!.Services;
 		try
 		{
-			// InitializeAsync offloads the heavy EnsureDatabaseCreated work to the thread pool,
-			// so awaiting it here keeps the UI thread responsive.
-			await services.GetRequiredService<IDataService>().InitializeAsync();
+			SetStatus("Initializing database...");
+			var initTask = services.GetRequiredService<IDataService>().InitializeAsync();
+			if (await Task.WhenAny(initTask, Task.Delay(45_000)) != initTask)
+			{
+				window.Page = new ContentPage
+				{
+					BackgroundColor = Color.FromArgb("#512BD4"),
+					Content = new Label
+					{
+						Text = "Startup timed out — please force-quit and reopen the app.",
+						TextColor = Colors.White,
+						Margin = 32,
+						HorizontalTextAlignment = TextAlignment.Center,
+						VerticalOptions = LayoutOptions.Center
+					}
+				};
+				return;
+			}
+			await initTask;
+			SetStatus("Loading...");
 
 			// Alert the user when any sale drops an item below its minimum stock level.
 			services.GetRequiredService<InventoryService>().LowStockDetected += async (_, item) =>

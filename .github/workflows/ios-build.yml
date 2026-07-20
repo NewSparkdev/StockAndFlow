@@ -96,7 +96,7 @@ jobs:
             -p:CodesignProvision="${{ secrets.APPLE_PROVISIONING_PROFILE_NAME }}" \
             -p:ApplicationId=dev.newspark.stockandflow \
             -p:ApplicationDisplayVersion=1.0.0 \
-            -p:ApplicationVersion=3
+            -p:ApplicationVersion=4
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
