@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace StockAndFlow.Models
 {
-    public class InventoryItem
+    public class InventoryItem : ISoftDeletable
     {
         public Guid Id { get; set; }
 

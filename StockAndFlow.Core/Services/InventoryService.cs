@@ -151,20 +151,9 @@ namespace StockAndFlow.Services
             ).ToList();
         }
 
-        /// <summary>
-        /// Gets all soft-deleted inventory items.
-        /// Note: This requires database-level support for IgnoreQueryFilters.
-        /// For JSON storage mode, this will return an empty list.
-        /// </summary>
         public async Task<List<InventoryItem>> GetDeletedItemsAsync()
         {
-            // This would require IgnoreQueryFilters support in the data service
-            // For now, we'll get all items and filter manually
-            // TODO: Add IgnoreQueryFilters support to IDataService
-            var allItems = await _dataService.GetAllAsync<InventoryItem>();
-            // The query filter will exclude deleted items, so this won't work as-is
-            // This is a limitation that would need data service enhancement
-            return new List<InventoryItem>();
+            return await _dataService.GetWhereAsync<InventoryItem>(i => i.IsDeleted);
         }
     }
 }

@@ -94,6 +94,11 @@ namespace StockAndFlow.Data
 
         public async Task<List<T>> GetAllAsync<T>() where T : class
         {
+            if (typeof(ISoftDeletable).IsAssignableFrom(typeof(T)))
+                return await _context.Set<T>()
+                    .Where(e => !EF.Property<bool>(e, "IsDeleted"))
+                    .ToListAsync();
+
             return await _context.Set<T>().ToListAsync();
         }
 

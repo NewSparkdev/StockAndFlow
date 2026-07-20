@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using StockAndFlow.Data.CompiledModels;
 using StockAndFlow.Models;
 using System;
 
@@ -22,7 +23,9 @@ namespace StockAndFlow.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite($"Data Source={_databasePath}");
+            optionsBuilder
+                .UseSqlite($"Data Source={_databasePath}")
+                .UseModel(StockAndFlowDbContextModel.Instance);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,9 +45,6 @@ namespace StockAndFlow.Data
                 // Soft delete configuration
                 entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
                 entity.Property(e => e.DeletedDate).IsRequired(false);
-
-                // Global query filter: Exclude soft-deleted items by default
-                entity.HasQueryFilter(e => !e.IsDeleted);
 
                 // Add index on Name for faster searching
                 entity.HasIndex(e => e.Name);
@@ -235,7 +235,6 @@ namespace StockAndFlow.Data
                 entity.Property(e => e.Phone).HasMaxLength(50);
                 entity.Property(e => e.Address).HasMaxLength(500);
                 entity.Property(e => e.Notes).HasMaxLength(1000);
-                entity.HasQueryFilter(e => !e.IsDeleted);
                 entity.HasIndex(e => e.Name);
                 entity.HasIndex(e => e.Email);
                 entity.Ignore(e => e.DisplayName);

@@ -2,7 +2,7 @@ using System;
 
 namespace StockAndFlow.Models
 {
-    public class Customer
+    public class Customer : ISoftDeletable
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = string.Empty;
