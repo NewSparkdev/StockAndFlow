@@ -1,4 +1,4 @@
-name: iOS Release Build
+﻿name: iOS Release Build
 
 on:
   workflow_dispatch:
@@ -96,7 +96,7 @@ jobs:
             -p:CodesignProvision="${{ secrets.APPLE_PROVISIONING_PROFILE_NAME }}" \
             -p:ApplicationId=dev.newspark.stockandflow \
             -p:ApplicationDisplayVersion=1.0.0 \
-            -p:ApplicationVersion=1
+            -p:ApplicationVersion=2
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
@@ -133,3 +133,4 @@ jobs:
             --ipa "$IPA_PATH" \
             --skip_submission true \
             --skip_waiting_for_build_processing true
+
