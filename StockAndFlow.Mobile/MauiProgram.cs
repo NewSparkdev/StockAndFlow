@@ -12,6 +12,11 @@ public static class MauiProgram
 {
 	public static MauiApp CreateMauiApp()
 	{
+		// Must be set before any EF Core type is accessed.
+		// The 10 MB stack thread used by the compiled model's static constructor
+		// is blocked on iOS; this switch makes it initialize inline instead.
+		AppContext.SetSwitch("Microsoft.EntityFrameworkCore.Issue31751", true);
+
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()

@@ -2,10 +2,8 @@
 using System;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Sqlite.Storage.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
 using StockAndFlow.Models;
 
 #pragma warning disable 219, 612, 618
@@ -13,14 +11,19 @@ using StockAndFlow.Models;
 
 namespace StockAndFlow.Data.CompiledModels
 {
-    internal partial class ExpenseEntityType
+    [EntityFrameworkInternal]
+    public partial class ExpenseEntityType
     {
         public static RuntimeEntityType Create(RuntimeModel model, RuntimeEntityType baseEntityType = null)
         {
             var runtimeEntityType = model.AddEntityType(
                 "StockAndFlow.Models.Expense",
                 typeof(Expense),
-                baseEntityType);
+                baseEntityType,
+                propertyCount: 9,
+                foreignKeyCount: 1,
+                unnamedIndexCount: 4,
+                keyCount: 1);
 
             var id = runtimeEntityType.AddProperty(
                 "Id",
@@ -30,7 +33,6 @@ namespace StockAndFlow.Data.CompiledModels
                 valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
-            id.TypeMapping = SqliteGuidTypeMapping.Default;
 
             var amount = runtimeEntityType.AddProperty(
                 "Amount",
@@ -38,21 +40,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Expense).GetProperty("Amount", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<Amount>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0m);
-            amount.TypeMapping = SqliteDecimalTypeMapping.Default.Clone(
-                comparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                keyComparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                providerValueComparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                mappingInfo: new RelationalTypeMappingInfo(
-                    storeTypeName: "decimal(18,2)"));
             amount.AddAnnotation("Relational:ColumnType", "decimal(18,2)");
 
             var category = runtimeEntityType.AddProperty(
@@ -61,7 +48,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Expense).GetProperty("Category", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<Category>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 maxLength: 100);
-            category.TypeMapping = SqliteStringTypeMapping.Default;
 
             var createdDate = runtimeEntityType.AddProperty(
                 "CreatedDate",
@@ -69,7 +55,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Expense).GetProperty("CreatedDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<CreatedDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-            createdDate.TypeMapping = SqliteDateTimeTypeMapping.Default;
 
             var description = runtimeEntityType.AddProperty(
                 "Description",
@@ -78,7 +63,6 @@ namespace StockAndFlow.Data.CompiledModels
                 fieldInfo: typeof(Expense).GetField("<Description>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true,
                 maxLength: 500);
-            description.TypeMapping = SqliteStringTypeMapping.Default;
 
             var expenseDate = runtimeEntityType.AddProperty(
                 "ExpenseDate",
@@ -86,7 +70,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Expense).GetProperty("ExpenseDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<ExpenseDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-            expenseDate.TypeMapping = SqliteDateTimeTypeMapping.Default;
 
             var inventoryItemId = runtimeEntityType.AddProperty(
                 "InventoryItemId",
@@ -94,7 +77,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Expense).GetProperty("InventoryItemId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<InventoryItemId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
-            inventoryItemId.TypeMapping = SqliteGuidTypeMapping.Default;
 
             var linkedItemName = runtimeEntityType.AddProperty(
                 "LinkedItemName",
@@ -102,14 +84,12 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Expense).GetProperty("LinkedItemName", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<LinkedItemName>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
-            linkedItemName.TypeMapping = SqliteStringTypeMapping.Default;
 
             var receiptImagePath = runtimeEntityType.AddProperty(
                 "ReceiptImagePath",
                 typeof(string),
                 propertyInfo: typeof(Expense).GetProperty("ReceiptImagePath", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Expense).GetField("<ReceiptImagePath>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
-            receiptImagePath.TypeMapping = SqliteStringTypeMapping.Default;
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

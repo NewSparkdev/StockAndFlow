@@ -34,7 +34,7 @@ namespace StockAndFlow.Data.CompiledModels
             }
 
             model.Customize();
-            _instance = model;
+            _instance = (StockAndFlowDbContextModel)model.FinalizeModel();
         }
 
         private static StockAndFlowDbContextModel _instance;

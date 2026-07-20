@@ -2,13 +2,8 @@
 using System;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Sqlite.Storage.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore.Storage.Json;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using StockAndFlow.Models;
 
 #pragma warning disable 219, 612, 618
@@ -16,14 +11,19 @@ using StockAndFlow.Models;
 
 namespace StockAndFlow.Data.CompiledModels
 {
-    internal partial class InventoryAdjustmentEntityType
+    [EntityFrameworkInternal]
+    public partial class InventoryAdjustmentEntityType
     {
         public static RuntimeEntityType Create(RuntimeModel model, RuntimeEntityType baseEntityType = null)
         {
             var runtimeEntityType = model.AddEntityType(
                 "StockAndFlow.Models.InventoryAdjustment",
                 typeof(InventoryAdjustment),
-                baseEntityType);
+                baseEntityType,
+                propertyCount: 10,
+                foreignKeyCount: 1,
+                unnamedIndexCount: 4,
+                keyCount: 1);
 
             var id = runtimeEntityType.AddProperty(
                 "Id",
@@ -33,7 +33,6 @@ namespace StockAndFlow.Data.CompiledModels
                 valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
-            id.TypeMapping = SqliteGuidTypeMapping.Default;
 
             var adjustmentDate = runtimeEntityType.AddProperty(
                 "AdjustmentDate",
@@ -41,7 +40,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("AdjustmentDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<AdjustmentDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-            adjustmentDate.TypeMapping = SqliteDateTimeTypeMapping.Default;
 
             var costPerUnit = runtimeEntityType.AddProperty(
                 "CostPerUnit",
@@ -49,21 +47,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("CostPerUnit", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<CostPerUnit>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0m);
-            costPerUnit.TypeMapping = SqliteDecimalTypeMapping.Default.Clone(
-                comparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                keyComparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                providerValueComparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                mappingInfo: new RelationalTypeMappingInfo(
-                    storeTypeName: "decimal(18,2)"));
             costPerUnit.AddAnnotation("Relational:ColumnType", "decimal(18,2)");
 
             var createdDate = runtimeEntityType.AddProperty(
@@ -72,7 +55,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("CreatedDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<CreatedDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-            createdDate.TypeMapping = SqliteDateTimeTypeMapping.Default;
 
             var inventoryItemId = runtimeEntityType.AddProperty(
                 "InventoryItemId",
@@ -80,14 +62,12 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("InventoryItemId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<InventoryItemId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
-            inventoryItemId.TypeMapping = SqliteGuidTypeMapping.Default;
 
             var inventoryItemName = runtimeEntityType.AddProperty(
                 "InventoryItemName",
                 typeof(string),
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("InventoryItemName", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<InventoryItemName>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
-            inventoryItemName.TypeMapping = SqliteStringTypeMapping.Default;
 
             var notes = runtimeEntityType.AddProperty(
                 "Notes",
@@ -95,7 +75,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("Notes", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<Notes>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
-            notes.TypeMapping = SqliteStringTypeMapping.Default;
 
             var quantityChange = runtimeEntityType.AddProperty(
                 "QuantityChange",
@@ -103,21 +82,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("QuantityChange", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<QuantityChange>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0);
-            quantityChange.TypeMapping = IntTypeMapping.Default.Clone(
-                comparer: new ValueComparer<int>(
-                    (int v1, int v2) => v1 == v2,
-                    (int v) => v,
-                    (int v) => v),
-                keyComparer: new ValueComparer<int>(
-                    (int v1, int v2) => v1 == v2,
-                    (int v) => v,
-                    (int v) => v),
-                providerValueComparer: new ValueComparer<int>(
-                    (int v1, int v2) => v1 == v2,
-                    (int v) => v,
-                    (int v) => v),
-                mappingInfo: new RelationalTypeMappingInfo(
-                    storeTypeName: "INTEGER"));
 
             var reason = runtimeEntityType.AddProperty(
                 "Reason",
@@ -125,27 +89,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("Reason", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<Reason>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 providerPropertyType: typeof(string));
-            reason.TypeMapping = SqliteStringTypeMapping.Default.Clone(
-                comparer: new ValueComparer<AdjustmentReason>(
-                    (AdjustmentReason v1, AdjustmentReason v2) => object.Equals((object)v1, (object)v2),
-                    (AdjustmentReason v) => v.GetHashCode(),
-                    (AdjustmentReason v) => v),
-                keyComparer: new ValueComparer<AdjustmentReason>(
-                    (AdjustmentReason v1, AdjustmentReason v2) => object.Equals((object)v1, (object)v2),
-                    (AdjustmentReason v) => v.GetHashCode(),
-                    (AdjustmentReason v) => v),
-                providerValueComparer: new ValueComparer<string>(
-                    (string v1, string v2) => v1 == v2,
-                    (string v) => v.GetHashCode(),
-                    (string v) => v),
-                converter: new ValueConverter<AdjustmentReason, string>(
-                    (AdjustmentReason v) => v.ToString(),
-                    (string v) => StringEnumConverter<AdjustmentReason, string, AdjustmentReason>.ConvertToEnum(v)),
-                jsonValueReaderWriter: new JsonConvertedValueReaderWriter<AdjustmentReason, string>(
-                    JsonStringReaderWriter.Instance,
-                    new ValueConverter<AdjustmentReason, string>(
-                        (AdjustmentReason v) => v.ToString(),
-                        (string v) => StringEnumConverter<AdjustmentReason, string, AdjustmentReason>.ConvertToEnum(v))));
             reason.SetSentinelFromProviderValue("Damaged");
 
             var salePricePerUnit = runtimeEntityType.AddProperty(
@@ -154,21 +97,6 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("SalePricePerUnit", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<SalePricePerUnit>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0m);
-            salePricePerUnit.TypeMapping = SqliteDecimalTypeMapping.Default.Clone(
-                comparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                keyComparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                providerValueComparer: new ValueComparer<decimal>(
-                    (decimal v1, decimal v2) => v1 == v2,
-                    (decimal v) => v.GetHashCode(),
-                    (decimal v) => v),
-                mappingInfo: new RelationalTypeMappingInfo(
-                    storeTypeName: "decimal(18,2)"));
             salePricePerUnit.AddAnnotation("Relational:ColumnType", "decimal(18,2)");
 
             var key = runtimeEntityType.AddKey(
