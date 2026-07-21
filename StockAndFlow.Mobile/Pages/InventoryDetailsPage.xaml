@@ -5,6 +5,7 @@
              Title="Item Details">
 
     <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Edit" Clicked="OnEditClicked" />
         <ToolbarItem Text="Close" Clicked="OnCloseClicked" />
     </ContentPage.ToolbarItems>
 
@@ -29,7 +30,10 @@
             <Label Text="Notes" Margin="0,8,0,0" />
             <Label Text="{Binding Notes}" />
 
-            <Button Text="Close" Clicked="OnCloseClicked" Margin="0,16,0,0" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button Grid.Column="0" Text="Edit" Clicked="OnEditClicked" />
+                <Button Grid.Column="1" Text="Close" Clicked="OnCloseClicked" Style="{StaticResource SecondaryButton}" />
+            </Grid>
 
         </VerticalStackLayout>
     </ScrollView>
