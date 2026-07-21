@@ -5,7 +5,7 @@
              Title="Adjustment Details">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Center">
+        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Fill">
 
             <Label Text="{Binding Adjustment.InventoryItemName}" FontSize="20" FontAttributes="Bold" />
             <Label Text="{Binding Adjustment.ReasonDisplay}" TextColor="Gray" />
