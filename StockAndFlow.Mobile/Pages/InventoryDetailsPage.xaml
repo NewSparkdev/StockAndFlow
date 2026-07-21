@@ -9,7 +9,7 @@
     </ContentPage.ToolbarItems>
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Center">
+        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Fill">
 
             <Image Source="{Binding ImagePath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasImage}" HeightRequest="160" Aspect="AspectFit" />
 
