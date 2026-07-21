@@ -4,7 +4,7 @@
              xmlns:models="clr-namespace:StockAndFlow.Models;assembly=StockAndFlow.Core"
              x:Class="StockAndFlow.Mobile.Pages.InventoryPage">
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="8" MaximumWidthRequest="900" HorizontalOptions="Center">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="8" MaximumWidthRequest="900" HorizontalOptions="Fill">
 
         <SearchBar Grid.Row="0" Placeholder="Search items..." Text="{Binding SearchText}" />
 
@@ -43,6 +43,7 @@
                                            TextColor="{Binding StockStatusColor}" />
                                     <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                            Style="{StaticResource Caption}"
+                                           IsVisible="{Binding HasSku}"
                                            Text="{Binding Sku, StringFormat='SKU: {0}'}" />
                                     <Label Grid.Row="2" Grid.Column="0"
                                            FontSize="13"
