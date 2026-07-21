@@ -53,6 +53,7 @@ namespace StockAndFlow.Models
 
         // UI Helper properties
         public bool HasImage => !string.IsNullOrEmpty(ImagePath);
+        public bool HasSku => !string.IsNullOrWhiteSpace(Sku);
         public bool IsSyncedWithShopify => !string.IsNullOrEmpty(ShopifyProductId);
         public string Description => Notes ?? string.Empty;
 
