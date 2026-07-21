@@ -43,6 +43,7 @@
                                            TextColor="{Binding StockStatusColor}" />
                                     <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                            Style="{StaticResource Caption}"
+                                           IsVisible="{Binding HasSku}"
                                            Text="{Binding Sku, StringFormat='SKU: {0}'}" />
                                     <Label Grid.Row="2" Grid.Column="0"
                                            FontSize="13"

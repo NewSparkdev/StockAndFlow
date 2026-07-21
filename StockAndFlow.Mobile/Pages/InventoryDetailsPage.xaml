@@ -16,7 +16,7 @@
             <Label Text="{Binding Name}" FontSize="24" FontAttributes="Bold" />
             <Label Text="{Binding StockStatus}" FontAttributes="Bold" TextColor="{Binding StockStatusColor}" />
 
-            <Grid ColumnDefinitions="*,Auto"><Label Text="SKU" /><Label Grid.Column="1" Text="{Binding Sku}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasSku}"><Label Text="SKU" /><Label Grid.Column="1" Text="{Binding Sku}" FontAttributes="Bold" /></Grid>
             <Grid ColumnDefinitions="*,Auto"><Label Text="Category" /><Label Grid.Column="1" Text="{Binding Category}" FontAttributes="Bold" /></Grid>
             <Grid ColumnDefinitions="*,Auto"><Label Text="Quantity on hand" /><Label Grid.Column="1" Text="{Binding QuantityOnHand}" FontAttributes="Bold" /></Grid>
             <Grid ColumnDefinitions="*,Auto"><Label Text="Minimum stock level" /><Label Grid.Column="1" Text="{Binding MinimumStockLevel}" FontAttributes="Bold" /></Grid>
