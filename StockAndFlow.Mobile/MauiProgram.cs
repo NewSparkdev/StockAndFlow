@@ -28,6 +28,14 @@ public static class MauiProgram
 			});
 
 
+#if IOS
+		// UISearchBar paints an opaque bar behind the rounded field (a black block against
+		// our dark surface); BackgroundColor=Transparent from the style can't remove it.
+		// Minimal style keeps only the rounded field, so the bar blends with any page.
+		Microsoft.Maui.Handlers.SearchBarHandler.Mapper.AppendToMapping("MinimalSearchBar",
+			(handler, _) => handler.PlatformView.SearchBarStyle = UIKit.UISearchBarStyle.Minimal);
+#endif
+
 		var services = builder.Services;
 
 		// Platform abstractions (MAUI implementations of the Core interfaces)
