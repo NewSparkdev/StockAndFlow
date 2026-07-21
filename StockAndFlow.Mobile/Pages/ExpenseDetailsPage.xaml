@@ -5,7 +5,7 @@
              Title="Expense Details">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Center">
+        <VerticalStackLayout Padding="16" Spacing="10" MaximumWidthRequest="720" HorizontalOptions="Fill">
 
             <Label Text="{Binding Expense.Category}" FontSize="20" FontAttributes="Bold" />
 
@@ -14,8 +14,10 @@
                 <Label Grid.Column="1" Text="{Binding Expense.Amount, StringFormat='{0:C2}'}" FontAttributes="Bold" />
             </Grid>
 
-            <Label Text="Date" />
-            <DatePicker Date="{Binding ExpenseDate}" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Date" />
+                <Label Grid.Column="1" Text="{Binding Expense.ExpenseDate, StringFormat='{0:d}'}" FontAttributes="Bold" />
+            </Grid>
 
             <Label Text="Description" />
             <Label Text="{Binding Expense.Description}" />
@@ -25,9 +27,9 @@
                 <Label Grid.Column="1" Text="{Binding Expense.LinkedItemName}" FontAttributes="Bold" />
             </Grid>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                <Button Grid.Column="0" Text="Close" Command="{Binding CloseCommand}" Style="{StaticResource SecondaryButton}" />
-                <Button Grid.Column="1" Text="Save Date" Command="{Binding SaveCommand}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button Grid.Column="0" Text="Edit" Command="{Binding EditCommand}" />
+                <Button Grid.Column="1" Text="Close" Command="{Binding CloseCommand}" Style="{StaticResource SecondaryButton}" />
             </Grid>
 
         </VerticalStackLayout>

@@ -13,6 +13,7 @@ namespace StockAndFlow.ViewModels
         private readonly ExpenseService _expenseService;
         private readonly Expense _expense;
         private readonly IDialogService _dialogService;
+        private readonly IEditorPresenter _editorPresenter;
         private DateTime _expenseDate;
 
         public event EventHandler<bool>? CloseRequested;
@@ -27,23 +28,34 @@ namespace StockAndFlow.ViewModels
 
         public ICommand SaveCommand { get; }
         public ICommand CloseCommand { get; }
+        public ICommand EditCommand { get; }
 
-        public ExpenseDetailsViewModel(ExpenseService expenseService, Expense expense, IDialogService dialogService)
+        public ExpenseDetailsViewModel(ExpenseService expenseService, Expense expense, IDialogService dialogService, IEditorPresenter editorPresenter)
         {
             _expenseService = expenseService;
             _expense = expense;
             _dialogService = dialogService;
+            _editorPresenter = editorPresenter;
             _expenseDate = expense.ExpenseDate;
 
             SaveCommand = new RelayCommand(async () => await SaveAsync());
             CloseCommand = new RelayCommand(Close);
+            EditCommand = new RelayCommand(async () => await EditAsync());
+        }
+
+        private async Task EditAsync()
+        {
+            await _editorPresenter.ShowEditExpenseAsync(_expense);
+            // Expense was mutated in-place by the edit form; refresh bindings.
+            _expenseDate = _expense.ExpenseDate;
+            OnPropertyChanged(nameof(ExpenseDate));
+            OnPropertyChanged(nameof(Expense));
         }
 
         private async Task SaveAsync()
         {
             try
             {
-                // Update the expense date
                 _expense.ExpenseDate = ExpenseDate;
                 await _expenseService.UpdateExpenseAsync(_expense);
 
