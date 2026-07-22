@@ -54,7 +54,7 @@ jobs:
       - name: Locate AAB
         id: find_aab
         run: |
-          AAB=$(find . -name "*.aab" | head -1)
+          AAB=$(find . -name "*.aab" -not -path "*/obj/*" | head -1)
           echo "path=$AAB" >> $GITHUB_OUTPUT
           echo "Found AAB: $AAB"
 
