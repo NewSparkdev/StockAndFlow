@@ -25,6 +25,7 @@
                         <SwipeView>
                             <SwipeView.RightItems>
                                 <SwipeItems>
+                                    <SwipeItem Text="Edit" BackgroundColor="{StaticResource Primary}" Invoked="OnEditSwipe" />
                                     <SwipeItem Text="Delete" BackgroundColor="{StaticResource Danger}" Invoked="OnDeleteSwipe" />
                                 </SwipeItems>
                             </SwipeView.RightItems>

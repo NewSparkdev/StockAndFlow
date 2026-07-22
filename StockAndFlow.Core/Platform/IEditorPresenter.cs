@@ -17,6 +17,7 @@ namespace StockAndFlow.Platform
         Task ShowInventoryDetailsAsync(InventoryItem item);
 
         Task ShowRecordSaleAsync();
+        Task ShowEditSaleAsync(SaleTransaction sale);
         Task ShowSaleDetailsAsync(SaleTransaction sale);
 
         Task ShowAddExpenseAsync();

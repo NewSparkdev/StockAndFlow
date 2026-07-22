@@ -64,6 +64,9 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	public Task ShowRecordSaleAsync() =>
 		PushAsync(new RecordSalePage(Create<RecordSaleViewModel>()));
 
+	public Task ShowEditSaleAsync(SaleTransaction sale) =>
+		PushAsync(new EditSalePage(Create<EditSaleViewModel>(sale)));
+
 	public Task ShowSaleDetailsAsync(SaleTransaction sale) =>
 		PushAsync(new SaleDetailsPage(Create<SaleDetailsViewModel>(sale)));
 

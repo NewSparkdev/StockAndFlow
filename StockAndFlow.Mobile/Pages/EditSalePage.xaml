@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:beh="clr-namespace:StockAndFlow.Mobile.Behaviors"
+             xmlns:vm="clr-namespace:StockAndFlow.ViewModels;assembly=StockAndFlow.Core"
+             x:Class="StockAndFlow.Mobile.Pages.EditSalePage"
+             Title="{Binding DialogTitle}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Fill">
+
+            <Label Text="Date" />
+            <DatePicker Date="{Binding SaleDate}" />
+
+            <Label Text="Customer name" />
+            <Entry Text="{Binding CustomerName}" Placeholder="Optional" />
+
+            <Label Text="Customer email" />
+            <Entry Text="{Binding CustomerEmail}" Placeholder="Optional" Keyboard="Email" />
+
+            <Label Text="Notes" />
+            <Editor Text="{Binding Notes}" Placeholder="Optional" HeightRequest="72" AutoSize="TextChanges" />
+
+            <Label Text="Items" FontAttributes="Bold" Margin="0,8,0,0" />
+
+            <CollectionView ItemsSource="{Binding Items}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:EditableSaleItem">
+                        <VerticalStackLayout Spacing="6" Padding="0,8,0,8">
+                            <Label Text="{Binding ItemName}" FontAttributes="Bold" FontSize="15" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                    <Label Text="Qty" />
+                                    <Entry Text="{Binding Quantity}" Keyboard="Numeric">
+                                        <Entry.Behaviors>
+                                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                                        </Entry.Behaviors>
+                                    </Entry>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <Label Text="Price / unit" />
+                                    <Entry Text="{Binding SalePricePerUnit}" Keyboard="Numeric">
+                                        <Entry.Behaviors>
+                                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
+                                        </Entry.Behaviors>
+                                    </Entry>
+                                </VerticalStackLayout>
+                            </Grid>
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" Margin="0,4,0,0" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button Grid.Column="0" Text="Save" Command="{Binding SaveCommand}" />
+                <Button Grid.Column="1" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

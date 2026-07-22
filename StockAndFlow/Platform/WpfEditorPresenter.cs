@@ -43,6 +43,8 @@ namespace StockAndFlow.Wpf.Platform
         public Task ShowRecordSaleAsync() =>
             ShowModal(() => new RecordSaleDialog(Create<RecordSaleViewModel>()));
 
+        public Task ShowEditSaleAsync(SaleTransaction sale) => Task.CompletedTask; // WPF edit-sale UI not yet implemented
+
         public Task ShowSaleDetailsAsync(SaleTransaction sale) =>
             ShowModal(() => new SaleDetailsDialog(Create<SaleDetailsViewModel>(sale)));
 

@@ -25,17 +25,21 @@
                 <Label Grid.Column="1" Text="{Binding Transaction.Profit, StringFormat='{0:C2}'}" FontAttributes="Bold" />
             </Grid>
 
-            <Label Text="Date" />
-            <DatePicker Date="{Binding SaleDate}" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Date" />
+                <Label Grid.Column="1" Text="{Binding Transaction.SaleDate, StringFormat='{0:d}'}" FontAttributes="Bold" />
+            </Grid>
 
-            <Label Text="Customer" />
-            <Label Text="{Binding Transaction.CustomerName}" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Customer" />
+                <Label Grid.Column="1" Text="{Binding Transaction.CustomerName}" FontAttributes="Bold" />
+            </Grid>
 
-            <Label Text="Items" FontAttributes="Bold" />
+            <Label Text="Items" FontAttributes="Bold" Margin="0,4,0,0" />
             <CollectionView ItemsSource="{Binding Transaction.Items}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:Sale">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Padding="0,4,0,4">
                             <Label Grid.Column="0" Text="{Binding ItemName}" />
                             <Label Grid.Column="1" Text="{Binding Quantity, StringFormat='x{0}'}" />
                             <Label Grid.Column="2" Text="{Binding Revenue, StringFormat='{0:C2}'}" />
@@ -44,9 +48,9 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                <Button Grid.Column="0" Text="Close" Command="{Binding CloseCommand}" Style="{StaticResource SecondaryButton}" />
-                <Button Grid.Column="1" Text="Save Date" Command="{Binding SaveCommand}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button Grid.Column="0" Text="Edit" Command="{Binding EditCommand}" />
+                <Button Grid.Column="1" Text="Close" Command="{Binding CloseCommand}" Style="{StaticResource SecondaryButton}" />
             </Grid>
 
         </VerticalStackLayout>
