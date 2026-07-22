@@ -81,6 +81,7 @@ namespace StockAndFlow.ViewModels
         public decimal TotalRevenue => Sales?.Sum(s => s.Revenue) ?? 0;
 
         public ICommand RecordSaleCommand { get; }
+        public ICommand EditSaleCommand { get; }
         public ICommand DeleteSaleCommand { get; }
         public ICommand ViewDetailsCommand { get; }
         public ICommand RefreshCommand { get; }
@@ -97,6 +98,7 @@ namespace StockAndFlow.ViewModels
             _editorPresenter = editorPresenter;
 
             RecordSaleCommand = new RelayCommand(async () => await RecordSaleAsync());
+            EditSaleCommand = new RelayCommand(async () => await EditSaleAsync(), () => SelectedSale != null);
             DeleteSaleCommand = new RelayCommand(async () => await DeleteSaleAsync(), () => SelectedSale != null);
             ViewDetailsCommand = new RelayCommand(async () => await ViewDetailsAsync(), () => SelectedSale != null);
             RefreshCommand = new RelayCommand(async () => await FilterSalesAsync());
@@ -163,6 +165,13 @@ namespace StockAndFlow.ViewModels
         private async Task RecordSaleAsync()
         {
             await _editorPresenter.ShowRecordSaleAsync();
+        }
+
+        private async Task EditSaleAsync()
+        {
+            if (SelectedSale == null)
+                return;
+            await _editorPresenter.ShowEditSaleAsync(SelectedSale);
         }
 
         private async Task ViewDetailsAsync()

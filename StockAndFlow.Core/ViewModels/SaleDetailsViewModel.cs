@@ -13,6 +13,7 @@ namespace StockAndFlow.ViewModels
         private readonly SalesService _salesService;
         private readonly SaleTransaction _transaction;
         private readonly IDialogService _dialogService;
+        private readonly IEditorPresenter _editorPresenter;
         private DateTime _saleDate;
 
         public event EventHandler<bool>? CloseRequested;
@@ -27,16 +28,29 @@ namespace StockAndFlow.ViewModels
 
         public ICommand SaveCommand { get; }
         public ICommand CloseCommand { get; }
+        public ICommand EditCommand { get; }
 
-        public SaleDetailsViewModel(SalesService salesService, SaleTransaction transaction, IDialogService dialogService)
+        public SaleDetailsViewModel(SalesService salesService, SaleTransaction transaction,
+            IDialogService dialogService, IEditorPresenter editorPresenter)
         {
             _salesService = salesService;
             _transaction = transaction;
             _dialogService = dialogService;
+            _editorPresenter = editorPresenter;
             _saleDate = transaction.SaleDate;
 
             SaveCommand = new RelayCommand(async () => await SaveAsync());
             CloseCommand = new RelayCommand(Close);
+            EditCommand = new RelayCommand(async () => await EditAsync());
+        }
+
+        private async Task EditAsync()
+        {
+            await _editorPresenter.ShowEditSaleAsync(_transaction);
+            // Transaction was mutated in-place; refresh bindings.
+            _saleDate = _transaction.SaleDate;
+            OnPropertyChanged(nameof(SaleDate));
+            OnPropertyChanged(nameof(Transaction));
         }
 
         private async Task SaveAsync()

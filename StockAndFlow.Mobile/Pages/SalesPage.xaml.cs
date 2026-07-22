@@ -36,6 +36,12 @@ public partial class SalesPage : ContentView, ISectionView
 		_viewModel.ViewDetailsCommand.Execute(null);
 	}
 
+	private void OnEditSwipe(object sender, EventArgs e)
+	{
+		Select(sender);
+		_viewModel.EditSaleCommand.Execute(null);
+	}
+
 	private void OnDeleteSwipe(object sender, EventArgs e)
 	{
 		Select(sender);
