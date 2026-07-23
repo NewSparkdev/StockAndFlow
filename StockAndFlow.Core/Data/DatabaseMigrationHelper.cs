@@ -59,12 +59,39 @@ namespace StockAndFlow.Data
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryAdjustments_Reason", "InventoryAdjustments", "Reason");
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryAdjustments_InventoryItemId_AdjustmentDate", "InventoryAdjustments", "InventoryItemId, AdjustmentDate");
 
+                // Create BomComponents table for the Bill of Materials feature
+                await CreateTableIfNotExistsAsync(connection, "BomComponents", @"
+                    CREATE TABLE BomComponents (
+                        Id TEXT NOT NULL PRIMARY KEY,
+                        ParentItemId TEXT NOT NULL,
+                        ComponentItemId TEXT NOT NULL,
+                        QuantityPerUnit TEXT NOT NULL
+                    )");
+                await CreateIndexIfNotExistsAsync(connection, "IX_BomComponents_ParentItemId", "BomComponents", "ParentItemId");
+                await CreateIndexIfNotExistsAsync(connection, "IX_BomComponents_ComponentItemId", "BomComponents", "ComponentItemId");
+
                 Log.Information("Database schema updates completed successfully");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error applying database schema updates");
                 throw;
+            }
+        }
+
+        private static async Task CreateTableIfNotExistsAsync(SqliteConnection connection, string tableName, string createSql)
+        {
+            var checkSql = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'";
+            using var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = checkSql;
+            var exists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
+
+            if (!exists)
+            {
+                using var createCommand = connection.CreateCommand();
+                createCommand.CommandText = createSql;
+                await createCommand.ExecuteNonQueryAsync();
+                Log.Information("Created table {Table}", tableName);
             }
         }
 

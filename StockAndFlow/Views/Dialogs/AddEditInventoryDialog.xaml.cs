@@ -14,12 +14,13 @@ namespace StockAndFlow.Views.Dialogs
         {
             DataContext = viewModel;
 
-            // Subscribe to close request
             viewModel.CloseRequested += (sender, result) =>
             {
                 DialogResult = result;
                 Close();
             };
+
+            Loaded += async (_, _) => await viewModel.InitializeAsync();
         }
     }
 }

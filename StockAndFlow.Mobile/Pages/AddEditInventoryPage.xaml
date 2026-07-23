@@ -69,6 +69,47 @@
             <Button Text="Choose Image" Command="{Binding BrowseImageCommand}" />
             <Image Source="{Binding ImagePath, Converter={StaticResource ImagePathConverter}}" IsVisible="{Binding HasImage}" HeightRequest="120" Aspect="AspectFit" />
 
+            <!-- Bill of Materials -->
+            <Frame Padding="12" BackgroundColor="#EEF2FF" BorderColor="#7986CB" CornerRadius="6" Margin="0,8,0,0">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Bill of Materials" FontAttributes="Bold" TextColor="#3949AB" />
+                    <Label Text="When this item is sold, stock is also deducted from the components below."
+                           FontSize="12" TextColor="#555" />
+
+                    <!-- Add component row -->
+                    <Grid ColumnDefinitions="*,70,Auto" ColumnSpacing="6">
+                        <Picker Grid.Column="0"
+                                Title="Select component"
+                                ItemsSource="{Binding AvailableComponents}"
+                                ItemDisplayBinding="{Binding Name}"
+                                SelectedItem="{Binding PendingComponent}" />
+                        <Entry Grid.Column="1"
+                               Text="{Binding PendingQty}"
+                               Keyboard="Numeric"
+                               Placeholder="Qty" />
+                        <Button Grid.Column="2"
+                                Text="Add"
+                                Command="{Binding AddBomComponentCommand}"
+                                WidthRequest="60" />
+                    </Grid>
+
+                    <!-- Component list -->
+                    <CollectionView ItemsSource="{Binding BomComponents}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,4" ColumnSpacing="8">
+                                    <Label Grid.Column="0" Text="{Binding Item.Name}" VerticalOptions="Center" />
+                                    <Label Grid.Column="1" Text="{Binding QuantityDisplay}" TextColor="#3949AB" FontAttributes="Bold" VerticalOptions="Center" />
+                                    <Button Grid.Column="2" Text="✕" Command="{Binding RemoveCommand}"
+                                            TextColor="#E74C3C" BackgroundColor="Transparent"
+                                            WidthRequest="36" HeightRequest="36" Padding="0" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
                 <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
                 <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />

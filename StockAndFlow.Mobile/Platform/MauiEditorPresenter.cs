@@ -40,7 +40,11 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 		PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>(item)));
 
 	public Task ShowInventoryDetailsAsync(InventoryItem item) =>
-		PushAsync(new InventoryDetailsPage(item, this));
+		PushAsync(new InventoryDetailsPage(
+			item,
+			this,
+			_services.GetRequiredService<BomService>(),
+			_services.GetRequiredService<InventoryService>()));
 
 	public Task ShowAddExpenseAsync() =>
 		PushAsync(new AddEditExpensePage(Create<AddEditExpenseViewModel>()));

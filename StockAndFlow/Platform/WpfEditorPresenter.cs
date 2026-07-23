@@ -38,7 +38,10 @@ namespace StockAndFlow.Wpf.Platform
             ShowModal(() => new AddEditInventoryDialog(Create<AddEditInventoryViewModel>(item)));
 
         public Task ShowInventoryDetailsAsync(InventoryItem item) =>
-            ShowModal(() => new InventoryDetailsDialog { DataContext = item });
+            ShowModal(() => new InventoryDetailsDialog(
+                item,
+                _services.GetRequiredService<BomService>(),
+                _services.GetRequiredService<InventoryService>()));
 
         public Task ShowRecordSaleAsync() =>
             ShowModal(() => new RecordSaleDialog(Create<RecordSaleViewModel>()));

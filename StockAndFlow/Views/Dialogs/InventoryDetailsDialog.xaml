@@ -149,6 +149,34 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Bill of Materials (populated from code-behind after load) -->
+                <Border x:Name="BomSection"
+                        Background="White"
+                        Padding="15"
+                        Margin="0,0,0,20"
+                        BorderBrush="#7986CB"
+                        BorderThickness="1"
+                        Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="Bill of Materials" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <TextBlock Text="Components consumed per unit sold:" Foreground="#555" FontSize="12" Margin="0,0,0,8"/>
+                        <ItemsControl x:Name="BomItemsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding QuantityDisplay}" Foreground="#3949AB" FontWeight="SemiBold"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
                 <!-- Metadata -->
                 <Border Background="White" Padding="15" BorderBrush="#BDC3C7" BorderThickness="1">
                     <StackPanel>

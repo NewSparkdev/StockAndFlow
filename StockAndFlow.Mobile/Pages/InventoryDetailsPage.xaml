@@ -30,6 +30,22 @@
             <Label Text="Notes" Margin="0,8,0,0" />
             <Label Text="{Binding Notes}" />
 
+            <!-- Bill of Materials (populated from code-behind on appear) -->
+            <VerticalStackLayout x:Name="BomSection" IsVisible="False" Spacing="6" Margin="0,8,0,0">
+                <Label Text="Bill of Materials" FontAttributes="Bold" FontSize="16" />
+                <Label Text="Components consumed per unit sold:" TextColor="Gray" FontSize="12" />
+                <CollectionView x:Name="BomList">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,4">
+                                <Label Grid.Column="0" Text="{Binding Name}" VerticalOptions="Center" />
+                                <Label Grid.Column="1" Text="{Binding QuantityDisplay}" TextColor="#3949AB" FontAttributes="Bold" VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
                 <Button Grid.Column="0" Text="Edit" Clicked="OnEditClicked" />
                 <Button Grid.Column="1" Text="Close" Clicked="OnCloseClicked" Style="{StaticResource SecondaryButton}" />
