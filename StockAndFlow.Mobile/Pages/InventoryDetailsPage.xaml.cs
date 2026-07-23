@@ -65,5 +65,5 @@ public partial class InventoryDetailsPage : ContentPage
 		_bomLoaded = false;
 	}
 
-	private sealed record BomDisplayRow(string Name, string QuantityDisplay);
+	internal sealed record BomDisplayRow(string Name, string QuantityDisplay);
 }

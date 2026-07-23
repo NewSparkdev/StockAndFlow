@@ -52,6 +52,6 @@ namespace StockAndFlow.Views.Dialogs
             Close();
         }
 
-        private sealed record BomDisplayRow(string Name, string QuantityDisplay);
+        internal sealed record BomDisplayRow(string Name, string QuantityDisplay);
     }
 }

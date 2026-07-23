@@ -68,6 +68,7 @@ namespace StockAndFlow.Data
             { typeof(InventoryAdjustment), "InventoryAdjustments" },
             { typeof(BusinessSettings), "BusinessSettings" },
             { typeof(Customer), "Customers" },
+            { typeof(BomComponent), "BomComponents" },
         };
 
         private static readonly Dictionary<Type, PropertyInfo[]> _propertyCache = new();

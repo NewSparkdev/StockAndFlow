@@ -229,25 +229,34 @@ namespace StockAndFlow.ViewModels
 
             var all = await _inventoryService.GetAllItemsAsync();
 
-            AvailableComponents.Clear();
-            foreach (var item in all.Where(i => i.Id != _originalItem.Id).OrderBy(i => i.Name))
-                AvailableComponents.Add(item);
+            var filtered = all.Where(i => i.Id != _originalItem.Id).OrderBy(i => i.Name).ToList();
+            UiDispatcher.Run(() =>
+            {
+                AvailableComponents.Clear();
+                foreach (var item in filtered)
+                    AvailableComponents.Add(item);
+            });
 
             if (_isEditMode)
             {
                 var existing = await _bomService.GetComponentsForItemAsync(_originalItem.Id);
-                foreach (var comp in existing)
-                {
-                    var compItem = all.FirstOrDefault(i => i.Id == comp.ComponentItemId);
-                    if (compItem != null)
+                var entries = existing
+                    .Select(comp =>
                     {
-                        var entry = new BomComponentEntry(compItem, comp.QuantityPerUnit, RemoveBomComponent)
+                        var compItem = all.FirstOrDefault(i => i.Id == comp.ComponentItemId);
+                        if (compItem == null) return null;
+                        return new BomComponentEntry(compItem, comp.QuantityPerUnit, RemoveBomComponent)
                         {
                             ExistingId = comp.Id
                         };
-                        BomComponents.Add(entry);
-                    }
-                }
+                    })
+                    .Where(e => e != null)
+                    .ToList();
+                UiDispatcher.Run(() =>
+                {
+                    foreach (var entry in entries)
+                        BomComponents.Add(entry!);
+                });
             }
         }
 
