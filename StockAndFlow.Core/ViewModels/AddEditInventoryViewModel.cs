@@ -1,4 +1,6 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using StockAndFlow.Commands;
@@ -11,10 +13,12 @@ namespace StockAndFlow.ViewModels
     public class AddEditInventoryViewModel : ViewModelBase
     {
         private readonly InventoryService _inventoryService;
+        private readonly BomService _bomService;
         private readonly IFilePickerService _filePicker;
         private readonly IDialogService _dialogService;
         private readonly InventoryItem _originalItem;
         private readonly bool _isEditMode;
+        private bool _initialized;
 
         private string _name = string.Empty;
         private string? _sku;
@@ -27,9 +31,37 @@ namespace StockAndFlow.ViewModels
         private string? _notes;
         private string _imagePath = string.Empty;
 
+        private InventoryItem? _pendingComponent;
+        private decimal _pendingQty = 1m;
+
         public event EventHandler<bool>? CloseRequested;
 
         public string DialogTitle => _isEditMode ? "Edit Inventory Item" : "Add New Inventory Item";
+
+        public ObservableCollection<BomComponentEntry> BomComponents { get; } = new();
+        public ObservableCollection<InventoryItem> AvailableComponents { get; } = new();
+
+        public InventoryItem? PendingComponent
+        {
+            get => _pendingComponent;
+            set
+            {
+                if (SetProperty(ref _pendingComponent, value))
+                    OnPropertyChanged(nameof(CanAddComponent));
+            }
+        }
+
+        public decimal PendingQty
+        {
+            get => _pendingQty;
+            set
+            {
+                if (SetProperty(ref _pendingQty, value))
+                    OnPropertyChanged(nameof(CanAddComponent));
+            }
+        }
+
+        public bool CanAddComponent => PendingComponent != null && PendingQty > 0;
 
         public string Name
         {
@@ -37,9 +69,7 @@ namespace StockAndFlow.ViewModels
             set
             {
                 if (SetProperty(ref _name, value))
-                {
                     OnPropertyChanged(nameof(IsValid));
-                }
             }
         }
 
@@ -89,9 +119,7 @@ namespace StockAndFlow.ViewModels
             set
             {
                 if (SetProperty(ref _quantityOnHand, value))
-                {
                     OnPropertyChanged(nameof(IsValid));
-                }
             }
         }
 
@@ -119,9 +147,7 @@ namespace StockAndFlow.ViewModels
             set
             {
                 if (SetProperty(ref _imagePath, value ?? string.Empty))
-                {
                     OnPropertyChanged(nameof(HasImage));
-                }
             }
         }
 
@@ -142,11 +168,17 @@ namespace StockAndFlow.ViewModels
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand BrowseImageCommand { get; }
+        public ICommand AddBomComponentCommand { get; }
 
-        // Constructor for adding new item
-        public AddEditInventoryViewModel(InventoryService inventoryService, IFilePickerService filePicker, IDialogService dialogService)
+        // Constructor for adding a new item
+        public AddEditInventoryViewModel(
+            InventoryService inventoryService,
+            BomService bomService,
+            IFilePickerService filePicker,
+            IDialogService dialogService)
         {
             _inventoryService = inventoryService;
+            _bomService = bomService;
             _filePicker = filePicker;
             _dialogService = dialogService;
             _originalItem = new InventoryItem();
@@ -155,18 +187,24 @@ namespace StockAndFlow.ViewModels
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => IsValid);
             CancelCommand = new RelayCommand(Cancel);
             BrowseImageCommand = new RelayCommand(async () => await BrowseImageAsync());
+            AddBomComponentCommand = new RelayCommand(AddBomComponent, () => CanAddComponent);
         }
 
-        // Constructor for editing existing item
-        public AddEditInventoryViewModel(InventoryService inventoryService, InventoryItem item, IFilePickerService filePicker, IDialogService dialogService)
+        // Constructor for editing an existing item
+        public AddEditInventoryViewModel(
+            InventoryService inventoryService,
+            BomService bomService,
+            InventoryItem item,
+            IFilePickerService filePicker,
+            IDialogService dialogService)
         {
             _inventoryService = inventoryService;
+            _bomService = bomService;
             _filePicker = filePicker;
             _dialogService = dialogService;
             _originalItem = item;
             _isEditMode = true;
 
-            // Load existing values
             Name = item.Name;
             Sku = item.Sku;
             Category = item.Category;
@@ -181,13 +219,57 @@ namespace StockAndFlow.ViewModels
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => IsValid);
             CancelCommand = new RelayCommand(Cancel);
             BrowseImageCommand = new RelayCommand(async () => await BrowseImageAsync());
+            AddBomComponentCommand = new RelayCommand(AddBomComponent, () => CanAddComponent);
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (_initialized) return;
+            _initialized = true;
+
+            var all = await _inventoryService.GetAllItemsAsync();
+
+            AvailableComponents.Clear();
+            foreach (var item in all.Where(i => i.Id != _originalItem.Id).OrderBy(i => i.Name))
+                AvailableComponents.Add(item);
+
+            if (_isEditMode)
+            {
+                var existing = await _bomService.GetComponentsForItemAsync(_originalItem.Id);
+                foreach (var comp in existing)
+                {
+                    var compItem = all.FirstOrDefault(i => i.Id == comp.ComponentItemId);
+                    if (compItem != null)
+                    {
+                        var entry = new BomComponentEntry(compItem, comp.QuantityPerUnit, RemoveBomComponent)
+                        {
+                            ExistingId = comp.Id
+                        };
+                        BomComponents.Add(entry);
+                    }
+                }
+            }
+        }
+
+        private void AddBomComponent()
+        {
+            if (PendingComponent == null || PendingQty <= 0) return;
+            if (BomComponents.Any(e => e.Item.Id == PendingComponent.Id)) return;
+
+            BomComponents.Add(new BomComponentEntry(PendingComponent, PendingQty, RemoveBomComponent));
+            PendingComponent = null;
+            PendingQty = 1m;
+        }
+
+        private void RemoveBomComponent(BomComponentEntry entry)
+        {
+            BomComponents.Remove(entry);
         }
 
         private async System.Threading.Tasks.Task SaveAsync()
         {
             try
             {
-                // Update the item with current values
                 _originalItem.Name = Name;
                 _originalItem.Sku = Sku;
                 _originalItem.Category = Category;
@@ -199,10 +281,17 @@ namespace StockAndFlow.ViewModels
                 _originalItem.Notes = Notes;
                 _originalItem.ImagePath = ImagePath;
 
-                // Save to database
                 await _inventoryService.CreateOrUpdateItemAsync(_originalItem);
 
-                // Close dialog with success
+                var components = BomComponents.Select(e => new BomComponent
+                {
+                    Id = e.ExistingId ?? Guid.NewGuid(),
+                    ParentItemId = _originalItem.Id,
+                    ComponentItemId = e.Item.Id,
+                    QuantityPerUnit = e.QuantityPerUnit
+                });
+                await _bomService.SaveComponentsForItemAsync(_originalItem.Id, components);
+
                 CloseRequested?.Invoke(this, true);
             }
             catch (Exception ex)
@@ -221,9 +310,24 @@ namespace StockAndFlow.ViewModels
         {
             var stored = await _filePicker.PickAndStoreImageAsync("Select Product Image");
             if (stored != null)
-            {
                 ImagePath = stored;
-            }
+        }
+    }
+
+    public sealed class BomComponentEntry
+    {
+        public InventoryItem Item { get; }
+        public decimal QuantityPerUnit { get; }
+        public Guid? ExistingId { get; set; }
+        public ICommand RemoveCommand { get; }
+
+        public string QuantityDisplay => $"× {QuantityPerUnit:G}";
+
+        public BomComponentEntry(InventoryItem item, decimal quantityPerUnit, Action<BomComponentEntry> onRemove)
+        {
+            Item = item;
+            QuantityPerUnit = quantityPerUnit;
+            RemoveCommand = new RelayCommand(() => onRemove(this));
         }
     }
 }

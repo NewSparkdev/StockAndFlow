@@ -15,6 +15,12 @@ public partial class AddEditInventoryPage : ContentPage
 		ScanSkuButton.Clicked += OnScanSkuClicked;
 	}
 
+	protected override async void OnAppearing()
+	{
+		base.OnAppearing();
+		await _viewModel.InitializeAsync();
+	}
+
 	private async void OnScanSkuClicked(object? sender, EventArgs e)
 	{
 		var scanPage = new BarcodeScanPage();

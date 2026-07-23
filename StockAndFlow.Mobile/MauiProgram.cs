@@ -52,6 +52,7 @@ public static class MauiProgram
 
 		// Business services
 		services.AddSingleton<InventoryService>();
+		services.AddSingleton<BomService>();
 		services.AddSingleton<SalesService>();
 		services.AddSingleton<ExpenseService>();
 		services.AddSingleton<CalculationService>();

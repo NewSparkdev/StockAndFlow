@@ -15,6 +15,7 @@ namespace StockAndFlow.Data
         public DbSet<InventoryAdjustment> InventoryAdjustments { get; set; } = null!;
         public DbSet<BusinessSettings> BusinessSettings { get; set; } = null!;
         public DbSet<Customer> Customers { get; set; } = null!;
+        public DbSet<BomComponent> BomComponents { get; set; } = null!;
 
         public StockAndFlowDbContext(string databasePath)
         {
@@ -240,6 +241,33 @@ namespace StockAndFlow.Data
                 entity.Ignore(e => e.DisplayName);
                 entity.Ignore(e => e.HasEmail);
                 entity.Ignore(e => e.HasPhone);
+            });
+
+            // Configure BomComponent
+            modelBuilder.Entity<BomComponent>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ParentItemId).IsRequired();
+                entity.Property(e => e.ComponentItemId).IsRequired();
+                entity.Property(e => e.QuantityPerUnit).HasColumnType("decimal(18,4)");
+
+                entity.HasOne<InventoryItem>()
+                    .WithMany()
+                    .HasForeignKey(e => e.ParentItemId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                entity.HasOne<InventoryItem>()
+                    .WithMany()
+                    .HasForeignKey(e => e.ComponentItemId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                entity.HasIndex(e => e.ParentItemId)
+                    .HasDatabaseName("IX_BomComponents_ParentItemId");
+
+                entity.HasIndex(e => e.ComponentItemId)
+                    .HasDatabaseName("IX_BomComponents_ComponentItemId");
             });
         }
 

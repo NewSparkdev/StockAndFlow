@@ -109,6 +109,7 @@ namespace StockAndFlow
 
             // Business Services
             services.AddSingleton<InventoryService>();
+            services.AddSingleton<BomService>();
             services.AddSingleton<SalesService>();
             services.AddSingleton<ExpenseService>();
             services.AddSingleton<CalculationService>();

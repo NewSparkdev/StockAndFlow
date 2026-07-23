@@ -11,13 +11,15 @@ namespace StockAndFlow.Services
     {
         private readonly IDataService _dataService;
         private readonly InventoryService _inventoryService;
+        private readonly BomService _bomService;
 
         public event EventHandler? SaleRecorded;
 
-        public SalesService(IDataService dataService, InventoryService inventoryService)
+        public SalesService(IDataService dataService, InventoryService inventoryService, BomService bomService)
         {
             _dataService = dataService;
             _inventoryService = inventoryService;
+            _bomService = bomService;
         }
 
         public async Task<List<Sale>> GetAllSalesAsync()
@@ -103,8 +105,17 @@ namespace StockAndFlow.Services
             {
                 await _dataService.SaveAsync(sale);
 
-                // Adjust inventory
+                // Adjust inventory for the finished good itself
                 await _inventoryService.AdjustQuantityAsync(inventoryItemId, -quantity);
+
+                // Cascade deductions to BOM components (e.g. selling a candle deducts wax, wick, jar)
+                var components = await _bomService.GetComponentsForItemAsync(inventoryItemId);
+                foreach (var comp in components)
+                {
+                    var deduction = (int)Math.Round(comp.QuantityPerUnit * quantity);
+                    if (deduction != 0)
+                        await _inventoryService.AdjustQuantityAsync(comp.ComponentItemId, -deduction);
+                }
 
                 await transaction.CommitAsync();
 
@@ -162,9 +173,16 @@ namespace StockAndFlow.Services
             {
                 if (restoreInventory)
                 {
-                    await _inventoryService.AdjustQuantityAsync(
-                        sale.InventoryItemId,
-                        sale.Quantity);
+                    await _inventoryService.AdjustQuantityAsync(sale.InventoryItemId, sale.Quantity);
+
+                    // Reverse BOM component deductions
+                    var components = await _bomService.GetComponentsForItemAsync(sale.InventoryItemId);
+                    foreach (var comp in components)
+                    {
+                        var restore = (int)Math.Round(comp.QuantityPerUnit * sale.Quantity);
+                        if (restore != 0)
+                            await _inventoryService.AdjustQuantityAsync(comp.ComponentItemId, restore);
+                    }
                 }
 
                 await _dataService.DeleteAsync<Sale>(saleId);
