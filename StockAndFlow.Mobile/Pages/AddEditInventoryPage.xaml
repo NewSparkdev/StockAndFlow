@@ -73,17 +73,17 @@
             <Frame Padding="12" BackgroundColor="#EEF2FF" BorderColor="#7986CB" CornerRadius="6" Margin="0,8,0,0">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Bill of Materials" FontAttributes="Bold" TextColor="#3949AB" FontSize="15" />
-                    <Label Text="Ingredients consumed per unit when this item is sold."
+                    <Label Text="Inventory items deducted from stock when one unit of this item is sold."
                            FontSize="12" TextColor="#5C6BC0" />
 
-                    <!-- Step 1: pick ingredient -->
-                    <Label Text="Ingredient" FontSize="11" FontAttributes="Bold" TextColor="#3949AB" />
+                    <!-- Step 1: pick inventory item -->
+                    <Label Text="Inventory item" FontSize="11" FontAttributes="Bold" TextColor="#3949AB" />
                     <Picker x:Name="ComponentPicker"
-                            Title="— tap to choose ingredient —"
+                            Title="— tap to choose —"
                             ItemsSource="{Binding AvailableComponents}"
                             ItemDisplayBinding="{Binding Name}"
                             SelectedIndexChanged="OnComponentPickerChanged"
-                            BackgroundColor="White" />
+                            TextColor="#212121" />
 
                     <!-- Step 2: set quantity + add -->
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -92,7 +92,7 @@
                             <Entry x:Name="PendingQtyEntry"
                                    Text="{Binding PendingQty}"
                                    Keyboard="Numeric"
-                                   BackgroundColor="White">
+                                   TextColor="#212121">
                                 <Entry.Behaviors>
                                     <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
                                 </Entry.Behaviors>

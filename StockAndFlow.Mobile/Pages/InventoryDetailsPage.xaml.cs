@@ -37,18 +37,37 @@ public partial class InventoryDetailsPage : ContentPage
 		if (components.Count == 0) return;
 
 		var all = await _inventoryService.GetAllItemsAsync();
-		var rows = components
-			.Select(c => new BomDisplayRow(
-				all.FirstOrDefault(i => i.Id == c.ComponentItemId)?.Name ?? "Unknown",
-				$"× {c.QuantityPerUnit:G}"))
-			.Where(r => r.Name != "Unknown")
-			.ToList();
 
-		if (rows.Count > 0)
+		bool isDark = Application.Current?.PlatformAppTheme == AppTheme.Dark;
+		var qtyColor = Color.FromArgb(isDark ? "#9FA8DA" : "#3949AB");
+
+		foreach (var comp in components)
 		{
-			BomList.ItemsSource = rows;
-			BomSection.IsVisible = true;
+			var name = all.FirstOrDefault(i => i.Id == comp.ComponentItemId)?.Name;
+			if (name == null) continue;
+
+			var row = new Grid
+			{
+				ColumnDefinitions =
+				{
+					new ColumnDefinition(GridLength.Star),
+					new ColumnDefinition(GridLength.Auto)
+				},
+				Padding = new Thickness(4, 6)
+			};
+			row.Add(new Label { Text = name, VerticalOptions = LayoutOptions.Center }, 0, 0);
+			row.Add(new Label
+			{
+				Text = $"× {comp.QuantityPerUnit:G}",
+				TextColor = qtyColor,
+				FontAttributes = FontAttributes.Bold,
+				VerticalOptions = LayoutOptions.Center
+			}, 1, 0);
+			BomList.Add(row);
 		}
+
+		if (BomList.Count > 0)
+			BomSection.IsVisible = true;
 	}
 
 	private async void OnCloseClicked(object? sender, EventArgs e)
@@ -65,5 +84,4 @@ public partial class InventoryDetailsPage : ContentPage
 		_bomLoaded = false;
 	}
 
-	internal sealed record BomDisplayRow(string Name, string QuantityDisplay);
 }
