@@ -11,7 +11,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.detect.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: detect
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          # Build if any source or resource file changed (excludes workflow yml and csproj-only bumps)
+          CHANGED=$(git diff --name-only "$PREV_TAG" HEAD | \
+            grep -cE "\.(cs|xaml|xml|png|svg|jpg|ttf|json|db)$" || true)
+          if [ "$CHANGED" -gt "0" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Source files changed since $PREV_TAG: $CHANGED — building iOS"
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "No source changes since $PREV_TAG (CI/version-only tag) — skipping iOS build"
+          fi
+
   build:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
 
     steps:
