@@ -38,36 +38,43 @@ public partial class InventoryDetailsPage : ContentPage
 
 		var all = await _inventoryService.GetAllItemsAsync();
 
+		// Build rows on background thread, then marshal all UI mutations to main thread.
 		bool isDark = Application.Current?.PlatformAppTheme == AppTheme.Dark;
 		var qtyColor = Color.FromArgb(isDark ? "#9FA8DA" : "#3949AB");
 
-		foreach (var comp in components)
+		var rows = components
+			.Select(c => (name: all.FirstOrDefault(i => i.Id == c.ComponentItemId)?.Name,
+			              qty: $"× {c.QuantityPerUnit:G}"))
+			.Where(r => r.name != null)
+			.ToList();
+
+		if (rows.Count == 0) return;
+
+		MainThread.BeginInvokeOnMainThread(() =>
 		{
-			var name = all.FirstOrDefault(i => i.Id == comp.ComponentItemId)?.Name;
-			if (name == null) continue;
-
-			var row = new Grid
+			foreach (var (name, qty) in rows)
 			{
-				ColumnDefinitions =
+				var row = new Grid
 				{
-					new ColumnDefinition(GridLength.Star),
-					new ColumnDefinition(GridLength.Auto)
-				},
-				Padding = new Thickness(4, 6)
-			};
-			row.Add(new Label { Text = name, VerticalOptions = LayoutOptions.Center }, 0, 0);
-			row.Add(new Label
-			{
-				Text = $"× {comp.QuantityPerUnit:G}",
-				TextColor = qtyColor,
-				FontAttributes = FontAttributes.Bold,
-				VerticalOptions = LayoutOptions.Center
-			}, 1, 0);
-			BomList.Add(row);
-		}
-
-		if (BomList.Count > 0)
+					ColumnDefinitions =
+					{
+						new ColumnDefinition(GridLength.Star),
+						new ColumnDefinition(GridLength.Auto)
+					},
+					Padding = new Thickness(4, 6)
+				};
+				row.Add(new Label { Text = name, VerticalOptions = LayoutOptions.Center }, 0, 0);
+				row.Add(new Label
+				{
+					Text = qty,
+					TextColor = qtyColor,
+					FontAttributes = FontAttributes.Bold,
+					VerticalOptions = LayoutOptions.Center
+				}, 1, 0);
+				BomList.Add(row);
+			}
 			BomSection.IsVisible = true;
+		});
 	}
 
 	private async void OnCloseClicked(object? sender, EventArgs e)
