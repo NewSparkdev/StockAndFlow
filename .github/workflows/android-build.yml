@@ -58,6 +58,18 @@ jobs:
           echo "path=$AAB" >> $GITHUB_OUTPUT
           echo "Found AAB: $AAB"
 
+      - name: Sign AAB
+        run: |
+          jarsigner \
+            -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore $RUNNER_TEMP/stockandflow-android.jks \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            ${{ steps.find_aab.outputs.path }} \
+            stockandflow
+
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
