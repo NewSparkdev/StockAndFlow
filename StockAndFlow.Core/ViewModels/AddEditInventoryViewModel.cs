@@ -260,7 +260,7 @@ namespace StockAndFlow.ViewModels
             }
         }
 
-        private void AddBomComponent()
+        public void AddBomComponent()
         {
             if (PendingComponent == null || PendingQty <= 0) return;
             if (BomComponents.Any(e => e.Item.Id == PendingComponent.Id)) return;

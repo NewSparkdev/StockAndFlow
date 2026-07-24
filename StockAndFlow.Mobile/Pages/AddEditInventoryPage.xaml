@@ -71,42 +71,57 @@
 
             <!-- Bill of Materials -->
             <Frame Padding="12" BackgroundColor="#EEF2FF" BorderColor="#7986CB" CornerRadius="6" Margin="0,8,0,0">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Bill of Materials" FontAttributes="Bold" TextColor="#3949AB" />
-                    <Label Text="When this item is sold, stock is also deducted from the components below."
-                           FontSize="12" TextColor="#555" />
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Bill of Materials" FontAttributes="Bold" TextColor="#3949AB" FontSize="15" />
+                    <Label Text="Ingredients consumed per unit when this item is sold."
+                           FontSize="12" TextColor="#5C6BC0" />
 
-                    <!-- Add component row -->
-                    <Grid ColumnDefinitions="*,70,Auto" ColumnSpacing="6">
-                        <Picker Grid.Column="0"
-                                Title="Select component"
-                                ItemsSource="{Binding AvailableComponents}"
-                                ItemDisplayBinding="{Binding Name}"
-                                SelectedItem="{Binding PendingComponent}" />
-                        <Entry Grid.Column="1"
-                               Text="{Binding PendingQty}"
-                               Keyboard="Numeric"
-                               Placeholder="Qty" />
-                        <Button Grid.Column="2"
-                                Text="Add"
-                                Command="{Binding AddBomComponentCommand}"
-                                WidthRequest="60" />
+                    <!-- Step 1: pick ingredient -->
+                    <Label Text="Ingredient" FontSize="11" FontAttributes="Bold" TextColor="#3949AB" />
+                    <Picker x:Name="ComponentPicker"
+                            Title="— tap to choose ingredient —"
+                            ItemsSource="{Binding AvailableComponents}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedIndexChanged="OnComponentPickerChanged"
+                            BackgroundColor="White" />
+
+                    <!-- Step 2: set quantity + add -->
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Text="Quantity per unit sold" FontSize="11" FontAttributes="Bold" TextColor="#3949AB" />
+                            <Entry x:Name="PendingQtyEntry"
+                                   Text="{Binding PendingQty}"
+                                   Keyboard="Numeric"
+                                   BackgroundColor="White">
+                                <Entry.Behaviors>
+                                    <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
+                                </Entry.Behaviors>
+                            </Entry>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1"
+                                Text="＋ Add"
+                                Clicked="OnAddBomComponentClicked"
+                                VerticalOptions="End"
+                                BackgroundColor="#3949AB"
+                                TextColor="White"
+                                CornerRadius="6"
+                                Padding="12,10" />
                     </Grid>
 
-                    <!-- Component list -->
-                    <CollectionView ItemsSource="{Binding BomComponents}">
-                        <CollectionView.ItemTemplate>
+                    <!-- Added ingredients — BindableLayout sizes to content; CollectionView must not nest in ScrollView -->
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding BomComponents}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,4" ColumnSpacing="8">
-                                    <Label Grid.Column="0" Text="{Binding Item.Name}" VerticalOptions="Center" />
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="4,6" ColumnSpacing="8">
+                                    <Label Grid.Column="0" Text="{Binding Item.Name}" TextColor="#212121" VerticalOptions="Center" />
                                     <Label Grid.Column="1" Text="{Binding QuantityDisplay}" TextColor="#3949AB" FontAttributes="Bold" VerticalOptions="Center" />
                                     <Button Grid.Column="2" Text="✕" Command="{Binding RemoveCommand}"
                                             TextColor="#E74C3C" BackgroundColor="Transparent"
                                             WidthRequest="36" HeightRequest="36" Padding="0" />
                                 </Grid>
                             </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Frame>
 

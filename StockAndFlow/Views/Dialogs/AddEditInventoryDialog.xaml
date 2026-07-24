@@ -141,51 +141,54 @@
                         BorderThickness="1"
                         CornerRadius="4">
                     <StackPanel>
-                        <TextBlock FontWeight="Bold" Foreground="#3949AB" Margin="0,0,0,4">Bill of Materials</TextBlock>
-                        <TextBlock TextWrapping="Wrap" Foreground="#555" FontSize="11" Margin="0,0,0,10">
-                            When this item is sold, stock is also deducted from the components listed below.
+                        <TextBlock FontWeight="Bold" Foreground="#3949AB" FontSize="13" Margin="0,0,0,4">Bill of Materials</TextBlock>
+                        <TextBlock TextWrapping="Wrap" Foreground="#5C6BC0" FontSize="11" Margin="0,0,0,10">
+                            Ingredients consumed per unit sold. Choose an ingredient, set the quantity, then click Add.
                         </TextBlock>
 
-                        <!-- Add row -->
-                        <Grid Margin="0,0,0,8">
+                        <!-- Ingredient selector -->
+                        <TextBlock Text="Ingredient" FontWeight="SemiBold" Foreground="#3949AB" FontSize="11" Margin="0,0,0,3"/>
+                        <ComboBox ItemsSource="{Binding AvailableComponents}"
+                                  SelectedItem="{Binding PendingComponent}"
+                                  DisplayMemberPath="Name"
+                                  Margin="0,0,0,8"
+                                  Padding="6,4"/>
+
+                        <!-- Quantity + Add -->
+                        <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <ComboBox Grid.Column="0"
-                                      ItemsSource="{Binding AvailableComponents}"
-                                      SelectedItem="{Binding PendingComponent}"
-                                      DisplayMemberPath="Name"
-                                      Margin="0,0,5,0"
-                                      Padding="6,4"/>
-                            <TextBox Grid.Column="1"
-                                     Text="{Binding PendingQty, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Qty per unit sold"
-                                     Margin="0,0,5,0"/>
-                            <Button Grid.Column="2"
-                                    Content="Add"
+                            <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                <TextBlock Text="Qty per unit sold" FontWeight="SemiBold" Foreground="#3949AB" FontSize="11" Margin="0,0,0,3"/>
+                                <TextBox Text="{Binding PendingQty, UpdateSourceTrigger=PropertyChanged}" Margin="0"/>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Content="+ Add"
                                     Command="{Binding AddBomComponentCommand}"
-                                    Padding="6,4"/>
+                                    VerticalAlignment="Bottom"
+                                    Padding="6,8"/>
                         </Grid>
 
                         <!-- Component list -->
                         <ItemsControl ItemsSource="{Binding BomComponents}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,2">
+                                    <Grid Margin="0,3">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="60"/>
                                             <ColumnDefinition Width="24"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Item.Name}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="0" Text="{Binding Item.Name}" Foreground="#212121" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1"
                                                    Text="{Binding QuantityDisplay}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Right"
                                                    Margin="0,0,6,0"
-                                                   Foreground="#555"/>
+                                                   Foreground="#3949AB"
+                                                   FontWeight="SemiBold"/>
                                         <Button Grid.Column="2"
                                                 Content="✕"
                                                 Command="{Binding RemoveCommand}"
