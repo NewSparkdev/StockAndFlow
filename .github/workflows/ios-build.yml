@@ -21,6 +21,11 @@ jobs:
           fetch-depth: 0
       - id: detect
         run: |
+          # Always build on manual dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           if [ -z "$PREV_TAG" ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
