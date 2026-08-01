@@ -77,7 +77,7 @@
                     <DataTemplate x:DataType="models:InventoryItem">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="{Binding Name}" />
-                            <Label Grid.Column="1" Text="{Binding QuantityOnHand, StringFormat='Qty: {0}'}" TextColor="{Binding StockStatusColor}" FontAttributes="Bold" />
+                            <Label Grid.Column="1" Text="{Binding QuantityDisplay, StringFormat='In stock: {0}'}" TextColor="{Binding StockStatusColor}" FontAttributes="Bold" />
                         </Grid>
                     </DataTemplate>
                 </BindableLayout.ItemTemplate>

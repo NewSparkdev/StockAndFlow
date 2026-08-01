@@ -19,7 +19,7 @@ namespace StockAndFlow.Models
         public Guid InventoryItemId { get; set; }
         public string InventoryItemName { get; set; } = string.Empty;
         public AdjustmentReason Reason { get; set; }
-        public int QuantityChange { get; set; } // Negative for reductions, positive for additions
+        public decimal QuantityChange { get; set; } // Negative for reductions, positive for additions
         public decimal CostPerUnit { get; set; }
         public decimal SalePricePerUnit { get; set; }
         public string? Notes { get; set; }
@@ -56,8 +56,8 @@ namespace StockAndFlow.Models
             get
             {
                 if (QuantityChange > 0)
-                    return $"+{QuantityChange}";
-                return QuantityChange.ToString();
+                    return $"+{QuantityChange:0.###}";
+                return QuantityChange.ToString("0.###");
             }
         }
 

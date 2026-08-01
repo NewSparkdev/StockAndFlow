@@ -93,7 +93,7 @@ public class LoadTests : IDisposable
         var items = await TestDataGenerator.GenerateInventoryItemsAsync(_dataService, count: 10);
         await TestDataGenerator.GenerateSalesAsync(_dataService, items, count: 10000, daysBack: 365);
 
-        var salesService = new SalesService(_dataService, new InventoryService(_dataService));
+        var salesService = new SalesService(_dataService, new InventoryService(_dataService), new BomService(_dataService));
 
         var startDate = DateTime.Now.AddDays(-30);
         var endDate = DateTime.Now;
@@ -122,7 +122,7 @@ public class LoadTests : IDisposable
         await TestDataGenerator.GenerateExpensesAsync(_dataService, count: 500);
 
         var inventoryService = new InventoryService(_dataService);
-        var salesService = new SalesService(_dataService, inventoryService);
+        var salesService = new SalesService(_dataService, inventoryService, new BomService(_dataService));
         var expenseService = new ExpenseService(_dataService);
         var adjustmentService = new InventoryAdjustmentService(_dataService, inventoryService);
 
@@ -162,7 +162,7 @@ public class LoadTests : IDisposable
         var items = await TestDataGenerator.GenerateInventoryItemsAsync(_dataService, count: 10);
 
         var inventoryService = new InventoryService(_dataService);
-        var salesService = new SalesService(_dataService, inventoryService);
+        var salesService = new SalesService(_dataService, inventoryService, new BomService(_dataService));
         var expenseService = new ExpenseService(_dataService);
         var adjustmentService = new InventoryAdjustmentService(_dataService, inventoryService);
 
@@ -217,7 +217,7 @@ public class LoadTests : IDisposable
 
         // Test various queries
         var inventoryService = new InventoryService(_dataService);
-        var salesService = new SalesService(_dataService, inventoryService);
+        var salesService = new SalesService(_dataService, inventoryService, new BomService(_dataService));
 
         stopwatch.Restart();
         var allItems = await inventoryService.GetAllItemsAsync();

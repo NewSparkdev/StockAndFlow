@@ -7,14 +7,22 @@ namespace StockAndFlow.Models
     public class CartItem : INotifyPropertyChanged
     {
         private bool _isSelected;
-        private int _quantity = 1;
+        private decimal _quantity = 1;
         private decimal _salePricePerUnit;
 
         public Guid InventoryItemId { get; set; }
         public string ItemName { get; set; } = string.Empty;
         public string? Sku { get; set; }
         public decimal CostPerUnit { get; set; }
-        public int AvailableQuantity { get; set; }
+        public decimal AvailableQuantity { get; set; }
+
+        /// <summary>How the item is measured ("each", "oz", "lb", ...). Used for display only.</summary>
+        public string UnitOfMeasure { get; set; } = "each";
+        public bool IsMeasured => !string.IsNullOrEmpty(UnitOfMeasure) &&
+            !string.Equals(UnitOfMeasure, "each", StringComparison.OrdinalIgnoreCase);
+        public string AvailableDisplay => IsMeasured
+            ? $"{AvailableQuantity:0.###} {UnitOfMeasure}"
+            : AvailableQuantity.ToString("0.###");
 
         public bool IsSelected
         {
@@ -32,7 +40,7 @@ namespace StockAndFlow.Models
             }
         }
 
-        public int Quantity
+        public decimal Quantity
         {
             get => _quantity;
             set

@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # The test project targets net10.0-windows (it references the WPF project)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Building only the test project pulls in Core + WPF and skips the MAUI
+      # project entirely, so no mobile workloads are needed on the runner.
+      - name: Run unit tests
+        run: >
+          dotnet test StockAndFlow.Tests/StockAndFlow.Tests.csproj
+          -c Release
+          --filter "FullyQualifiedName!~Performance"
+          --logger "console;verbosity=normal"

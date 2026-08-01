@@ -24,10 +24,16 @@ namespace StockAndFlow.Models
         [Range(0, double.MaxValue, ErrorMessage = "Sale price must be 0 or greater")]
         public decimal SalePrice { get; set; }
 
-        public int QuantityOnHand { get; set; }
+        public decimal QuantityOnHand { get; set; }
 
-        [Range(0, int.MaxValue, ErrorMessage = "Minimum stock level must be 0 or greater")]
-        public int MinimumStockLevel { get; set; } = 0;
+        [Range(0, double.MaxValue, ErrorMessage = "Minimum stock level must be 0 or greater")]
+        public decimal MinimumStockLevel { get; set; } = 0;
+
+        /// <summary>
+        /// How the item is measured: "each" (counted, the default) or a weight/volume
+        /// unit such as "oz", "lb", "g", "kg", "fl oz", "ml", "L".
+        /// </summary>
+        public string UnitOfMeasure { get; set; } = "each";
         public string? Supplier { get; set; }
         public string? Notes { get; set; }
         public string ImagePath { get; set; } = string.Empty;
@@ -52,6 +58,23 @@ namespace StockAndFlow.Models
             : 0;
 
         // UI Helper properties
+        public bool IsMeasured => !string.IsNullOrEmpty(UnitOfMeasure) &&
+            !string.Equals(UnitOfMeasure, "each", StringComparison.OrdinalIgnoreCase);
+        public string QuantityDisplay => IsMeasured
+            ? $"{QuantityOnHand:0.###} {UnitOfMeasure}"
+            : QuantityOnHand.ToString("0.###");
+        public string MinimumStockDisplay => IsMeasured
+            ? $"{MinimumStockLevel:0.###} {UnitOfMeasure}"
+            : MinimumStockLevel.ToString("0.###");
+        public string CostPerUnitDisplay => IsMeasured
+            ? $"{CostPerUnit:C2} / {UnitOfMeasure}"
+            : $"{CostPerUnit:C2} each";
+        public string SalePriceDisplay => IsMeasured
+            ? $"{SalePrice:C2} / {UnitOfMeasure}"
+            : $"{SalePrice:C2} each";
+        public string ProfitPerUnitDisplay => IsMeasured
+            ? $"{ProfitPerUnit:C2} / {UnitOfMeasure}"
+            : $"{ProfitPerUnit:C2} each";
         public bool HasImage => !string.IsNullOrEmpty(ImagePath);
         public bool IsSyncedWithShopify => !string.IsNullOrEmpty(ShopifyProductId);
         public string Description => Notes ?? string.Empty;

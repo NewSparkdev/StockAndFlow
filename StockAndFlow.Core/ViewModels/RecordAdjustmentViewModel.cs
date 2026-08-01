@@ -18,7 +18,7 @@ namespace StockAndFlow.ViewModels
         private ObservableCollection<InventoryItem> _inventoryItems = new();
         private InventoryItem? _selectedItem;
         private AdjustmentReason _selectedReason;
-        private int _quantityChange;
+        private decimal _quantityChange;
         private string? _notes;
         private DateTime _adjustmentDate;
 
@@ -59,7 +59,7 @@ namespace StockAndFlow.ViewModels
             set => SetProperty(ref _selectedReason, value);
         }
 
-        public int QuantityChange
+        public decimal QuantityChange
         {
             get => _quantityChange;
             set
@@ -89,13 +89,13 @@ namespace StockAndFlow.ViewModels
             set => SetProperty(ref _adjustmentDate, value);
         }
 
-        public int CurrentQuantity => SelectedItem?.QuantityOnHand ?? 0;
-        public int NewQuantity => CurrentQuantity + QuantityChange;
+        public decimal CurrentQuantity => SelectedItem?.QuantityOnHand ?? 0;
+        public decimal NewQuantity => CurrentQuantity + QuantityChange;
 
         // Financial impact properties
         public decimal CostPerUnit => SelectedItem?.CostPerUnit ?? 0;
         public decimal SalePricePerUnit => SelectedItem?.SalePrice ?? 0;
-        public int QuantityLost => QuantityChange < 0 ? Math.Abs(QuantityChange) : 0;
+        public decimal QuantityLost => QuantityChange < 0 ? Math.Abs(QuantityChange) : 0;
         public decimal CostLost => QuantityLost * CostPerUnit;
         public decimal PotentialRevenueLost => QuantityLost * SalePricePerUnit;
         public decimal PotentialProfitLost => PotentialRevenueLost - CostLost;

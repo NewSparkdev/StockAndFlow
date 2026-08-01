@@ -37,6 +37,9 @@ namespace StockAndFlow.Data
                 await AddColumnIfNotExistsAsync(connection, "InventoryItems", "IsDeleted", "INTEGER NOT NULL DEFAULT 0");
                 await AddColumnIfNotExistsAsync(connection, "InventoryItems", "DeletedDate", "TEXT NULL");
 
+                // Unit of measure for the measure-by-weight/volume feature ("each" = counted)
+                await AddColumnIfNotExistsAsync(connection, "InventoryItems", "UnitOfMeasure", "TEXT NOT NULL DEFAULT 'each'");
+
                 // Create indexes if they don't exist
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_Name", "InventoryItems", "Name");
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_Sku", "InventoryItems", "Sku");

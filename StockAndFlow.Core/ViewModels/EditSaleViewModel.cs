@@ -15,13 +15,13 @@ namespace StockAndFlow.ViewModels
     /// </summary>
     public class EditableSaleItem : ViewModelBase
     {
-        private int _quantity;
+        private decimal _quantity;
         private decimal _salePricePerUnit;
 
         public Sale OriginalSale { get; }
         public string ItemName => OriginalSale.ItemName;
 
-        public int Quantity
+        public decimal Quantity
         {
             get => _quantity;
             set => SetProperty(ref _quantity, value);
@@ -45,6 +45,7 @@ namespace StockAndFlow.ViewModels
     {
         private readonly SalesService _salesService;
         private readonly InventoryService _inventoryService;
+        private readonly BomService _bomService;
         private readonly SaleTransaction _transaction;
         private readonly IDialogService _dialogService;
 
@@ -87,10 +88,11 @@ namespace StockAndFlow.ViewModels
         public ICommand CancelCommand { get; }
 
         public EditSaleViewModel(SalesService salesService, InventoryService inventoryService,
-            SaleTransaction transaction, IDialogService dialogService)
+            BomService bomService, SaleTransaction transaction, IDialogService dialogService)
         {
             _salesService = salesService;
             _inventoryService = inventoryService;
+            _bomService = bomService;
             _transaction = transaction;
             _dialogService = dialogService;
 
@@ -113,7 +115,7 @@ namespace StockAndFlow.ViewModels
                 foreach (var editableItem in Items)
                 {
                     var sale = editableItem.OriginalSale;
-                    int quantityDelta = editableItem.Quantity - sale.Quantity;
+                    decimal quantityDelta = editableItem.Quantity - sale.Quantity;
 
                     sale.SaleDate = SaleDate;
                     sale.CustomerName = CustomerName;
@@ -124,8 +126,20 @@ namespace StockAndFlow.ViewModels
 
                     // Positive delta = sold more → deduct more from inventory.
                     // Negative delta = sold less → restore the difference.
+                    // Forced: the sale record is changing regardless, so stock must follow it
+                    // even below zero — same rule as BOM deductions when the sale was recorded.
                     if (quantityDelta != 0)
-                        await _inventoryService.AdjustQuantityAsync(sale.InventoryItemId, -quantityDelta);
+                    {
+                        await _inventoryService.AdjustQuantityAsync(sale.InventoryItemId, -quantityDelta, forceAllowNegative: true);
+
+                        var components = await _bomService.GetComponentsForItemAsync(sale.InventoryItemId);
+                        foreach (var comp in components)
+                        {
+                            var change = comp.QuantityPerUnit * quantityDelta;
+                            if (change != 0)
+                                await _inventoryService.AdjustQuantityAsync(comp.ComponentItemId, -change, forceAllowNegative: true);
+                        }
+                    }
 
                     await _salesService.UpdateSaleAsync(sale);
                 }

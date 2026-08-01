@@ -72,7 +72,7 @@ public abstract class ServiceTestBase : IDisposable
     protected SalesService CreateSalesService()
     {
         var inventoryService = CreateInventoryService();
-        return new SalesService(DataService, inventoryService);
+        return new SalesService(DataService, inventoryService, new BomService(DataService));
     }
 
     /// <summary>

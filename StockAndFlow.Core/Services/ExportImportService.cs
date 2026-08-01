@@ -375,7 +375,7 @@ namespace StockAndFlow.Services
                 item.Category = row.Cell(4).GetString();
                 item.CostPerUnit = (decimal)row.Cell(5).GetDouble();
                 item.SalePrice = (decimal)row.Cell(6).GetDouble();
-                item.QuantityOnHand = (int)row.Cell(7).GetDouble();
+                item.QuantityOnHand = (decimal)row.Cell(7).GetDouble();
                 item.LastModifiedDate = DateTime.Now;
 
                 await _inventoryService.CreateOrUpdateItemAsync(item);
@@ -404,7 +404,7 @@ namespace StockAndFlow.Services
                     SaleDate = row.Cell(3).GetDateTime(),
                     ItemName = itemName,
                     InventoryItemId = Guid.Parse(row.Cell(5).GetString()),
-                    Quantity = (int)row.Cell(6).GetDouble(),
+                    Quantity = (decimal)row.Cell(6).GetDouble(),
                     SalePricePerUnit = (decimal)row.Cell(7).GetDouble(),
                     CostPerUnit = (decimal)row.Cell(8).GetDouble(),
                     CustomerName = row.Cell(12).GetString(),

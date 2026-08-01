@@ -46,7 +46,7 @@
                                            Text="{Binding Sku, StringFormat='SKU: {0}'}" />
                                     <Label Grid.Row="2" Grid.Column="0"
                                            FontSize="13"
-                                           Text="{Binding QuantityOnHand, StringFormat='Qty: {0}'}" />
+                                           Text="{Binding QuantityDisplay, StringFormat='In stock: {0}'}" />
                                     <Label Grid.Row="2" Grid.Column="1"
                                            FontSize="13" FontAttributes="Bold"
                                            Text="{Binding SalePrice, StringFormat='{0:C2}'}" />

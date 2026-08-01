@@ -25,8 +25,9 @@ namespace StockAndFlow.ViewModels
         private string? _category;
         private decimal _costPerUnit;
         private decimal _salePrice;
-        private int _quantityOnHand;
-        private int _minimumStockLevel;
+        private decimal _quantityOnHand;
+        private decimal _minimumStockLevel;
+        private UnitOption _selectedUnit = UnitOption.Each;
         private string? _supplier;
         private string? _notes;
         private string _imagePath = string.Empty;
@@ -94,6 +95,7 @@ namespace StockAndFlow.ViewModels
                 {
                     OnPropertyChanged(nameof(ProfitMarginPerUnit));
                     OnPropertyChanged(nameof(ProfitMarginPercentage));
+                    OnPropertyChanged(nameof(ProfitSummary));
                     OnPropertyChanged(nameof(IsValid));
                 }
             }
@@ -108,12 +110,13 @@ namespace StockAndFlow.ViewModels
                 {
                     OnPropertyChanged(nameof(ProfitMarginPerUnit));
                     OnPropertyChanged(nameof(ProfitMarginPercentage));
+                    OnPropertyChanged(nameof(ProfitSummary));
                     OnPropertyChanged(nameof(IsValid));
                 }
             }
         }
 
-        public int QuantityOnHand
+        public decimal QuantityOnHand
         {
             get => _quantityOnHand;
             set
@@ -123,11 +126,71 @@ namespace StockAndFlow.ViewModels
             }
         }
 
-        public int MinimumStockLevel
+        public decimal MinimumStockLevel
         {
             get => _minimumStockLevel;
             set => SetProperty(ref _minimumStockLevel, value);
         }
+
+        public System.Collections.Generic.List<UnitOption> UnitOptions { get; } = UnitOption.All;
+
+        public UnitOption SelectedUnit
+        {
+            get => _selectedUnit;
+            set
+            {
+                if (value != null && SetProperty(ref _selectedUnit, value))
+                {
+                    OnPropertyChanged(nameof(IsMeasured));
+                    OnPropertyChanged(nameof(QuantityLabel));
+                    OnPropertyChanged(nameof(MinStockLabel));
+                    OnPropertyChanged(nameof(CostLabel));
+                    OnPropertyChanged(nameof(PriceLabel));
+                    OnPropertyChanged(nameof(QuantityHelpText));
+                    OnPropertyChanged(nameof(MinStockHelpText));
+                    OnPropertyChanged(nameof(CostHelpText));
+                    OnPropertyChanged(nameof(PriceHelpText));
+                    OnPropertyChanged(nameof(ProfitSummary));
+                }
+            }
+        }
+
+        public bool IsMeasured => SelectedUnit.Value != "each";
+
+        private string Unit => SelectedUnit.Value;
+
+        // Unit-aware field labels
+        public string QuantityLabel => IsMeasured ? $"How much in stock ({Unit})" : "How many in stock";
+        public string MinStockLabel => "Low stock alert";
+        public string CostLabel => IsMeasured ? $"Your cost (per {Unit})" : "Your cost (each)";
+        public string PriceLabel => IsMeasured ? $"Selling price (per {Unit})" : "Selling price (each)";
+
+        // Unit-aware help text for the tappable "?" icons
+        public string MeasureHelpText =>
+            "Most items are counted — 12 candles, 5 mugs — so leave this on \"By count\".\n\n" +
+            "Pick a weight or volume unit for supplies you track in bulk, like candle wax. " +
+            "Example: choose ounces (oz), and instead of \"90 waxes\" you'll have \"90 oz of wax\" — " +
+            "amounts, prices, and low-stock alerts all become per ounce, and you can use partial amounts like 2.5 oz.";
+
+        public string CostHelpText => IsMeasured
+            ? $"What YOU pay for one {Unit} of this item.\n\nExample: a 90 oz bag of wax costs you $27 — that's $0.30 per oz, so you'd enter 0.30.\n\nThe app compares this with your selling price to show your profit."
+            : "What YOU pay to buy or make one of this item.\n\nExample: you buy mugs from your supplier for $4 each, so you'd enter 4.\n\nThe app compares this with your selling price to show how much profit you make on every sale.";
+
+        public string PriceHelpText => IsMeasured
+            ? $"What your CUSTOMER pays for one {Unit} of this item, if you sell it directly.\n\nIf you only use this item as an ingredient in other products (like wax in candles), you can leave this at 0."
+            : "What your CUSTOMER pays for one of this item.\n\nExample: you sell each mug for $10, so you'd enter 10.\n\nSelling price minus your cost = your profit on each one sold.";
+
+        public string QuantityHelpText => IsMeasured
+            ? $"How much of this item you have right now, in {Unit}. Weigh or measure what you have and enter that amount — partial amounts like 90.5 are fine.\n\nThe app lowers this automatically when sales use it up."
+            : "The number of this item you have right now. Count what's on your shelf and enter that number.\n\nYou only set this when adding the item or fixing a count — the app lowers it automatically every time you record a sale.";
+
+        public string MinStockHelpText => IsMeasured
+            ? $"When your stock drops to this many {Unit}, the app flags the item so you know it's time to restock.\n\nExample: enter 10 and you'll see a 'Low stock' warning once only 10 {Unit} are left.\n\nEnter 0 if you don't want a restock reminder."
+            : "When your stock drops to this number, the app flags the item so you know it's time to restock.\n\nExample: enter 5 and this item shows a 'Low stock' warning once only 5 are left.\n\nEnter 0 if you don't want a restock reminder for this item.";
+
+        public string ProfitSummary => IsMeasured
+            ? $"Profit per {Unit} sold: {ProfitMarginPerUnit:C2}"
+            : $"Profit on each one sold: {ProfitMarginPerUnit:C2}";
 
         public string? Supplier
         {
@@ -212,6 +275,7 @@ namespace StockAndFlow.ViewModels
             SalePrice = item.SalePrice;
             QuantityOnHand = item.QuantityOnHand;
             MinimumStockLevel = item.MinimumStockLevel;
+            SelectedUnit = UnitOption.FromValue(item.UnitOfMeasure);
             Supplier = item.Supplier;
             Notes = item.Notes;
             ImagePath = item.ImagePath;
@@ -277,6 +341,7 @@ namespace StockAndFlow.ViewModels
                 _originalItem.SalePrice = SalePrice;
                 _originalItem.QuantityOnHand = QuantityOnHand;
                 _originalItem.MinimumStockLevel = MinimumStockLevel;
+                _originalItem.UnitOfMeasure = SelectedUnit.Value;
                 _originalItem.Supplier = Supplier;
                 _originalItem.Notes = Notes;
                 _originalItem.ImagePath = ImagePath;
@@ -311,6 +376,45 @@ namespace StockAndFlow.ViewModels
             var stored = await _filePicker.PickAndStoreImageAsync("Select Product Image");
             if (stored != null)
                 ImagePath = stored;
+        }
+    }
+
+    /// <summary>
+    /// A choice in the "How do you measure this item?" picker: the stored unit value
+    /// plus the friendly text shown to the user.
+    /// </summary>
+    public sealed class UnitOption
+    {
+        public string Value { get; }
+        public string Display { get; }
+
+        private UnitOption(string value, string display)
+        {
+            Value = value;
+            Display = display;
+        }
+
+        public override string ToString() => Display;
+
+        public static readonly UnitOption Each = new("each", "By count (each)");
+
+        public static readonly System.Collections.Generic.List<UnitOption> All = new()
+        {
+            Each,
+            new("oz", "By weight — ounces (oz)"),
+            new("lb", "By weight — pounds (lb)"),
+            new("g", "By weight — grams (g)"),
+            new("kg", "By weight — kilograms (kg)"),
+            new("fl oz", "By volume — fluid ounces (fl oz)"),
+            new("ml", "By volume — milliliters (ml)"),
+            new("L", "By volume — liters (L)"),
+        };
+
+        public static UnitOption FromValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return Each;
+            return All.Find(u => string.Equals(u.Value, value, StringComparison.OrdinalIgnoreCase)) ?? Each;
         }
     }
 

@@ -14,7 +14,7 @@ namespace StockAndFlow.Models
         public decimal OverallProfitMargin { get; set; }
 
         public int TotalSalesCount { get; set; }
-        public int TotalItemsSold { get; set; }
+        public decimal TotalItemsSold { get; set; }
         public int UniqueInventoryItems { get; set; }
 
         public DateTime CalculatedAt { get; set; }
