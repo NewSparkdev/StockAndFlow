@@ -86,10 +86,11 @@ namespace StockAndFlow.Data.CompiledModels
 
             var quantity = runtimeEntityType.AddProperty(
                 "Quantity",
-                typeof(int),
+                typeof(decimal),
                 propertyInfo: typeof(Sale).GetProperty("Quantity", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Sale).GetField("<Quantity>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                sentinel: 0);
+                sentinel: 0m);
+            quantity.AddAnnotation("Relational:ColumnType", "decimal(18,3)");
 
             var saleDate = runtimeEntityType.AddProperty(
                 "SaleDate",

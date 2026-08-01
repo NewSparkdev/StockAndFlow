@@ -11,12 +11,13 @@ namespace StockAndFlow.Data.CompiledModels
     public partial class StockAndFlowDbContextModel
     {
         private StockAndFlowDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("e7c69dda-9ca5-4fe4-b183-58eb652739ca"), entityTypeCount: 6)
+            : base(skipDetectChanges: false, modelId: new Guid("84f10934-a96f-4de1-8d69-68c8e7a03f4f"), entityTypeCount: 7)
         {
         }
 
         partial void Initialize()
         {
+            var bomComponent = BomComponentEntityType.Create(this);
             var businessSettings = BusinessSettingsEntityType.Create(this);
             var customer = CustomerEntityType.Create(this);
             var expense = ExpenseEntityType.Create(this);
@@ -24,11 +25,14 @@ namespace StockAndFlow.Data.CompiledModels
             var inventoryItem = InventoryItemEntityType.Create(this);
             var sale = SaleEntityType.Create(this);
 
+            BomComponentEntityType.CreateForeignKey1(bomComponent, inventoryItem);
+            BomComponentEntityType.CreateForeignKey2(bomComponent, inventoryItem);
             ExpenseEntityType.CreateForeignKey1(expense, inventoryItem);
             InventoryAdjustmentEntityType.CreateForeignKey1(inventoryAdjustment, inventoryItem);
             SaleEntityType.CreateForeignKey1(sale, customer);
             SaleEntityType.CreateForeignKey2(sale, inventoryItem);
 
+            BomComponentEntityType.CreateAnnotations(bomComponent);
             BusinessSettingsEntityType.CreateAnnotations(businessSettings);
             CustomerEntityType.CreateAnnotations(customer);
             ExpenseEntityType.CreateAnnotations(expense);

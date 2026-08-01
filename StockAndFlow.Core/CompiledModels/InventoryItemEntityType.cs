@@ -19,7 +19,7 @@ namespace StockAndFlow.Data.CompiledModels
                 "StockAndFlow.Models.InventoryItem",
                 typeof(InventoryItem),
                 baseEntityType,
-                propertyCount: 18,
+                propertyCount: 19,
                 unnamedIndexCount: 5,
                 keyCount: 1);
 
@@ -93,10 +93,11 @@ namespace StockAndFlow.Data.CompiledModels
 
             var minimumStockLevel = runtimeEntityType.AddProperty(
                 "MinimumStockLevel",
-                typeof(int),
+                typeof(decimal),
                 propertyInfo: typeof(InventoryItem).GetProperty("MinimumStockLevel", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryItem).GetField("<MinimumStockLevel>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                sentinel: 0);
+                sentinel: 0m);
+            minimumStockLevel.AddAnnotation("Relational:ColumnType", "decimal(18,3)");
 
             var name = runtimeEntityType.AddProperty(
                 "Name",
@@ -114,10 +115,11 @@ namespace StockAndFlow.Data.CompiledModels
 
             var quantityOnHand = runtimeEntityType.AddProperty(
                 "QuantityOnHand",
-                typeof(int),
+                typeof(decimal),
                 propertyInfo: typeof(InventoryItem).GetProperty("QuantityOnHand", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryItem).GetField("<QuantityOnHand>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                sentinel: 0);
+                sentinel: 0m);
+            quantityOnHand.AddAnnotation("Relational:ColumnType", "decimal(18,3)");
 
             var salePrice = runtimeEntityType.AddProperty(
                 "SalePrice",
@@ -155,6 +157,14 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryItem).GetProperty("Supplier", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryItem).GetField("<Supplier>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
+
+            var unitOfMeasure = runtimeEntityType.AddProperty(
+                "UnitOfMeasure",
+                typeof(string),
+                propertyInfo: typeof(InventoryItem).GetProperty("UnitOfMeasure", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(InventoryItem).GetField("<UnitOfMeasure>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                valueGenerated: ValueGenerated.OnAdd);
+            unitOfMeasure.AddAnnotation("Relational:DefaultValue", "each");
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

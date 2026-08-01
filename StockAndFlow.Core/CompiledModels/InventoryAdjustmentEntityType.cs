@@ -78,10 +78,11 @@ namespace StockAndFlow.Data.CompiledModels
 
             var quantityChange = runtimeEntityType.AddProperty(
                 "QuantityChange",
-                typeof(int),
+                typeof(decimal),
                 propertyInfo: typeof(InventoryAdjustment).GetProperty("QuantityChange", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryAdjustment).GetField("<QuantityChange>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                sentinel: 0);
+                sentinel: 0m);
+            quantityChange.AddAnnotation("Relational:ColumnType", "decimal(18,3)");
 
             var reason = runtimeEntityType.AddProperty(
                 "Reason",
