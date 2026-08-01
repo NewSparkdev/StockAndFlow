@@ -40,13 +40,13 @@
                                     <Label Grid.Row="1" Grid.Column="1" Style="{StaticResource Caption}"
                                            Text="{Binding SalePricePerUnit, StringFormat='{0:C2} ea'}" />
                                     <Label Grid.Row="2" Grid.Column="1" Style="{StaticResource Caption}"
-                                           Text="{Binding AvailableQuantity, StringFormat='{0} in stock'}" />
+                                           Text="{Binding AvailableDisplay, StringFormat='{0} in stock'}" />
                                     <Entry Grid.Row="0" Grid.Column="2" Grid.RowSpan="3"
                                            Text="{Binding Quantity}" Keyboard="Numeric"
                                            WidthRequest="60" HorizontalTextAlignment="Center"
                                            VerticalOptions="Center">
                                         <Entry.Behaviors>
-                                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
                                         </Entry.Behaviors>
                                     </Entry>
                                 </Grid>

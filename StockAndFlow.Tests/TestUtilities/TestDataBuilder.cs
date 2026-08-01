@@ -16,10 +16,11 @@ public static class TestDataBuilder
         string? name = null,
         decimal cost = 10.00m,
         decimal salePrice = 20.00m,
-        int quantity = 100,
+        decimal quantity = 100,
         string? sku = null,
         string? category = null,
-        int minimumStockLevel = 5)
+        decimal minimumStockLevel = 5,
+        string unitOfMeasure = "each")
     {
         var id = Guid.NewGuid();
         return new InventoryItem
@@ -32,6 +33,7 @@ public static class TestDataBuilder
             SalePrice = salePrice,
             QuantityOnHand = quantity,
             MinimumStockLevel = minimumStockLevel,
+            UnitOfMeasure = unitOfMeasure,
             Supplier = "Test Supplier",
             Notes = "Test item created for unit testing",
             CreatedDate = DateTime.Now.AddDays(-30),
@@ -45,7 +47,7 @@ public static class TestDataBuilder
     public static Sale CreateSale(
         Guid? itemId = null,
         string? itemName = null,
-        int quantity = 1,
+        decimal quantity = 1,
         decimal salePrice = 20.00m,
         decimal cost = 10.00m,
         string? customerName = null,
@@ -97,7 +99,7 @@ public static class TestDataBuilder
     public static InventoryAdjustment CreateAdjustment(
         Guid? itemId = null,
         string? itemName = null,
-        int quantityChange = -5,
+        decimal quantityChange = -5,
         AdjustmentReason reason = AdjustmentReason.Damaged,
         decimal cost = 10.00m,
         decimal salePrice = 20.00m,

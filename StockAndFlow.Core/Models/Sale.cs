@@ -33,8 +33,8 @@ namespace StockAndFlow.Models
         [StringLength(200, MinimumLength = 1, ErrorMessage = "Item name must be between 1 and 200 characters")]
         public string ItemName { get; set; } = string.Empty;
 
-        [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")]
-        public int Quantity { get; set; }
+        [Range(0.001, double.MaxValue, ErrorMessage = "Quantity must be greater than 0")]
+        public decimal Quantity { get; set; }
 
         [Range(0, double.MaxValue, ErrorMessage = "Sale price must be 0 or greater")]
         public decimal SalePricePerUnit { get; set; }

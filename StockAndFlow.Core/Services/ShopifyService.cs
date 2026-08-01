@@ -316,7 +316,7 @@ namespace StockAndFlow.Services
                 {
                     location_id = locationId,
                     inventory_item_id = variant.Variant.InventoryItemId,
-                    available = item.QuantityOnHand
+                    available = (int)Math.Round(item.QuantityOnHand)
                 };
 
                 var content = new StringContent(

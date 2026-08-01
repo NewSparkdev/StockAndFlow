@@ -18,7 +18,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem("Widget", quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -47,7 +47,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem("Widget", quantity: 5);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -71,7 +71,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var nonExistentId = Guid.NewGuid();
 
@@ -93,7 +93,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -116,7 +116,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem("Widget", quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -150,7 +150,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(salePrice: 20.00m, quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -172,7 +172,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -198,7 +198,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(salePrice: 100.00m, quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -226,7 +226,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -255,7 +255,7 @@ public class SalesServiceTests
         await dataService.SaveSettingsAsync(settings);
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 5);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -279,7 +279,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -307,7 +307,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -336,7 +336,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -362,7 +362,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -394,7 +394,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -420,7 +420,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item1 = TestDataBuilder.CreateInventoryItem("Widget", quantity: 100);
         var item2 = TestDataBuilder.CreateInventoryItem("Gadget", quantity: 100);
@@ -448,7 +448,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -477,7 +477,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item1 = TestDataBuilder.CreateInventoryItem(quantity: 100);
         var item2 = TestDataBuilder.CreateInventoryItem(quantity: 100);
@@ -503,7 +503,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -528,7 +528,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -554,7 +554,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var item = TestDataBuilder.CreateInventoryItem(cost: 10.00m, salePrice: 25.00m, quantity: 100);
         await inventoryService.CreateOrUpdateItemAsync(item);
@@ -578,7 +578,7 @@ public class SalesServiceTests
         await dataService.InitializeAsync();
 
         var inventoryService = new InventoryService(dataService);
-        var salesService = new SalesService(dataService, inventoryService);
+        var salesService = new SalesService(dataService, inventoryService, new BomService(dataService));
 
         var nonExistentId = Guid.NewGuid();
 

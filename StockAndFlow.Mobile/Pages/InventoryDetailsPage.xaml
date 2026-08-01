@@ -19,11 +19,11 @@
 
             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasSku}"><Label Text="SKU" /><Label Grid.Column="1" Text="{Binding Sku}" FontAttributes="Bold" /></Grid>
             <Grid ColumnDefinitions="*,Auto"><Label Text="Category" /><Label Grid.Column="1" Text="{Binding Category}" FontAttributes="Bold" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><Label Text="Quantity on hand" /><Label Grid.Column="1" Text="{Binding QuantityOnHand}" FontAttributes="Bold" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><Label Text="Minimum stock level" /><Label Grid.Column="1" Text="{Binding MinimumStockLevel}" FontAttributes="Bold" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><Label Text="Cost / unit" /><Label Grid.Column="1" Text="{Binding CostPerUnit, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><Label Text="Sale price" /><Label Grid.Column="1" Text="{Binding SalePrice, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><Label Text="Profit / unit" /><Label Grid.Column="1" Text="{Binding ProfitPerUnit, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="In stock" /><Label Grid.Column="1" Text="{Binding QuantityDisplay}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Low stock alert" /><Label Grid.Column="1" Text="{Binding MinimumStockDisplay}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Your cost" /><Label Grid.Column="1" Text="{Binding CostPerUnitDisplay}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Selling price" /><Label Grid.Column="1" Text="{Binding SalePriceDisplay}" FontAttributes="Bold" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><Label Text="Profit" /><Label Grid.Column="1" Text="{Binding ProfitPerUnitDisplay}" FontAttributes="Bold" /></Grid>
             <Grid ColumnDefinitions="*,Auto"><Label Text="Total value" /><Label Grid.Column="1" Text="{Binding TotalValue, StringFormat='{0:C2}'}" FontAttributes="Bold" /></Grid>
             <Grid ColumnDefinitions="*,Auto"><Label Text="Supplier" /><Label Grid.Column="1" Text="{Binding Supplier}" FontAttributes="Bold" /></Grid>
 

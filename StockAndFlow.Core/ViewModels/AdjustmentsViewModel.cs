@@ -79,8 +79,8 @@ namespace StockAndFlow.ViewModels
         }
 
         public int TotalAdjustments => Adjustments?.Count ?? 0;
-        public int TotalReductions => Adjustments?.Where(a => a.QuantityChange < 0).Sum(a => Math.Abs(a.QuantityChange)) ?? 0;
-        public int TotalAdditions => Adjustments?.Where(a => a.QuantityChange > 0).Sum(a => a.QuantityChange) ?? 0;
+        public decimal TotalReductions => Adjustments?.Where(a => a.QuantityChange < 0).Sum(a => Math.Abs(a.QuantityChange)) ?? 0;
+        public decimal TotalAdditions => Adjustments?.Where(a => a.QuantityChange > 0).Sum(a => a.QuantityChange) ?? 0;
 
         // Financial loss properties
         public decimal TotalCostLost => Adjustments?.Where(a => a.IsLoss).Sum(a => a.TotalCost) ?? 0;

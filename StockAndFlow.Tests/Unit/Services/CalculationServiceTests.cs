@@ -20,7 +20,7 @@ public class CalculationServiceTests : IDisposable
         _dataService.InitializeAsync().Wait();
 
         _inventoryService = new InventoryService(_dataService);
-        _salesService = new SalesService(_dataService, _inventoryService);
+        _salesService = new SalesService(_dataService, _inventoryService, new BomService(_dataService));
         _expenseService = new ExpenseService(_dataService);
         _adjustmentService = new InventoryAdjustmentService(_dataService, _inventoryService);
 

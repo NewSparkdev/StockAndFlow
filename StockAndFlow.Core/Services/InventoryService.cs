@@ -111,7 +111,13 @@ namespace StockAndFlow.Services
             InventoryChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public async Task<bool> AdjustQuantityAsync(Guid itemId, int quantityChange)
+        /// <param name="forceAllowNegative">
+        /// Bypasses the AllowNegativeInventory setting. Used for automatic consequences of a
+        /// recorded sale (BOM component deductions, sale-edit deltas): the sale already happened,
+        /// so the books must follow it — a negative count tells the user their numbers were off,
+        /// whereas skipping the deduction would silently overstate stock.
+        /// </param>
+        public async Task<bool> AdjustQuantityAsync(Guid itemId, decimal quantityChange, bool forceAllowNegative = false)
         {
             var item = await GetItemByIdAsync(itemId);
             if (item == null)
@@ -119,9 +125,12 @@ namespace StockAndFlow.Services
 
             var newQuantity = item.QuantityOnHand + quantityChange;
 
-            var settings = await _dataService.GetSettingsAsync();
-            if (newQuantity < 0 && !settings.AllowNegativeInventory)
-                return false;
+            if (newQuantity < 0 && !forceAllowNegative)
+            {
+                var settings = await _dataService.GetSettingsAsync();
+                if (!settings.AllowNegativeInventory)
+                    return false;
+            }
 
             item.QuantityOnHand = newQuantity;
             await CreateOrUpdateItemAsync(item);

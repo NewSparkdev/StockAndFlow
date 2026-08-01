@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:beh="clr-namespace:StockAndFlow.Mobile.Behaviors"
+             xmlns:ctrl="clr-namespace:StockAndFlow.Mobile.Controls"
              x:Class="StockAndFlow.Mobile.Pages.AddEditInventoryPage"
              Title="{Binding DialogTitle}">
 
@@ -20,9 +21,21 @@
             <Label Text="Category" />
             <Entry Text="{Binding Category}" Placeholder="Optional" />
 
+            <HorizontalStackLayout Spacing="6">
+                <Label Text="How do you measure this item?" VerticalOptions="Center" />
+                <ctrl:HelpIcon HelpTitle="How do you measure this item?"
+                               HelpText="{Binding MeasureHelpText}" />
+            </HorizontalStackLayout>
+            <Picker ItemsSource="{Binding UnitOptions}"
+                    SelectedItem="{Binding SelectedUnit}" />
+
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <VerticalStackLayout Grid.Column="0" Spacing="4">
-                    <Label Text="Cost / unit" />
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="{Binding CostLabel}" VerticalOptions="Center" />
+                        <ctrl:HelpIcon HelpTitle="{Binding CostLabel}"
+                                       HelpText="{Binding CostHelpText}" />
+                    </HorizontalStackLayout>
                     <Entry Text="{Binding CostPerUnit}" Keyboard="Numeric">
                         <Entry.Behaviors>
                             <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
@@ -30,7 +43,11 @@
                     </Entry>
                 </VerticalStackLayout>
                 <VerticalStackLayout Grid.Column="1" Spacing="4">
-                    <Label Text="Sale price" />
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="{Binding PriceLabel}" VerticalOptions="Center" />
+                        <ctrl:HelpIcon HelpTitle="{Binding PriceLabel}"
+                                       HelpText="{Binding PriceHelpText}" />
+                    </HorizontalStackLayout>
                     <Entry Text="{Binding SalePrice}" Keyboard="Numeric">
                         <Entry.Behaviors>
                             <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
@@ -41,24 +58,32 @@
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <VerticalStackLayout Grid.Column="0" Spacing="4">
-                    <Label Text="Quantity on hand" />
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="{Binding QuantityLabel}" VerticalOptions="Center" />
+                        <ctrl:HelpIcon HelpTitle="{Binding QuantityLabel}"
+                                       HelpText="{Binding QuantityHelpText}" />
+                    </HorizontalStackLayout>
                     <Entry Text="{Binding QuantityOnHand}" Keyboard="Numeric">
                         <Entry.Behaviors>
-                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
                         </Entry.Behaviors>
                     </Entry>
                 </VerticalStackLayout>
                 <VerticalStackLayout Grid.Column="1" Spacing="4">
-                    <Label Text="Min. stock level" />
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="{Binding MinStockLabel}" VerticalOptions="Center" />
+                        <ctrl:HelpIcon HelpTitle="{Binding MinStockLabel}"
+                                       HelpText="{Binding MinStockHelpText}" />
+                    </HorizontalStackLayout>
                     <Entry Text="{Binding MinimumStockLevel}" Keyboard="Numeric">
                         <Entry.Behaviors>
-                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
                         </Entry.Behaviors>
                     </Entry>
                 </VerticalStackLayout>
             </Grid>
 
-            <Label Text="{Binding ProfitMarginPerUnit, StringFormat='Profit / unit: {0:C2}'}" TextColor="Gray" />
+            <Label Text="{Binding ProfitSummary}" TextColor="Gray" />
 
             <Label Text="Supplier" />
             <Entry Text="{Binding Supplier}" Placeholder="Optional" />

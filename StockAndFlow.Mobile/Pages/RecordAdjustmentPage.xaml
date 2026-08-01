@@ -24,7 +24,7 @@
             <Label Text="Quantity change (negative reduces stock)" />
             <Entry Text="{Binding QuantityChange}" Keyboard="Numeric">
                 <Entry.Behaviors>
-                    <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="True" />
+                    <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="True" />
                 </Entry.Behaviors>
             </Entry>
 

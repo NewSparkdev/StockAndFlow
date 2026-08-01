@@ -113,7 +113,7 @@ public partial class App : Application
 				{
 					if (Current?.Windows is { Count: > 0 } wins && wins[0].Page is Page page)
 						await page.DisplayAlert("Low stock",
-							$"{item.Name} is running low — {item.QuantityOnHand} remaining (minimum: {item.MinimumStockLevel}).",
+							$"{item.Name} is running low — {item.QuantityDisplay} remaining (alert level: {item.MinimumStockDisplay}).",
 							"OK");
 				});
 			};

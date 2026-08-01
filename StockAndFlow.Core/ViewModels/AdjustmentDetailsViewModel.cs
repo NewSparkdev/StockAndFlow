@@ -13,7 +13,7 @@ namespace StockAndFlow.ViewModels
         private readonly InventoryService _inventoryService;
         private InventoryAdjustment _adjustment;
         private DateTime _adjustmentDate;
-        private int? _currentQuantity;
+        private decimal? _currentQuantity;
 
         public event EventHandler<bool>? CloseRequested;
 
@@ -29,19 +29,19 @@ namespace StockAndFlow.ViewModels
             set => SetProperty(ref _adjustmentDate, value);
         }
 
-        public int? CurrentQuantity
+        public decimal? CurrentQuantity
         {
             get => _currentQuantity;
             set => SetProperty(ref _currentQuantity, value);
         }
 
-        public int? QuantityBefore => CurrentQuantity.HasValue ? CurrentQuantity.Value - Adjustment.QuantityChange : null;
-        public int? QuantityAfter => CurrentQuantity;
+        public decimal? QuantityBefore => CurrentQuantity.HasValue ? CurrentQuantity.Value - Adjustment.QuantityChange : null;
+        public decimal? QuantityAfter => CurrentQuantity;
 
         // Financial impact properties
         public decimal CostPerUnit => Adjustment?.CostPerUnit ?? 0;
         public decimal SalePricePerUnit => Adjustment?.SalePricePerUnit ?? 0;
-        public int QuantityLost => Adjustment != null && Adjustment.QuantityChange < 0 ? Math.Abs(Adjustment.QuantityChange) : 0;
+        public decimal QuantityLost => Adjustment != null && Adjustment.QuantityChange < 0 ? Math.Abs(Adjustment.QuantityChange) : 0;
         public decimal CostLost => Adjustment?.TotalCost ?? 0;
         public decimal PotentialRevenueLost => Adjustment?.PotentialRevenue ?? 0;
         public decimal PotentialProfitLost => Adjustment?.PotentialProfit ?? 0;

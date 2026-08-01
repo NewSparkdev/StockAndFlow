@@ -33,7 +33,7 @@
                                     <Label Text="Qty" />
                                     <Entry Text="{Binding Quantity}" Keyboard="Numeric">
                                         <Entry.Behaviors>
-                                            <beh:NumericEntryBehavior AllowDecimal="False" AllowNegative="False" />
+                                            <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
                                         </Entry.Behaviors>
                                     </Entry>
                                 </VerticalStackLayout>

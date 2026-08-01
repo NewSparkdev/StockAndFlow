@@ -34,7 +34,7 @@ namespace StockAndFlow.Services
 
         public async Task<Sale?> RecordSaleAsync(
             Guid inventoryItemId,
-            int quantity,
+            decimal quantity,
             decimal? customSalePrice = null,
             string? customerName = null,
             string? customerEmail = null,
@@ -112,9 +112,9 @@ namespace StockAndFlow.Services
                 var components = await _bomService.GetComponentsForItemAsync(inventoryItemId);
                 foreach (var comp in components)
                 {
-                    var deduction = (int)Math.Round(comp.QuantityPerUnit * quantity);
+                    var deduction = comp.QuantityPerUnit * quantity;
                     if (deduction != 0)
-                        await _inventoryService.AdjustQuantityAsync(comp.ComponentItemId, -deduction);
+                        await _inventoryService.AdjustQuantityAsync(comp.ComponentItemId, -deduction, forceAllowNegative: true);
                 }
 
                 await transaction.CommitAsync();
@@ -179,7 +179,7 @@ namespace StockAndFlow.Services
                     var components = await _bomService.GetComponentsForItemAsync(sale.InventoryItemId);
                     foreach (var comp in components)
                     {
-                        var restore = (int)Math.Round(comp.QuantityPerUnit * sale.Quantity);
+                        var restore = comp.QuantityPerUnit * sale.Quantity;
                         if (restore != 0)
                             await _inventoryService.AdjustQuantityAsync(comp.ComponentItemId, restore);
                     }

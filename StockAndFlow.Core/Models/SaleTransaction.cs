@@ -15,7 +15,7 @@ namespace StockAndFlow.Models
 
         // Calculated properties
         public int ItemCount => Items?.Count ?? 0;
-        public int TotalQuantity => Items?.Sum(i => i.Quantity) ?? 0;
+        public decimal TotalQuantity => Items?.Sum(i => i.Quantity) ?? 0;
         public decimal Revenue => Items?.Sum(i => i.Revenue) ?? 0;
         public decimal COGS => Items?.Sum(i => i.COGS) ?? 0;
         public decimal Profit => Items?.Sum(i => i.Profit) ?? 0;

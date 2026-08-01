@@ -142,6 +142,7 @@ namespace StockAndFlow.ViewModels
                         SalePricePerUnit = item.SalePrice,
                         CostPerUnit = item.CostPerUnit,
                         AvailableQuantity = item.QuantityOnHand,
+                        UnitOfMeasure = item.UnitOfMeasure,
                         Quantity = 1,
                         IsSelected = false
                     };
@@ -185,7 +186,7 @@ namespace StockAndFlow.ViewModels
             if (problem != null)
             {
                 SaleFailed?.Invoke(this,
-                    $"Not enough stock for \"{problem.ItemName}\".\nAvailable: {problem.AvailableQuantity}, requested: {problem.Quantity}.");
+                    $"Not enough stock for \"{problem.ItemName}\".\nAvailable: {problem.AvailableDisplay}, requested: {problem.Quantity:0.###}.");
                 return;
             }
 

@@ -46,7 +46,7 @@ namespace StockAndFlow.ViewModels
         // Inventory
         private ObservableCollection<InventoryItem> _lowStockItems = new();
         private decimal _totalInventoryValue;
-        private int _totalItemsInStock;
+        private decimal _totalItemsInStock;
 
         // Inventory Adjustments & Losses
         private int _totalAdjustments;
@@ -166,7 +166,7 @@ namespace StockAndFlow.ViewModels
             set => SetProperty(ref _totalInventoryValue, value);
         }
 
-        public int TotalItemsInStock
+        public decimal TotalItemsInStock
         {
             get => _totalItemsInStock;
             set => SetProperty(ref _totalItemsInStock, value);
@@ -534,7 +534,7 @@ namespace StockAndFlow.ViewModels
     public class TopSellingItem
     {
         public string ItemName { get; set; } = string.Empty;
-        public int QuantitySold { get; set; }
+        public decimal QuantitySold { get; set; }
         public decimal Revenue { get; set; }
         public decimal Profit { get; set; }
         public int SalesCount { get; set; }

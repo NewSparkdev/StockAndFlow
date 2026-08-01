@@ -40,6 +40,9 @@ namespace StockAndFlow.Data
                 entity.Property(e => e.Name).IsRequired();
                 entity.Property(e => e.CostPerUnit).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.SalePrice).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.QuantityOnHand).HasColumnType("decimal(18,3)");
+                entity.Property(e => e.MinimumStockLevel).HasColumnType("decimal(18,3)");
+                entity.Property(e => e.UnitOfMeasure).IsRequired().HasDefaultValue("each");
                 entity.Property(e => e.CreatedDate).IsRequired();
                 entity.Property(e => e.LastModifiedDate).IsRequired();
 
@@ -67,6 +70,12 @@ namespace StockAndFlow.Data
                 entity.Ignore(e => e.ProfitPerUnit);
                 entity.Ignore(e => e.ProfitMarginPerUnit);
                 entity.Ignore(e => e.ProfitMarginPercentage);
+                entity.Ignore(e => e.IsMeasured);
+                entity.Ignore(e => e.QuantityDisplay);
+                entity.Ignore(e => e.MinimumStockDisplay);
+                entity.Ignore(e => e.CostPerUnitDisplay);
+                entity.Ignore(e => e.SalePriceDisplay);
+                entity.Ignore(e => e.ProfitPerUnitDisplay);
                 entity.Ignore(e => e.HasImage);
                 entity.Ignore(e => e.IsSyncedWithShopify);
                 entity.Ignore(e => e.Description);
@@ -90,6 +99,7 @@ namespace StockAndFlow.Data
                 entity.Property(e => e.SaleDate).IsRequired();
                 entity.Property(e => e.InventoryItemId).IsRequired();
                 entity.Property(e => e.ItemName).IsRequired();
+                entity.Property(e => e.Quantity).HasColumnType("decimal(18,3)");
                 entity.Property(e => e.SalePricePerUnit).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.CostPerUnit).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.TaxRate).HasColumnType("decimal(5,2)");
@@ -182,6 +192,7 @@ namespace StockAndFlow.Data
                 entity.Property(e => e.Reason).IsRequired().HasConversion<string>();
                 entity.Property(e => e.AdjustmentDate).IsRequired();
                 entity.Property(e => e.CreatedDate).IsRequired();
+                entity.Property(e => e.QuantityChange).HasColumnType("decimal(18,3)");
                 entity.Property(e => e.CostPerUnit).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.SalePricePerUnit).HasColumnType("decimal(18,2)");
 
