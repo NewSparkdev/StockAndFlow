@@ -24,6 +24,7 @@ namespace StockAndFlow.ViewModels
         private string? _sku;
         private string? _category;
         private decimal _costPerUnit;
+        private decimal _extraCost;
         private decimal _salePrice;
         private decimal _quantityOnHand;
         private decimal _minimumStockLevel;
@@ -63,6 +64,50 @@ namespace StockAndFlow.ViewModels
         }
 
         public bool CanAddComponent => PendingComponent != null && PendingQty > 0;
+
+        public bool HasBom => BomComponents.Count > 0;
+
+        /// <summary>What one unit of this item costs in raw materials: Σ(component cost × amount used).</summary>
+        public decimal MaterialsCost => BomComponents.Sum(e => e.Item.CostPerUnit * e.QuantityPerUnit);
+
+        /// <summary>
+        /// The user's own costs on top of materials (labor, packaging). Never touched by the
+        /// app, so refreshing material prices can't overwrite it.
+        /// </summary>
+        public decimal ExtraCost
+        {
+            get => _extraCost;
+            set
+            {
+                if (SetProperty(ref _extraCost, value))
+                {
+                    OnPropertyChanged(nameof(CostBreakdownHint));
+                    if (HasBom)
+                        CostPerUnit = MaterialsCost + ExtraCost;
+                }
+            }
+        }
+
+        public string CostBreakdownHint =>
+            $"Calculated for you: materials {MaterialsCost:C2} + your extras {ExtraCost:C2}";
+
+        public string ExtraCostHelpText =>
+            "Anything else that goes into making ONE of this item besides the materials listed here — your time, packaging, labels, shipping supplies.\n\n" +
+            "Example: materials come to $0.90 and you value your labor at $0.35 per candle — enter 0.35 and Your cost becomes $1.25.\n\n" +
+            "This number is yours: updating material prices never changes it. Leave it at 0 if materials are the whole cost.";
+
+        /// <summary>
+        /// Keeps "Your cost" in sync while a Bill of Materials exists:
+        /// total = materials (calculated) + extras (user-owned).
+        /// </summary>
+        private void OnBomChanged()
+        {
+            OnPropertyChanged(nameof(HasBom));
+            OnPropertyChanged(nameof(MaterialsCost));
+            OnPropertyChanged(nameof(CostBreakdownHint));
+            if (BomComponents.Count > 0)
+                CostPerUnit = MaterialsCost + ExtraCost;
+        }
 
         public string Name
         {
@@ -174,7 +219,7 @@ namespace StockAndFlow.ViewModels
 
         public string CostHelpText => IsMeasured
             ? $"What YOU pay for one {Unit} of this item.\n\nExample: a 90 oz bag of wax costs you $27 — that's $0.30 per oz, so you'd enter 0.30.\n\nThe app compares this with your selling price to show your profit."
-            : "What YOU pay to buy or make one of this item.\n\nExample: you buy mugs from your supplier for $4 each, so you'd enter 4.\n\nThe app compares this with your selling price to show how much profit you make on every sale.";
+            : "What YOU pay to buy or make one of this item.\n\nExample: you buy mugs from your supplier for $4 each, so you'd enter 4.\n\nIf you add a Bill of Materials below, this is calculated for you: materials cost + your extra costs (labor, packaging).\n\nThe app compares this with your selling price to show how much profit you make on every sale.";
 
         public string PriceHelpText => IsMeasured
             ? $"What your CUSTOMER pays for one {Unit} of this item, if you sell it directly.\n\nIf you only use this item as an ingredient in other products (like wax in candles), you can leave this at 0."
@@ -247,6 +292,7 @@ namespace StockAndFlow.ViewModels
             _originalItem = new InventoryItem();
             _isEditMode = false;
 
+            BomComponents.CollectionChanged += (_, _) => OnBomChanged();
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => IsValid);
             CancelCommand = new RelayCommand(Cancel);
             BrowseImageCommand = new RelayCommand(async () => await BrowseImageAsync());
@@ -272,6 +318,7 @@ namespace StockAndFlow.ViewModels
             Sku = item.Sku;
             Category = item.Category;
             CostPerUnit = item.CostPerUnit;
+            ExtraCost = item.ExtraCostPerUnit;
             SalePrice = item.SalePrice;
             QuantityOnHand = item.QuantityOnHand;
             MinimumStockLevel = item.MinimumStockLevel;
@@ -280,6 +327,7 @@ namespace StockAndFlow.ViewModels
             Notes = item.Notes;
             ImagePath = item.ImagePath;
 
+            BomComponents.CollectionChanged += (_, _) => OnBomChanged();
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => IsValid);
             CancelCommand = new RelayCommand(Cancel);
             BrowseImageCommand = new RelayCommand(async () => await BrowseImageAsync());
@@ -338,6 +386,7 @@ namespace StockAndFlow.ViewModels
                 _originalItem.Sku = Sku;
                 _originalItem.Category = Category;
                 _originalItem.CostPerUnit = CostPerUnit;
+                _originalItem.ExtraCostPerUnit = ExtraCost;
                 _originalItem.SalePrice = SalePrice;
                 _originalItem.QuantityOnHand = QuantityOnHand;
                 _originalItem.MinimumStockLevel = MinimumStockLevel;
@@ -425,7 +474,13 @@ namespace StockAndFlow.ViewModels
         public Guid? ExistingId { get; set; }
         public ICommand RemoveCommand { get; }
 
-        public string QuantityDisplay => $"× {QuantityPerUnit:G}";
+        public string QuantityDisplay => Item.IsMeasured
+            ? $"× {QuantityPerUnit:0.###} {Item.UnitOfMeasure}"
+            : $"× {QuantityPerUnit:0.###}";
+
+        /// <summary>What this component contributes to the cost of one finished item.</summary>
+        public decimal LineCost => Item.CostPerUnit * QuantityPerUnit;
+        public string LineCostDisplay => $"{LineCost:C2}";
 
         public BomComponentEntry(InventoryItem item, decimal quantityPerUnit, Action<BomComponentEntry> onRemove)
         {

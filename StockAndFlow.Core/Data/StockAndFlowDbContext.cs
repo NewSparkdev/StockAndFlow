@@ -37,6 +37,7 @@ namespace StockAndFlow.Data
                 entity.Property(e => e.Name).IsRequired();
                 entity.Property(e => e.CostPerUnit).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.SalePrice).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.ExtraCostPerUnit).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
                 entity.Property(e => e.QuantityOnHand).HasColumnType("decimal(18,3)");
                 entity.Property(e => e.MinimumStockLevel).HasColumnType("decimal(18,3)");
                 entity.Property(e => e.UnitOfMeasure).IsRequired().HasDefaultValue("each");

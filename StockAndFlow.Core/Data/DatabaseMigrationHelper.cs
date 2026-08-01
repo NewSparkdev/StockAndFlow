@@ -40,6 +40,9 @@ namespace StockAndFlow.Data
                 // Unit of measure for the measure-by-weight/volume feature ("each" = counted)
                 await AddColumnIfNotExistsAsync(connection, "InventoryItems", "UnitOfMeasure", "TEXT NOT NULL DEFAULT 'each'");
 
+                // Labor/packaging cost on top of BOM materials cost
+                await AddColumnIfNotExistsAsync(connection, "InventoryItems", "ExtraCostPerUnit", "TEXT NOT NULL DEFAULT '0'");
+
                 // Create indexes if they don't exist
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_Name", "InventoryItems", "Name");
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_Sku", "InventoryItems", "Sku");

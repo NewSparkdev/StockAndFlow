@@ -24,6 +24,14 @@ namespace StockAndFlow.Models
         [Range(0, double.MaxValue, ErrorMessage = "Sale price must be 0 or greater")]
         public decimal SalePrice { get; set; }
 
+        /// <summary>
+        /// Costs beyond raw materials for one unit (labor, packaging, labels). Only meaningful
+        /// for items with a Bill of Materials: CostPerUnit = materials cost + this.
+        /// Kept separate so recalculating material prices never overwrites the user's number.
+        /// </summary>
+        [Range(0, double.MaxValue, ErrorMessage = "Extra cost must be 0 or greater")]
+        public decimal ExtraCostPerUnit { get; set; }
+
         public decimal QuantityOnHand { get; set; }
 
         [Range(0, double.MaxValue, ErrorMessage = "Minimum stock level must be 0 or greater")]
