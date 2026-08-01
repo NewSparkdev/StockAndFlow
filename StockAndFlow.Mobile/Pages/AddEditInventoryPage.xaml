@@ -36,11 +36,15 @@
                         <ctrl:HelpIcon HelpTitle="{Binding CostLabel}"
                                        HelpText="{Binding CostHelpText}" />
                     </HorizontalStackLayout>
-                    <Entry Text="{Binding CostPerUnit}" Keyboard="Numeric">
+                    <Entry Text="{Binding CostPerUnit}" Keyboard="Numeric" IsReadOnly="{Binding HasBom}">
                         <Entry.Behaviors>
                             <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
                         </Entry.Behaviors>
                     </Entry>
+                    <Label Text="{Binding CostBreakdownHint}"
+                           IsVisible="{Binding HasBom}"
+                           FontSize="11"
+                           TextColor="{AppThemeBinding Light=#3949AB, Dark=#ac99ea}" />
                 </VerticalStackLayout>
                 <VerticalStackLayout Grid.Column="1" Spacing="4">
                     <HorizontalStackLayout Spacing="6">
@@ -133,14 +137,39 @@
                                 Padding="12,10" />
                     </Grid>
 
+                    <!-- Cost breakdown (feeds the "Your cost" field above) -->
+                    <VerticalStackLayout Spacing="6" IsVisible="{Binding HasBom}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Materials cost per item" FontAttributes="Bold" TextColor="#3949AB" />
+                            <Label Grid.Column="1" Text="{Binding MaterialsCost, StringFormat='{0:C2}'}" FontAttributes="Bold" TextColor="#3949AB" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                <Label Text="Extra costs per item (labor, packaging)" TextColor="#212121" VerticalOptions="Center" />
+                                <ctrl:HelpIcon HelpTitle="Extra costs per item"
+                                               HelpText="{Binding ExtraCostHelpText}" />
+                            </HorizontalStackLayout>
+                            <Entry Grid.Column="1" Text="{Binding ExtraCost}" Keyboard="Numeric" HorizontalTextAlignment="End" TextColor="#212121">
+                                <Entry.Behaviors>
+                                    <beh:NumericEntryBehavior AllowDecimal="True" AllowNegative="False" />
+                                </Entry.Behaviors>
+                            </Entry>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Your cost per item" FontAttributes="Bold" TextColor="#3949AB" />
+                            <Label Grid.Column="1" Text="{Binding CostPerUnit, StringFormat='{0:C2}'}" FontAttributes="Bold" TextColor="#3949AB" />
+                        </Grid>
+                    </VerticalStackLayout>
+
                     <!-- Added ingredients — BindableLayout sizes to content; CollectionView must not nest in ScrollView -->
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding BomComponents}" Spacing="0">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="4,6" ColumnSpacing="8">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" Padding="4,6" ColumnSpacing="8">
                                     <Label Grid.Column="0" Text="{Binding Item.Name}" TextColor="#212121" VerticalOptions="Center" />
                                     <Label Grid.Column="1" Text="{Binding QuantityDisplay}" TextColor="#3949AB" FontAttributes="Bold" VerticalOptions="Center" />
-                                    <Button Grid.Column="2" Text="✕" Command="{Binding RemoveCommand}"
+                                    <Label Grid.Column="2" Text="{Binding LineCostDisplay}" TextColor="#555" FontSize="13" VerticalOptions="Center" />
+                                    <Button Grid.Column="3" Text="✕" Command="{Binding RemoveCommand}"
                                             TextColor="#E74C3C" BackgroundColor="Transparent"
                                             WidthRequest="36" HeightRequest="36" Padding="0" />
                                 </Grid>

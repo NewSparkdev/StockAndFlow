@@ -142,6 +142,7 @@ public class DatabaseMigrationTests : IDisposable
         item.CostPerUnit.Should().Be(10.5m);
         item.SalePrice.Should().Be(20m);
         item.UnitOfMeasure.Should().Be("each", "items from before the feature must default to counted");
+        item.ExtraCostPerUnit.Should().Be(0m, "items from before the feature have no extra cost");
         item.IsDeleted.Should().BeFalse();
     }
 

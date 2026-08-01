@@ -19,7 +19,7 @@ namespace StockAndFlow.Data.CompiledModels
                 "StockAndFlow.Models.InventoryItem",
                 typeof(InventoryItem),
                 baseEntityType,
-                propertyCount: 19,
+                propertyCount: 20,
                 unnamedIndexCount: 5,
                 keyCount: 1);
 
@@ -61,6 +61,16 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(InventoryItem).GetProperty("DeletedDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(InventoryItem).GetField("<DeletedDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
+
+            var extraCostPerUnit = runtimeEntityType.AddProperty(
+                "ExtraCostPerUnit",
+                typeof(decimal),
+                propertyInfo: typeof(InventoryItem).GetProperty("ExtraCostPerUnit", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(InventoryItem).GetField("<ExtraCostPerUnit>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                valueGenerated: ValueGenerated.OnAdd,
+                sentinel: 0m);
+            extraCostPerUnit.AddAnnotation("Relational:ColumnType", "decimal(18,2)");
+            extraCostPerUnit.AddAnnotation("Relational:DefaultValue", 0m);
 
             var imagePath = runtimeEntityType.AddProperty(
                 "ImagePath",
