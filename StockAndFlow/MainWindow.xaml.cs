@@ -21,6 +21,14 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
+    private void OnShopifySettingsClick(object sender, RoutedEventArgs e)
+    {
+        var viewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+            .GetRequiredService<StockAndFlow.ViewModels.ShopifySettingsViewModel>(App.Services);
+        var dialog = new Views.Dialogs.ShopifySettingsDialog(viewModel) { Owner = this };
+        dialog.ShowDialog();
+    }
+
     /// <summary>
     /// Handles mouse wheel scrolling in the Reports tab to prevent child controls
     /// (DataGrids, Charts) from capturing scroll events

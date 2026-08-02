@@ -185,16 +185,11 @@ namespace StockAndFlow.ViewModels
             {
                 await _dialogService.ShowAlertAsync(
                     "Shopify Not Configured",
-                    "Shopify integration is not configured!\n\n" +
-                    "To set up Shopify sync:\n\n" +
-                    "1. Get your Shopify Admin API credentials:\n" +
-                    "   • Go to your Shopify Admin\n" +
-                    "   • Settings → Apps → Develop apps\n" +
-                    "   • Create a custom app with read/write permissions\n\n" +
-                    "2. Open the app's Business Settings and enter your credentials:\n" +
-                    "   • Store name (without .myshopify.com)\n" +
-                    "   • Access token (shpat_xxxxx)\n\n" +
-                    "3. Save and try again!");
+                    "Shopify sync isn't set up yet.\n\n" +
+                    "Open Shopify Settings (next to this button on desktop, or Settings → " +
+                    "Shopify Sync on mobile), turn the integration on, and enter your store " +
+                    "name and Admin API access token. There's a Test Connection button to " +
+                    "verify before syncing.");
                 return;
             }
 

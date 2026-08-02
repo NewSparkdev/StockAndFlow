@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ctrl="clr-namespace:StockAndFlow.Mobile.Controls"
+             x:Class="StockAndFlow.Mobile.Pages.ShopifySettingsPage"
+             Title="Shopify Sync"
+             BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+
+    <ContentPage.Resources>
+        <Style x:Key="FieldLabel" TargetType="Label" BasedOn="{StaticResource Caption}">
+            <Setter Property="Margin" Value="2,0,0,2" />
+        </Style>
+        <Style x:Key="FieldEntry" TargetType="Entry">
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceContainerDark}}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="*,Auto">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="16" Spacing="16" MaximumWidthRequest="720" HorizontalOptions="Fill">
+
+                <!-- Connection -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Connect your Shopify store" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Pulls your products and orders into Stock &amp; Flow, and can push inventory counts back to Shopify."
+                               Style="{StaticResource Caption}" />
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Enable Shopify sync" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding ShopifyEnabled}" />
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="2">
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="Store name" Style="{StaticResource FieldLabel}" VerticalOptions="Center" />
+                                <ctrl:HelpIcon HelpTitle="Store name" HelpText="{Binding StoreNameHelpText}" />
+                            </HorizontalStackLayout>
+                            <Entry Text="{Binding StoreName}" Placeholder="yourstore" Keyboard="Url" Style="{StaticResource FieldEntry}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="2">
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="Admin API access token" Style="{StaticResource FieldLabel}" VerticalOptions="Center" />
+                                <ctrl:HelpIcon HelpTitle="Access token" HelpText="{Binding AccessTokenHelpText}" />
+                            </HorizontalStackLayout>
+                            <Entry Text="{Binding AccessToken}" Placeholder="shpat_..." IsPassword="True" Style="{StaticResource FieldEntry}" />
+                            <Label Text="Stored encrypted on this device only." Style="{StaticResource Caption}" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Actions -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Test &amp; sync" Style="{StaticResource SectionTitle}" />
+
+                        <Button Text="Test Connection" Command="{Binding TestConnectionCommand}"
+                                Style="{StaticResource SecondaryButton}" />
+                        <Button Text="Sync Now" Command="{Binding SyncNowCommand}" />
+
+                        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+                        <Label Text="{Binding StatusMessage}" Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Pinned action bar -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="16,10"
+              BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+            <Button Grid.Column="0" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" />
+            <Button Grid.Column="1" Text="Save" Command="{Binding SaveCommand}" />
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

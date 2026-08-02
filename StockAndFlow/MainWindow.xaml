@@ -38,6 +38,10 @@
                             Command="{Binding RefreshMetricsCommand}"
                             Margin="0,0,10,0"
                             Style="{StaticResource SecondaryButton}"/>
+                    <Button Content="Shopify Settings"
+                            Click="OnShopifySettingsClick"
+                            Margin="0,0,10,0"
+                            Style="{StaticResource SecondaryButton}"/>
                     <Button Content="Sync Shopify"
                             Command="{Binding SyncShopifyCommand}"
                             Style="{StaticResource SecondaryButton}"/>

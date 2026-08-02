@@ -19,6 +19,12 @@ public partial class SettingsPage : ContentPage
 		await Navigation.PushAsync(new BusinessSettingsPage(vm));
 	}
 
+	private async void OnShopifySettingsTapped(object? sender, TappedEventArgs e)
+	{
+		var vm = IPlatformApplication.Current!.Services.GetRequiredService<ShopifySettingsViewModel>();
+		await Navigation.PushAsync(new ShopifySettingsPage(vm));
+	}
+
 	private async void OnExportImportTapped(object? sender, TappedEventArgs e)
 	{
 		var service = IPlatformApplication.Current!.Services.GetRequiredService<ExportImportService>();
