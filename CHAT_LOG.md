@@ -65,6 +65,7 @@ existing WPF app. Both apps reference the same Core.
 
 | Commit | What it did |
 |---|---|
+| `897342b` | Invoices: render business logo + per-field display toggles (**⚠ entity changed — regen compiled model on onboarding before next release**) |
 | `95f9e89` | Fix upgrade crash for pre-customer DBs: migrate `Sales.CustomerId` + `Customers` table |
 | `60a9dfb` | Harden credential encryption: AES-GCM + "enc1:" marker, resilient key init, mobile migration, backup exclusions |
 | `30bd0db` | WPF parity: unit-of-measure picker, extra-costs field, BOM cost breakdown |
