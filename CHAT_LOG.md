@@ -420,9 +420,22 @@ enable toggle, store name + token with help text, Test Connection, Sync Now, liv
 - ✅ Test Connection → connected. ✅ Sync Now → **real products appear in Inventory**.
 - ✅ Bonus proof of the credential work: the token is on disk as `enc1:`-prefixed DPAPI
   ciphertext in `Data/settings.json` — the hardening from `60a9dfb` working on a real secret.
-- ⚠️ **Order→sale sync not yet live-verified** — the dev store's sample data contains no orders.
-  Covered by unit tests (incl. dedup + single deduction); to close the gap, place a test order
-  in the dev store admin and re-sync.
+- ✅ **Order→sale sync live-verified** after fixing a 5th bug the live test exposed (commit
+  `652926b`): a test order placed in the dev store imported as a sale — Selling Plans Ski Wax
+  ×2 @ $24.95, `ShopifyOrderId` stamped. **The bug: `SyncOrdersAsync` opened a transaction and
+  `RecordSaleAsync` opens its own → SQLite "connection is already in a transaction" → every
+  order import threw, always.** Orders were fetched and parsed fine; the failure was one step
+  later, at the write.
+- 🚩 **The unit tests missed it because `InMemoryDataService` allowed nested transactions.**
+  The fake now throws exactly like SQLite; with that fidelity fix the order test fails first,
+  then passes. Lesson: a test double that is more permissive than the real dependency will
+  certify broken code.
+- ⚠️ **Known issue — inventory double-deduction on order import.** Shopify already decrements
+  stock when an order is placed, and product sync copies Shopify's number down; then order
+  import records a sale that deducts *again*. Observed: Shopify 8 → local 6. Self-corrects on
+  the next product sync (which overwrites from Shopify), but the local count is wrong in
+  between and spurious adjustments are recorded. Needs a product decision on who owns stock
+  truth before the paywall advertises this feature.
 - Gotcha for next time: the WPF app keeps its SQLite data in an uncheckpointed WAL while running,
   so the DB can't be inspected externally until the app exits cleanly — verify through the UI.
 
