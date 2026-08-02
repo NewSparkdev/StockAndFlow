@@ -65,6 +65,12 @@ namespace StockAndFlow.ViewModels
 
         public bool CanAddComponent => PendingComponent != null && PendingQty > 0;
 
+        /// <summary>
+        /// Codes already used by other items, so a generated barcode can avoid clashing.
+        /// Populated by <see cref="InitializeAsync"/>.
+        /// </summary>
+        public List<string?> ExistingSkus { get; } = new();
+
         public bool HasBom => BomComponents.Count > 0;
 
         /// <summary>What one unit of this item costs in raw materials: Σ(component cost × amount used).</summary>
@@ -211,6 +217,45 @@ namespace StockAndFlow.ViewModels
         public string PriceLabel => IsMeasured ? $"Selling price (per {Unit})" : "Selling price (each)";
 
         // Unit-aware help text for the tappable "?" icons
+        /// <summary>Plain-language walkthrough shown on the label-printing screen.</summary>
+        public static string BarcodeHowToText =>
+            "HOW BARCODES WORK HERE\n\n" +
+            "1. Give each product a code.\n" +
+            "   Tap \"Create barcode label\" when adding or editing an item and we'll make one " +
+            "for you, or type in your own.\n\n" +
+            "2. Print the labels.\n" +
+            "   Use \"Print labels\" to get a sheet of every product at once, then stick them on " +
+            "your jars, boxes or price tags. Print at 100% — if your printer offers \"fit to " +
+            "page\", turn it off, or the bars shrink and stop scanning.\n\n" +
+            "3. Scan when you sell.\n" +
+            "   On Record Sale, tap Scan and photograph the label. The item drops straight into " +
+            "the sale, so there's no hunting through a list at a busy market stall.\n\n" +
+            "4. Scan to find things too.\n" +
+            "   Scanning on the Add/Edit screen fills in the code, so you can point at an " +
+            "existing product to pull up its record.\n\n" +
+            "TIPS\n" +
+            "• Every product needs its own code. If two share one, a scan can't tell them " +
+            "apart — the app will warn you.\n" +
+            "• Keep labels flat and unwrinkled; a bent barcode is a barcode that won't scan.\n" +
+            "• Already sell through a shop or Amazon with official UPC/EAN barcodes? Just scan " +
+            "or type those in instead — the app reads them all.";
+
+        public string BarcodeHelpText =>
+            "There are two kinds of barcode, and most small sellers only need the first.\n\n" +
+            "YOUR OWN (what this button makes)\n" +
+            "Free, unlimited, and instantly usable. It scans with this app and with ordinary " +
+            "barcode scanners, so it's all you need for craft fairs, markets, your own shop or " +
+            "your own website. We'll create a short code for the item if it doesn't have one.\n\n" +
+            "OFFICIAL RETAIL BARCODES (UPC / EAN)\n" +
+            "The numbers on supermarket products. Required if you want to sell through a " +
+            "retailer, a distributor or Amazon, because they have to be unique worldwide. They " +
+            "are issued by GS1 for a fee — no app can make one for you, and inventing one would " +
+            "clash with a real product.\n\n" +
+            "ALREADY HAVE OFFICIAL BARCODES?\n" +
+            "Use them here. Tap Scan and photograph the barcode, or just type the number into " +
+            "the SKU / Barcode box. The app reads every common format and will store whatever " +
+            "you give it.";
+
         public string MeasureHelpText =>
             "Most items are counted — 12 candles, 5 mugs — so leave this on \"By count\".\n\n" +
             "Pick a weight or volume unit for supplies you track in bulk, like candle wax. " +
@@ -349,6 +394,9 @@ namespace StockAndFlow.ViewModels
                     AvailableComponents.Add(item);
             });
 
+            ExistingSkus.Clear();
+            ExistingSkus.AddRange(all.Where(i => i.Id != _originalItem.Id).Select(i => i.Sku));
+
             if (_isEditMode)
             {
                 var existing = await _bomService.GetComponentsForItemAsync(_originalItem.Id);
@@ -391,6 +439,31 @@ namespace StockAndFlow.ViewModels
         {
             try
             {
+                // Two items sharing a code makes scanning ambiguous: the lookup takes the
+                // first match, so the wrong product gets added to the sale with no warning.
+                if (!string.IsNullOrWhiteSpace(Sku))
+                {
+                    var all = await _inventoryService.GetAllItemsAsync();
+                    var clash = all.FirstOrDefault(i =>
+                        i.Id != _originalItem.Id &&
+                        !string.IsNullOrWhiteSpace(i.Sku) &&
+                        string.Equals(i.Sku!.Trim(), Sku!.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                    if (clash != null)
+                    {
+                        var proceed = await _dialogService.ShowConfirmAsync(
+                            "Code already used",
+                            $"\"{clash.Name}\" already uses the code {clash.Sku}.\n\n" +
+                            "Scanning it won't know which item you mean, and may pick the wrong one. " +
+                            "Give this item its own code instead?",
+                            "Let me change it",
+                            "Save anyway");
+
+                        if (proceed)
+                            return;
+                    }
+                }
+
                 _originalItem.Name = Name;
                 _originalItem.Sku = Sku;
                 _originalItem.Category = Category;

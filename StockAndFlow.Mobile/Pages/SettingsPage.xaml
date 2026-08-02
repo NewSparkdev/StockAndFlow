@@ -73,6 +73,38 @@
                 </Border.GestureRecognizers>
             </Border>
 
+            <Border Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Image Source="settings_data.png" Style="{StaticResource RowIcon}" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label Text="Shopify Sync" Style="{StaticResource RowTitle}" />
+                        <Label Text="Connect your Shopify store" Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnShopifySettingsTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
+            <Border Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Image Source="settings_business.png" Style="{StaticResource RowIcon}" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label Text="Barcodes &amp; Labels" Style="{StaticResource RowTitle}" />
+                        <Label Text="Print labels for your products, and how scanning works" Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBarcodeLabelsTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
             <!-- DATA -->
             <Label Text="DATA" Style="{StaticResource SectionHeader}" />
 

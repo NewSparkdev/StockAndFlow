@@ -98,6 +98,21 @@ public class DatabaseMigrationTests : IDisposable
                 AdjustmentDate TEXT NOT NULL,
                 CreatedDate TEXT NOT NULL
             );
+            CREATE TABLE BusinessSettings (
+                Id TEXT NOT NULL PRIMARY KEY,
+                BusinessName TEXT NULL,
+                Address TEXT NULL,
+                City TEXT NULL,
+                State TEXT NULL,
+                ZipCode TEXT NULL,
+                Phone TEXT NULL,
+                Email TEXT NULL,
+                Website TEXT NULL,
+                TaxId TEXT NULL,
+                DefaultTaxStateCode TEXT NULL,
+                LogoPath TEXT NULL,
+                LastModified TEXT NOT NULL
+            );
             """;
         await cmd.ExecuteNonQueryAsync();
 
@@ -225,6 +240,48 @@ public class DatabaseMigrationTests : IDisposable
         context.SaveChanges();
 
         context.Customers.Single(c => c.Id == customer.Id).Name.Should().Be("First Customer");
+    }
+
+    [Fact]
+    public async Task Migration_AddsSaleUnitOfMeasure_DefaultingToEach()
+    {
+        await CreateLegacyDatabaseAsync(saleQuantity: 3);
+
+        await DatabaseMigrationHelper.ApplySchemaUpdatesAsync(_dbPath);
+
+        using var context = new StockAndFlowDbContext(_dbPath);
+        var sale = context.Sales.Single();
+        sale.UnitOfMeasure.Should().Be("each", "sales predating measured goods were counted");
+        sale.QuantityDisplay.Should().Be("3", "counted sales must not sprout a unit suffix");
+    }
+
+    [Fact]
+    public async Task Migration_AddsInvoiceDisplayColumns_DefaultingToShown()
+    {
+        await CreateLegacyDatabaseAsync();
+
+        using (var seed = new SqliteConnection($"Data Source={_dbPath}"))
+        {
+            await seed.OpenAsync();
+            var insert = seed.CreateCommand();
+            insert.CommandText = """
+                INSERT INTO BusinessSettings (Id, BusinessName, LastModified)
+                VALUES ($id, 'Legacy Candle Co', '2025-01-01 00:00:00');
+                """;
+            insert.Parameters.AddWithValue("$id", Guid.NewGuid().ToString().ToUpperInvariant());
+            await insert.ExecuteNonQueryAsync();
+        }
+
+        await DatabaseMigrationHelper.ApplySchemaUpdatesAsync(_dbPath);
+
+        using var context = new StockAndFlowDbContext(_dbPath);
+        var settings = context.BusinessSettings.Single();
+        settings.BusinessName.Should().Be("Legacy Candle Co");
+        settings.ShowLogoOnInvoice.Should().BeTrue("existing invoices must keep looking the same");
+        settings.ShowPhoneOnInvoice.Should().BeTrue();
+        settings.ShowEmailOnInvoice.Should().BeTrue();
+        settings.ShowWebsiteOnInvoice.Should().BeTrue();
+        settings.ShowTaxIdOnInvoice.Should().BeTrue();
     }
 
     [Fact]

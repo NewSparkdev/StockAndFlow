@@ -72,6 +72,7 @@ public static class MauiProgram
 		services.AddSingleton<AdjustmentsViewModel>();
 		services.AddSingleton<CustomersViewModel>();
 		services.AddTransient<BusinessSettingsViewModel>();
+		services.AddTransient<ShopifySettingsViewModel>();
 		services.AddTransient<AddEditCustomerViewModel>();
 
 		// Pages

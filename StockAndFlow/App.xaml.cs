@@ -129,6 +129,7 @@ namespace StockAndFlow
 
             // Transient editor ViewModel resolved directly by RecordSaleDialog's "edit settings" path.
             services.AddTransient<BusinessSettingsViewModel>();
+            services.AddTransient<ShopifySettingsViewModel>();
         }
 
         private async Task<AppSettings> LoadSettingsAsync()

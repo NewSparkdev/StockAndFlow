@@ -2,79 +2,163 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Serilog;
 using StockAndFlow.Models;
 
 namespace StockAndFlow.Services
 {
+    /// <summary>
+    /// Two-way sync with a Shopify store via the REST Admin API using a custom-app access token.
+    /// Shopify returns snake_case JSON with prices as strings ("19.99"), so all DTOs carry
+    /// explicit <see cref="JsonPropertyNameAttribute"/> mappings and deserialization allows
+    /// numbers-from-strings — default (PascalCase, strict) parsing silently produces empty
+    /// objects, which made every sync a no-op that still reported success.
+    /// </summary>
     public class ShopifyService
     {
+        // Shopify supports each API version for ~12 months after release. Bump this
+        // periodically (and re-run ShopifyServiceTests) — requests to sunset versions
+        // get silently redirected to the oldest supported version.
+        private const string ApiVersion = "2026-01";
+
+        private const int PageSize = 250; // Shopify's maximum page size
+
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
+        };
+
         private readonly IDataService _dataService;
         private readonly InventoryService _inventoryService;
         private readonly SalesService _salesService;
-
-        // Static HttpClient to prevent socket exhaustion
-        private static readonly HttpClient _httpClient = new HttpClient
-        {
-            Timeout = TimeSpan.FromSeconds(30)
-        };
+        private readonly HttpClient _httpClient;
 
         public event EventHandler<string>? SyncStatusChanged;
         public event EventHandler<Exception>? SyncError;
 
+        /// <summary>Raised after a sync that changed local data, so views can reload.</summary>
+        public event EventHandler? SyncCompleted;
+
         private bool _isEnabled;
         private string? _storeName;
         private string? _accessToken;
+        private int _salesImported;
 
         public bool IsConfigured => _isEnabled && !string.IsNullOrEmpty(_storeName) && !string.IsNullOrEmpty(_accessToken);
 
         public ShopifyService(
             IDataService dataService,
             InventoryService inventoryService,
-            SalesService salesService)
+            SalesService salesService,
+            HttpMessageHandler? httpMessageHandler = null)
         {
             _dataService = dataService;
             _inventoryService = inventoryService;
             _salesService = salesService;
+            // The service is a singleton, so one HttpClient for its lifetime avoids socket
+            // exhaustion. The handler override exists for tests.
+            _httpClient = httpMessageHandler == null
+                ? new HttpClient { Timeout = TimeSpan.FromSeconds(30) }
+                : new HttpClient(httpMessageHandler) { Timeout = TimeSpan.FromSeconds(30) };
         }
 
+        /// <summary>Reads current credentials from settings. Safe to call again after they change.</summary>
         public async Task InitializeAsync()
         {
             var settings = await _dataService.GetSettingsAsync();
             _isEnabled = settings.ShopifyEnabled;
-            _storeName = settings.ShopifyStoreName;
+            _storeName = NormalizeStoreName(settings.ShopifyStoreName);
             _accessToken = settings.ShopifyAccessToken;
-
-            if (IsConfigured)
-            {
-                ConfigureHttpClient();
-            }
         }
 
-        private void ConfigureHttpClient()
+        /// <summary>
+        /// Accepts "mystore", "mystore.myshopify.com", or a pasted admin URL and reduces it
+        /// to the bare store handle.
+        /// </summary>
+        public static string? NormalizeStoreName(string? raw)
         {
-            // Validate that we're using HTTPS
-            var baseUrl = $"https://{_storeName}.myshopify.com/admin/api/2024-01/";
-            var uri = new Uri(baseUrl);
+            if (string.IsNullOrWhiteSpace(raw))
+                return raw;
 
-            if (uri.Scheme != Uri.UriSchemeHttps)
+            var name = raw.Trim();
+            name = name.Replace("https://", "", StringComparison.OrdinalIgnoreCase)
+                       .Replace("http://", "", StringComparison.OrdinalIgnoreCase);
+            var slash = name.IndexOf('/');
+            if (slash >= 0)
+                name = name.Substring(0, slash);
+            const string suffix = ".myshopify.com";
+            if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(0, name.Length - suffix.Length);
+            return name;
+        }
+
+        private string BaseUrl => $"https://{_storeName}.myshopify.com/admin/api/{ApiVersion}/";
+
+        /// <summary>GET with the access token attached per-request (the client itself stays unconfigured
+        /// so credentials can change at runtime). Accepts a relative path or an absolute pagination URL.</summary>
+        private Task<HttpResponseMessage> GetAsync(string pathOrUrl)
+        {
+            var url = pathOrUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                ? pathOrUrl
+                : BaseUrl + pathOrUrl;
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("X-Shopify-Access-Token", _accessToken);
+            return _httpClient.SendAsync(request);
+        }
+
+        private Task<HttpResponseMessage> PostAsync(string path, object payload)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, BaseUrl + path)
             {
-                throw new InvalidOperationException("Shopify API must use HTTPS");
-            }
+                Content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
+            };
+            request.Headers.Add("X-Shopify-Access-Token", _accessToken);
+            return _httpClient.SendAsync(request);
+        }
 
-            _httpClient.BaseAddress = uri;
-            _httpClient.DefaultRequestHeaders.Clear();
+        /// <summary>
+        /// Like EnsureSuccessStatusCode, but includes Shopify's error body in the message —
+        /// a bare "403 Forbidden" hides whether the cause is a missing scope, protected
+        /// customer data, or an expired token.
+        /// </summary>
+        private static async Task EnsureSuccessAsync(HttpResponseMessage response, string what)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
 
-            // Validate access token before adding
-            if (string.IsNullOrWhiteSpace(_accessToken))
+            var body = string.Empty;
+            try { body = await response.Content.ReadAsStringAsync(); } catch { /* best effort */ }
+            if (body.Length > 500) body = body.Substring(0, 500);
+
+            Log.Error("Shopify {What} request failed: {Status} {Reason} — {Body}",
+                what, (int)response.StatusCode, response.ReasonPhrase, body);
+
+            throw new HttpRequestException(
+                $"Shopify returned {(int)response.StatusCode} {response.ReasonPhrase} for {what}. {body}");
+        }
+
+        /// <summary>Extracts the rel="next" URL from Shopify's Link pagination header, if any.</summary>
+        private static string? NextPageUrl(HttpResponseMessage response)
+        {
+            if (!response.Headers.TryGetValues("Link", out var values))
+                return null;
+
+            foreach (var value in values)
             {
-                throw new InvalidOperationException("Access token cannot be empty");
+                foreach (var part in value.Split(','))
+                {
+                    if (!part.Contains("rel=\"next\"", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    var start = part.IndexOf('<');
+                    var end = part.IndexOf('>');
+                    if (start >= 0 && end > start)
+                        return part.Substring(start + 1, end - start - 1);
+                }
             }
-
-            _httpClient.DefaultRequestHeaders.Add("X-Shopify-Access-Token", _accessToken);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return null;
         }
 
         public async Task<bool> TestConnectionAsync()
@@ -84,8 +168,15 @@ namespace StockAndFlow.Services
 
             try
             {
-                var response = await _httpClient.GetAsync("shop.json");
-                return response.IsSuccessStatusCode;
+                var response = await GetAsync("shop.json");
+                if (!response.IsSuccessStatusCode)
+                    return false;
+
+                // Status alone isn't proof — a wrong store name can return an HTML page.
+                // Make sure the body actually parses as a shop.
+                var json = await response.Content.ReadAsStringAsync();
+                var shop = JsonSerializer.Deserialize<ShopifyShopResponse>(json, JsonOptions);
+                return shop?.Shop?.Id > 0;
             }
             catch
             {
@@ -103,34 +194,47 @@ namespace StockAndFlow.Services
             {
                 SyncStatusChanged?.Invoke(this, "Fetching products from Shopify...");
 
-                var response = await _httpClient.GetAsync("products.json");
-                response.EnsureSuccessStatusCode();
+                var products = new List<ShopifyProduct>();
+                string? url = $"products.json?limit={PageSize}";
+                while (url != null)
+                {
+                    var response = await GetAsync(url);
+                    await EnsureSuccessAsync(response, "products");
 
-                var json = await response.Content.ReadAsStringAsync();
-                var shopifyResponse = JsonSerializer.Deserialize<ShopifyProductsResponse>(json);
+                    var json = await response.Content.ReadAsStringAsync();
+                    var page = JsonSerializer.Deserialize<ShopifyProductsResponse>(json, JsonOptions);
+                    Log.Information("Shopify products page returned {Count} products", page?.Products?.Count ?? 0);
+                    if (page?.Products != null)
+                        products.AddRange(page.Products);
 
-                if (shopifyResponse?.Products == null || shopifyResponse.Products.Count == 0)
+                    url = NextPageUrl(response);
+                }
+
+                if (products.Count == 0)
                 {
                     await transaction.CommitAsync();
+                    SyncStatusChanged?.Invoke(this, "No products found in the Shopify store");
                     return;
                 }
 
-                SyncStatusChanged?.Invoke(this, $"Syncing {shopifyResponse.Products.Count} products...");
+                SyncStatusChanged?.Invoke(this, $"Syncing {products.Count} products...");
 
-                // Load all items once to prevent N+1 queries (PERFORMANCE FIX)
+                // Load all items once to prevent N+1 queries
                 var allItems = await _inventoryService.GetAllItemsAsync();
 
-                foreach (var shopifyProduct in shopifyResponse.Products)
+                foreach (var shopifyProduct in products)
                 {
                     await SyncProductToInventoryAsync(shopifyProduct, allItems);
                 }
 
                 await transaction.CommitAsync();
-                SyncStatusChanged?.Invoke(this, "Sync completed successfully");
+                SyncStatusChanged?.Invoke(this, $"Sync completed: {products.Count} products");
+                SyncCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                Log.Error(ex, "Shopify product sync failed");
                 SyncError?.Invoke(this, ex);
                 SyncStatusChanged?.Invoke(this, $"Sync failed: {ex.Message}");
             }
@@ -138,11 +242,9 @@ namespace StockAndFlow.Services
 
         private async Task SyncProductToInventoryAsync(ShopifyProduct shopifyProduct, List<InventoryItem> allItems)
         {
-            // Validate product data
             if (shopifyProduct == null || shopifyProduct.Id == 0 || string.IsNullOrWhiteSpace(shopifyProduct.Title))
                 return;
 
-            // Validate variants exist and have valid data
             if (shopifyProduct.Variants == null || shopifyProduct.Variants.Count == 0)
                 return;
 
@@ -150,13 +252,11 @@ namespace StockAndFlow.Services
             if (variant == null)
                 return;
 
-            // Find existing item by Shopify ID (in-memory search)
             var existingItem = allItems.FirstOrDefault(i =>
                 i.ShopifyProductId == shopifyProduct.Id.ToString());
 
             if (existingItem != null)
             {
-                // Update existing item
                 existingItem.Name = shopifyProduct.Title;
                 existingItem.LastModifiedDate = DateTime.Now;
                 existingItem.SalePrice = variant.Price;
@@ -168,7 +268,6 @@ namespace StockAndFlow.Services
             }
             else
             {
-                // Create new item
                 var newItem = new InventoryItem
                 {
                     Name = shopifyProduct.Title,
@@ -190,44 +289,65 @@ namespace StockAndFlow.Services
             if (!IsConfigured)
                 return;
 
-            using var transaction = await _dataService.BeginTransactionAsync();
+            // NO outer transaction here: RecordSaleAsync opens its own (sale + inventory
+            // adjustment + BOM must be atomic together), and SQLite rejects nested
+            // transactions — which made every order import throw. Per-order atomicity is
+            // the right granularity anyway: a partial import is safe because ShopifyOrderId
+            // dedup means the next sync resumes where this one stopped.
             try
             {
                 SyncStatusChanged?.Invoke(this, "Fetching orders from Shopify...");
 
                 var sinceParam = since.HasValue
-                    ? $"?created_at_min={since.Value:yyyy-MM-ddTHH:mm:ssZ}"
+                    ? $"&created_at_min={since.Value:yyyy-MM-ddTHH:mm:ssZ}"
                     : "";
 
-                var response = await _httpClient.GetAsync($"orders.json{sinceParam}");
-                response.EnsureSuccessStatusCode();
-
-                var json = await response.Content.ReadAsStringAsync();
-                var shopifyResponse = JsonSerializer.Deserialize<ShopifyOrdersResponse>(json);
-
-                if (shopifyResponse?.Orders == null || shopifyResponse.Orders.Count == 0)
+                var orders = new List<ShopifyOrder>();
+                string? url = $"orders.json?status=any&limit={PageSize}{sinceParam}";
+                while (url != null)
                 {
-                    await transaction.CommitAsync();
+                    Log.Information("Shopify orders request: {Url}", url);
+                    var response = await GetAsync(url);
+                    await EnsureSuccessAsync(response, "orders");
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    var page = JsonSerializer.Deserialize<ShopifyOrdersResponse>(json, JsonOptions);
+                    Log.Information("Shopify orders page returned {Count} orders (payload {Length} chars)",
+                        page?.Orders?.Count ?? 0, json.Length);
+                    if (page?.Orders != null)
+                        orders.AddRange(page.Orders);
+
+                    url = NextPageUrl(response);
+                }
+
+                if (orders.Count == 0)
+                {
+                    SyncStatusChanged?.Invoke(this, "No new orders found");
                     return;
                 }
 
-                SyncStatusChanged?.Invoke(this, $"Processing {shopifyResponse.Orders.Count} orders...");
+                SyncStatusChanged?.Invoke(this, $"Processing {orders.Count} orders...");
 
-                // Load all data once to prevent N+1 queries (PERFORMANCE FIX)
+                // Load all data once to prevent N+1 queries
                 var allInventoryItems = await _inventoryService.GetAllItemsAsync();
                 var existingSales = await _salesService.GetAllSalesAsync();
 
-                foreach (var order in shopifyResponse.Orders)
+                _salesImported = 0;
+                foreach (var order in orders)
                 {
                     await ProcessShopifyOrderAsync(order, allInventoryItems, existingSales);
                 }
 
-                await transaction.CommitAsync();
-                SyncStatusChanged?.Invoke(this, "Order sync completed");
+                Log.Information("Shopify order sync: {Orders} orders fetched, {Sales} sales imported",
+                    orders.Count, _salesImported);
+                SyncStatusChanged?.Invoke(this, _salesImported > 0
+                    ? $"Order sync completed: {_salesImported} new sale(s) from {orders.Count} order(s)"
+                    : $"Order sync completed: {orders.Count} order(s) fetched, none new to import");
+                SyncCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                Log.Error(ex, "Shopify order sync failed");
                 SyncError?.Invoke(this, ex);
                 SyncStatusChanged?.Invoke(this, $"Order sync failed: {ex.Message}");
             }
@@ -238,45 +358,67 @@ namespace StockAndFlow.Services
             List<InventoryItem> allInventoryItems,
             List<Sale> existingSales)
         {
-            // Validate order data
             if (order == null || order.Id == 0)
                 return;
 
-            // Check if order already processed
             if (existingSales.Any(s => s.ShopifyOrderId == order.Id.ToString()))
+            {
+                Log.Debug("Shopify order {OrderId} already imported; skipping", order.Id);
                 return;
+            }
 
             var lineItems = order.LineItems ?? new List<ShopifyLineItem>();
             if (lineItems.Count == 0)
+            {
+                Log.Warning("Shopify order {OrderId} has no line items", order.Id);
                 return;
+            }
 
             foreach (var lineItem in lineItems)
             {
-                // Validate line item data
-                if (lineItem == null || lineItem.VariantId == 0 || lineItem.Quantity <= 0)
+                // variant_id/product_id are null for custom line items and deleted products
+                if (lineItem == null || lineItem.VariantId is null or 0 || lineItem.Quantity <= 0)
                     continue;
 
-                // Find inventory item by Shopify product/variant ID (in-memory search)
                 var inventoryItem = allInventoryItems.FirstOrDefault(i =>
                     i.ShopifyVariantId == lineItem.VariantId.ToString() ||
-                    i.ShopifyProductId == lineItem.ProductId.ToString());
+                    (lineItem.ProductId != null && i.ShopifyProductId == lineItem.ProductId.ToString()));
 
                 if (inventoryItem != null)
                 {
-                    // Build customer name safely
                     var customerName = !string.IsNullOrWhiteSpace(order.Customer?.FirstName) ||
                                       !string.IsNullOrWhiteSpace(order.Customer?.LastName)
                         ? $"{order.Customer?.FirstName ?? ""} {order.Customer?.LastName ?? ""}".Trim()
                         : null;
 
-                    await _salesService.RecordSaleAsync(
+                    var sale = await _salesService.RecordSaleAsync(
                         inventoryItem.Id,
                         lineItem.Quantity,
                         lineItem.Price,
                         customerName,
                         order.Customer?.Email,
-                        $"Shopify Order #{order.OrderNumber ?? order.Id.ToString()}"
+                        $"Shopify Order #{order.OrderNumber?.ToString() ?? order.Id.ToString()}"
                     );
+
+                    // Stamp the Shopify order id on the sale — it is the dedup key that stops
+                    // the same order being re-imported as a new sale on every sync.
+                    if (sale != null)
+                    {
+                        sale.ShopifyOrderId = order.Id.ToString();
+                        sale.ShopifyOrderNumber = order.OrderNumber?.ToString();
+                        await _dataService.SaveAsync(sale);
+                        existingSales.Add(sale);
+                        _salesImported++;
+                    }
+                }
+                else
+                {
+                    // The finished good isn't in local inventory (product sync not run, or the
+                    // product was deleted in Shopify). Skipping silently used to make this look
+                    // like "nothing to import".
+                    Log.Warning("Shopify order {OrderId}: no local inventory item matches " +
+                                "variant {VariantId} / product {ProductId} — line item skipped",
+                        order.Id, lineItem.VariantId, lineItem.ProductId);
                 }
             }
         }
@@ -289,11 +431,11 @@ namespace StockAndFlow.Services
             try
             {
                 // Get inventory item ID from variant
-                var variantResponse = await _httpClient.GetAsync($"variants/{item.ShopifyVariantId}.json");
+                var variantResponse = await GetAsync($"variants/{item.ShopifyVariantId}.json");
                 variantResponse.EnsureSuccessStatusCode();
 
                 var variantJson = await variantResponse.Content.ReadAsStringAsync();
-                var variant = JsonSerializer.Deserialize<ShopifyVariantResponse>(variantJson);
+                var variant = JsonSerializer.Deserialize<ShopifyVariantResponse>(variantJson, JsonOptions);
 
                 if (variant?.Variant?.InventoryItemId == null)
                     return;
@@ -301,17 +443,16 @@ namespace StockAndFlow.Services
                 // Get location if not provided (use first location)
                 if (locationId == null)
                 {
-                    var locationsResponse = await _httpClient.GetAsync("locations.json");
+                    var locationsResponse = await GetAsync("locations.json");
                     locationsResponse.EnsureSuccessStatusCode();
                     var locationsJson = await locationsResponse.Content.ReadAsStringAsync();
-                    var locations = JsonSerializer.Deserialize<ShopifyLocationsResponse>(locationsJson);
+                    var locations = JsonSerializer.Deserialize<ShopifyLocationsResponse>(locationsJson, JsonOptions);
                     locationId = locations?.Locations?.FirstOrDefault()?.Id ?? 0;
                 }
 
                 if (locationId == 0)
                     return;
 
-                // Update inventory level using the correct API endpoint
                 var updatePayload = new
                 {
                     location_id = locationId,
@@ -319,12 +460,8 @@ namespace StockAndFlow.Services
                     available = (int)Math.Round(item.QuantityOnHand)
                 };
 
-                var content = new StringContent(
-                    JsonSerializer.Serialize(updatePayload),
-                    System.Text.Encoding.UTF8,
-                    "application/json");
-
-                await _httpClient.PostAsync("inventory_levels/set.json", content);
+                var response = await PostAsync("inventory_levels/set.json", updatePayload);
+                response.EnsureSuccessStatusCode();
 
                 SyncStatusChanged?.Invoke(this, $"Updated inventory for {item.Name}");
             }
@@ -336,71 +473,131 @@ namespace StockAndFlow.Services
         }
     }
 
-    // Shopify API DTOs
+    // Shopify REST Admin API DTOs. Shopify serializes snake_case with prices as strings;
+    // every property carries an explicit mapping because default resolution matches none of them.
+    public class ShopifyShopResponse
+    {
+        [JsonPropertyName("shop")]
+        public ShopifyShop? Shop { get; set; }
+    }
+
+    public class ShopifyShop
+    {
+        [JsonPropertyName("id")]
+        public long Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+    }
+
     public class ShopifyProductsResponse
     {
+        [JsonPropertyName("products")]
         public List<ShopifyProduct>? Products { get; set; }
     }
 
     public class ShopifyProduct
     {
+        [JsonPropertyName("id")]
         public long Id { get; set; }
+
+        [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("product_type")]
         public string? ProductType { get; set; }
+
+        [JsonPropertyName("variants")]
         public List<ShopifyVariant>? Variants { get; set; }
     }
 
     public class ShopifyVariant
     {
+        [JsonPropertyName("id")]
         public long Id { get; set; }
+
+        [JsonPropertyName("price")]
         public decimal Price { get; set; }
+
+        [JsonPropertyName("sku")]
         public string? Sku { get; set; }
+
+        [JsonPropertyName("inventory_quantity")]
         public int InventoryQuantity { get; set; }
+
+        [JsonPropertyName("inventory_item_id")]
         public long? InventoryItemId { get; set; }
     }
 
     public class ShopifyVariantResponse
     {
+        [JsonPropertyName("variant")]
         public ShopifyVariant? Variant { get; set; }
     }
 
     public class ShopifyOrdersResponse
     {
+        [JsonPropertyName("orders")]
         public List<ShopifyOrder>? Orders { get; set; }
     }
 
     public class ShopifyOrder
     {
+        [JsonPropertyName("id")]
         public long Id { get; set; }
-        public string? OrderNumber { get; set; }
-        public DateTime CreatedAt { get; set; }
+
+        [JsonPropertyName("order_number")]
+        public long? OrderNumber { get; set; }
+
+        [JsonPropertyName("created_at")]
+        public DateTimeOffset CreatedAt { get; set; }
+
+        [JsonPropertyName("line_items")]
         public List<ShopifyLineItem>? LineItems { get; set; }
+
+        [JsonPropertyName("customer")]
         public ShopifyCustomer? Customer { get; set; }
     }
 
     public class ShopifyLineItem
     {
-        public long ProductId { get; set; }
-        public long VariantId { get; set; }
+        [JsonPropertyName("product_id")]
+        public long? ProductId { get; set; }
+
+        [JsonPropertyName("variant_id")]
+        public long? VariantId { get; set; }
+
+        [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
+
+        [JsonPropertyName("price")]
         public decimal Price { get; set; }
     }
 
     public class ShopifyCustomer
     {
+        [JsonPropertyName("first_name")]
         public string? FirstName { get; set; }
+
+        [JsonPropertyName("last_name")]
         public string? LastName { get; set; }
+
+        [JsonPropertyName("email")]
         public string? Email { get; set; }
     }
 
     public class ShopifyLocationsResponse
     {
+        [JsonPropertyName("locations")]
         public List<ShopifyLocation>? Locations { get; set; }
     }
 
     public class ShopifyLocation
     {
+        [JsonPropertyName("id")]
         public long Id { get; set; }
+
+        [JsonPropertyName("name")]
         public string? Name { get; set; }
     }
 }

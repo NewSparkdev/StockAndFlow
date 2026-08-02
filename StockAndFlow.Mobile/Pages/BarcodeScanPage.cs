@@ -1,6 +1,4 @@
-using SkiaSharp;
-using ZXing;
-using ZXing.Common;
+using StockAndFlow.Services;
 
 namespace StockAndFlow.Mobile.Pages;
 
@@ -12,6 +10,10 @@ namespace StockAndFlow.Mobile.Pages;
 public class BarcodeScanPage : ContentPage
 {
     public event EventHandler<string>? BarcodeDetected;
+
+    // Decoding lives in Core's BarcodeService so it is shared with label generation and
+    // covered by tests (generated barcodes are decoded back through this exact path).
+    private static readonly BarcodeService Decoder = new();
 
     private readonly ActivityIndicator _spinner;
     private readonly Label _statusLabel;
@@ -114,38 +116,7 @@ public class BarcodeScanPage : ContentPage
             var barcode = await Task.Run(async () =>
             {
                 await using var stream = await photo.OpenReadAsync();
-                using var bitmap = SKBitmap.Decode(stream);
-                if (bitmap == null) return null;
-
-                // ZXing needs raw pixels in BGRA32 format
-                var bytes = bitmap.Bytes;
-                var src = new RGBLuminanceSource(bytes, bitmap.Width, bitmap.Height,
-                    RGBLuminanceSource.BitmapFormat.BGRA32);
-
-                var reader = new BarcodeReaderGeneric
-                {
-                    AutoRotate = true,
-                    Options = new DecodingOptions
-                    {
-                        TryHarder = true,
-                        PossibleFormats = new List<BarcodeFormat>
-                        {
-                            BarcodeFormat.QR_CODE,
-                            BarcodeFormat.CODE_128,
-                            BarcodeFormat.CODE_39,
-                            BarcodeFormat.EAN_13,
-                            BarcodeFormat.EAN_8,
-                            BarcodeFormat.UPC_A,
-                            BarcodeFormat.UPC_E,
-                            BarcodeFormat.ITF,
-                            BarcodeFormat.DATA_MATRIX,
-                            BarcodeFormat.PDF_417,
-                            BarcodeFormat.AZTEC,
-                        }
-                    }
-                };
-
-                return reader.Decode(src)?.Text;
+                return Decoder.Decode(stream);
             });
 
             if (!string.IsNullOrEmpty(barcode))

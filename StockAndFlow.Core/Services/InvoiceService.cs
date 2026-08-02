@@ -20,6 +20,7 @@ namespace StockAndFlow.Services
     public class InvoiceService
     {
         private readonly BusinessSettingsService _settingsService;
+        private readonly Platform.IPathProvider? _pathProvider;
 
         // US Letter at 72 dpi (PDF points).
         private const float PageWidth = 612f;
@@ -38,9 +39,10 @@ namespace StockAndFlow.Services
         private static readonly SKColor GreyLight = new(0xEE, 0xEE, 0xEE);
         private static readonly SKColor White = SKColors.White;
 
-        public InvoiceService(BusinessSettingsService settingsService)
+        public InvoiceService(BusinessSettingsService settingsService, Platform.IPathProvider? pathProvider = null)
         {
             _settingsService = settingsService;
+            _pathProvider = pathProvider;
         }
 
         /// <summary>
@@ -90,7 +92,10 @@ namespace StockAndFlow.Services
             using var stream = new SKFileWStream(outputPath);
             using var document = SKDocument.CreatePdf(stream);
 
-            var ctx = new RenderContext(document, regular, bold, italic);
+            var ctx = new RenderContext(document, regular, bold, italic)
+            {
+                OnPageEnd = c => DrawFooter(c, settings)
+            };
             ctx.BeginPage();
 
             DrawHeader(ctx, settings, transaction);
@@ -98,10 +103,32 @@ namespace StockAndFlow.Services
             DrawTotals(ctx, transaction);
             DrawNotes(ctx, transaction);
             DrawThankYou(ctx);
-            DrawFooter(ctx, settings);
 
             ctx.EndPage();
             document.Close();
+        }
+
+        /// <summary>
+        /// Finds a readable logo file for the invoice. Stored paths can be absolute paths from a
+        /// previous install (mobile app sandboxes move), so fall back to re-basing the file name
+        /// onto the current Images directory — same strategy as the app's ImagePathConverter.
+        /// </summary>
+        private string? ResolveLogoPath(BusinessSettings settings)
+        {
+            var stored = settings.LogoPath;
+            if (string.IsNullOrWhiteSpace(stored))
+                return null;
+            if (File.Exists(stored))
+                return stored;
+
+            var fileName = Path.GetFileName(stored);
+            if (_pathProvider != null && !string.IsNullOrEmpty(fileName))
+            {
+                var rebased = Path.Combine(_pathProvider.ImagesDirectory, fileName);
+                if (File.Exists(rebased))
+                    return rebased;
+            }
+            return null;
         }
 
         private void DrawHeader(RenderContext ctx, BusinessSettings settings, SaleTransaction transaction)
@@ -110,6 +137,36 @@ namespace StockAndFlow.Services
 
             // Left column: business identity.
             float leftY = topY;
+
+            // Business logo above the name, scaled into a bounded box. A logo that fails to
+            // decode is simply skipped — an invoice must never fail because of a bad image.
+            if (settings.ShowLogoOnInvoice)
+            {
+                var logoPath = ResolveLogoPath(settings);
+                if (logoPath != null)
+                {
+                    try
+                    {
+                        using var logo = SKBitmap.Decode(logoPath);
+                        if (logo != null && logo.Width > 0 && logo.Height > 0)
+                        {
+                            const float maxLogoWidth = 160f;
+                            const float maxLogoHeight = 56f;
+                            var scale = Math.Min(Math.Min(maxLogoWidth / logo.Width, maxLogoHeight / logo.Height), 1f);
+                            var w = logo.Width * scale;
+                            var h = logo.Height * scale;
+                            var dest = new SKRect(ContentLeft, Margin, ContentLeft + w, Margin + h);
+                            ctx.Canvas.DrawBitmap(logo, dest);
+                            leftY = Margin + h + 20f;
+                        }
+                    }
+                    catch
+                    {
+                        // Undecodable image — render the text-only header.
+                    }
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(settings.BusinessName))
             {
                 ctx.Text(settings.BusinessName!, ContentLeft, leftY, 18, ctx.Bold, Brand);
@@ -125,18 +182,18 @@ namespace StockAndFlow.Services
                 ctx.Text($"{settings.City}, {settings.State} {settings.ZipCode}", ContentLeft, leftY, 9, ctx.Regular, Ink);
                 leftY += 12f;
             }
-            if (!string.IsNullOrWhiteSpace(settings.Phone))
+            if (settings.ShowPhoneOnInvoice && !string.IsNullOrWhiteSpace(settings.Phone))
             {
                 leftY += 3f;
                 ctx.Text($"Phone: {settings.Phone}", ContentLeft, leftY, 9, ctx.Regular, Ink);
                 leftY += 12f;
             }
-            if (!string.IsNullOrWhiteSpace(settings.Email))
+            if (settings.ShowEmailOnInvoice && !string.IsNullOrWhiteSpace(settings.Email))
             {
                 ctx.Text($"Email: {settings.Email}", ContentLeft, leftY, 9, ctx.Regular, Ink);
                 leftY += 12f;
             }
-            if (!string.IsNullOrWhiteSpace(settings.Website))
+            if (settings.ShowWebsiteOnInvoice && !string.IsNullOrWhiteSpace(settings.Website))
             {
                 ctx.Text($"Web: {settings.Website}", ContentLeft, leftY, 9, ctx.Regular, Ink);
                 leftY += 12f;
@@ -205,8 +262,13 @@ namespace StockAndFlow.Services
 
                 float baseline = ctx.Y + RowHeight - CellPad;
                 ctx.Text(item.ItemName ?? string.Empty, ColItemX + CellPad, baseline, 11, ctx.Regular, Ink);
-                ctx.Text(item.Quantity.ToString(), ColQtyCenter, baseline, 11, ctx.Regular, Ink, SKTextAlign.Center);
-                ctx.Text($"${item.SalePricePerUnit:N2}", ColUnitEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
+                // "2.5 oz" for measured goods, "3" for counted — a bare number on a customer
+                // invoice is ambiguous for anything sold by weight or volume.
+                ctx.Text(item.QuantityDisplay, ColQtyCenter, baseline, 11, ctx.Regular, Ink, SKTextAlign.Center);
+                var unitPrice = item.IsMeasured
+                    ? $"${item.SalePricePerUnit:N2}/{item.UnitOfMeasure}"
+                    : $"${item.SalePricePerUnit:N2}";
+                ctx.Text(unitPrice, ColUnitEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
                 ctx.Text($"${item.Revenue:N2}", ColTotalEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
 
                 ctx.Y += RowHeight;
@@ -225,11 +287,34 @@ namespace StockAndFlow.Services
             ctx.Y += RowHeight;
         }
 
+        /// <summary>
+        /// Lowest y a block may occupy before it collides with the footer strip.
+        /// </summary>
+        private const float ContentBottom = PageHeight - Margin - 44f;
+
+        /// <summary>
+        /// Starts a new page when <paramref name="needed"/> points wouldn't fit above the
+        /// footer. Without this, totals and notes drew straight over the footer text and off
+        /// the bottom of the page whenever the item table ended low.
+        /// </summary>
+        private static void EnsureSpace(RenderContext ctx, float needed)
+        {
+            if (ctx.Y + needed <= ContentBottom)
+                return;
+
+            ctx.EndPage();
+            ctx.BeginPage();
+            ctx.Y = Margin + 16f;
+        }
+
         private void DrawTotals(RenderContext ctx, SaleTransaction transaction)
         {
             var subtotal = transaction.Items.Sum(i => i.Subtotal);
             var tax = transaction.Items.Sum(i => i.TaxAmount);
             var total = transaction.Revenue; // subtotal + tax
+
+            // Subtotal + optional tax + total, plus the leading gap.
+            EnsureSpace(ctx, 24f + (tax > 0 ? 3 : 2) * 18f);
 
             const float labelRight = ContentRight - 120f;
             float y = ctx.Y + 24f;
@@ -256,11 +341,21 @@ namespace StockAndFlow.Services
             if (string.IsNullOrWhiteSpace(transaction.Notes))
                 return;
 
+            var lines = WrapText(ctx, transaction.Notes!, ctx.Regular, 10, ContentWidth).ToList();
+            EnsureSpace(ctx, 28f + 14f + lines.Count * 13f);
+
             float y = ctx.Y + 28f;
             ctx.Text("Notes:", ContentLeft, y, 11, ctx.Bold, Ink);
             y += 14f;
-            foreach (var line in WrapText(ctx, transaction.Notes!, ctx.Regular, 10, ContentWidth))
+            foreach (var line in lines)
             {
+                // A very long note can outrun the page on its own.
+                if (y > ContentBottom)
+                {
+                    ctx.Y = y;
+                    EnsureSpace(ctx, 13f);
+                    y = ctx.Y;
+                }
                 ctx.Text(line, ContentLeft, y, 10, ctx.Regular, Ink);
                 y += 13f;
             }
@@ -269,6 +364,7 @@ namespace StockAndFlow.Services
 
         private void DrawThankYou(RenderContext ctx)
         {
+            EnsureSpace(ctx, 30f);
             float y = ctx.Y + 30f;
             ctx.Text("Thank you for your business!", PageWidth / 2f, y, 12, ctx.Italic, GreyDark, SKTextAlign.Center);
             ctx.Y = y;
@@ -281,7 +377,7 @@ namespace StockAndFlow.Services
             y += 12f;
             ctx.Text($"Generated on: {DateTime.Now:MMMM dd, yyyy 'at' hh:mm tt}", PageWidth / 2f, y, 8, ctx.Regular, GreyMedium, SKTextAlign.Center);
             y += 11f;
-            if (!string.IsNullOrWhiteSpace(settings.TaxId))
+            if (settings.ShowTaxIdOnInvoice && !string.IsNullOrWhiteSpace(settings.TaxId))
             {
                 ctx.Text($"Tax ID: {settings.TaxId}", PageWidth / 2f, y, 8, ctx.Regular, GreyMedium, SKTextAlign.Center);
             }
@@ -329,13 +425,20 @@ namespace StockAndFlow.Services
                 Italic = italic;
             }
 
+            /// <summary>Draws the page footer; runs for every page, not just the last one.</summary>
+            public Action<RenderContext>? OnPageEnd { get; set; }
+
             public void BeginPage()
             {
                 Canvas = _document.BeginPage(PageWidth, PageHeight);
                 Y = Margin;
             }
 
-            public void EndPage() => _document.EndPage();
+            public void EndPage()
+            {
+                OnPageEnd?.Invoke(this);
+                _document.EndPage();
+            }
 
             public void Text(string text, float x, float baseline, float size, SKTypeface typeface, SKColor color,
                 SKTextAlign align = SKTextAlign.Left)

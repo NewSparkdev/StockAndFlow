@@ -65,6 +65,8 @@ existing WPF app. Both apps reference the same Core.
 
 | Commit | What it did |
 |---|---|
+| `21d66af` | Fix Shopify sync (was silently broken: PascalCase parsing of snake_case JSON = no-op syncs, no config UI, sunset API version, no pagination, order dedup never worked) + Shopify settings UI on both platforms. ✅ **Live-verified against a real dev store 2026-08-02** (see §4.18) |
+| `897342b` | Invoices: render business logo + per-field display toggles (**⚠ entity changed — regen compiled model on onboarding before next release**) |
 | `95f9e89` | Fix upgrade crash for pre-customer DBs: migrate `Sales.CustomerId` + `Customers` table |
 | `60a9dfb` | Harden credential encryption: AES-GCM + "enc1:" marker, resilient key init, mobile migration, backup exclusions |
 | `30bd0db` | WPF parity: unit-of-measure picker, extra-costs field, BOM cost breakdown |
@@ -225,9 +227,10 @@ existing WPF app. Both apps reference the same Core.
 - **Mobile (Android + iOS):** real camera capture via `MediaPicker.CapturePhotoAsync`; image
   decoded with **ZXing.Net** (`BarcodeReader`). Scanned value populates the SKU/Barcode field on
   Add/Edit Inventory and pre-fills search on Record Sale.
-- **WPF desktop:** USB HID barcode scanner support. Scanners appear as keyboards; a `PreviewKeyDown`
-  listener on the Record Sale window collects rapid keystrokes (< 50 ms apart) and fires the scan
-  handler when `Enter` arrives, bypassing normal text input.
+- **WPF desktop:** USB HID barcode scanner support. Scanners appear as keyboards, so the Record
+  Sale window's barcode box takes focus and `Enter` fires the SKU lookup.
+  *(Correction 2026-08-02: this entry previously described 50 ms keystroke-timing detection —
+  no such logic exists in the code, and none is needed for a real scanner.)*
 
 ### 4.10 Bill of Materials / Recipe feature (2026-07-xx, commits `fd22345`–`f965afc`)
 A "finished good" inventory item can now declare which other items it consumes per unit sold
@@ -388,6 +391,165 @@ Two workflows added to the `worktree-onboarding` branch, triggered on `v*` tags:
   upload; Apple processing ~10–30 min). CI runs monitored via the public GitHub API
   (`gh` CLI now installed for next time).
 
+### 4.18 Shopify sync: fixed, given a UI, and live-verified (2026-08-02, commit `21d66af`)
+**The feature had never worked.** Four defects, none of which would ever surface as an error:
+1. DTOs parsed Shopify's snake_case JSON with .NET defaults (PascalCase, strict) → every
+   response deserialized into empty objects → sync reported **"completed successfully" while
+   syncing nothing**.
+2. **No configuration UI existed on any platform** — the WPF "not configured" alert pointed at
+   Business Settings fields that don't exist. Credentials could not be entered at all.
+3. API version pinned to `2024-01`, sunset by Shopify in early 2025; no pagination (50-product
+   ceiling).
+4. Imported orders never got `ShopifyOrderId` stamped on the sale — the dedup key — so every
+   sync would have **re-imported all orders as duplicate sales and re-deducted inventory**.
+
+Fixes: explicit `JsonPropertyName` mappings + numbers-from-strings; nullable line-item
+product/variant ids (null for custom items); API version `2026-01` as a documented const;
+Link-header pagination at 250/page; order-id stamping; connection test now validates the body
+parses as a shop (wrong store names return HTML 200s); per-request auth headers instead of
+mutating a static `HttpClient.BaseAddress` (throws after first use — credentials could never be
+changed at runtime); store-name normalization (`https://x.myshopify.com/admin` → `x`);
+injectable `HttpMessageHandler` for tests. **13 new tests** against real-shape Shopify JSON.
+
+New **Shopify Sync** settings screen on both heads (shared `ShopifySettingsViewModel`):
+enable toggle, store name + token with help text, Test Connection, Sync Now, live status.
+
+**Live verification (2026-08-02)** — Shopify Partners → Dev Dashboard:
+- Dev store **`stockandflow-test.myshopify.com`** (Basic plan, sample data), org NewSpark.dev.
+- Custom app **"Stock & Flow"**, installed, scopes `read_products`, `read_orders`,
+  `read_inventory`, `write_inventory`. Admin API token is single-reveal — held by the user only.
+- ✅ Test Connection → connected. ✅ Sync Now → **real products appear in Inventory**.
+- ✅ Bonus proof of the credential work: the token is on disk as `enc1:`-prefixed DPAPI
+  ciphertext in `Data/settings.json` — the hardening from `60a9dfb` working on a real secret.
+- ✅ **Order→sale sync live-verified** after fixing a 5th bug the live test exposed (commit
+  `652926b`): a test order placed in the dev store imported as a sale — Selling Plans Ski Wax
+  ×2 @ $24.95, `ShopifyOrderId` stamped. **The bug: `SyncOrdersAsync` opened a transaction and
+  `RecordSaleAsync` opens its own → SQLite "connection is already in a transaction" → every
+  order import threw, always.** Orders were fetched and parsed fine; the failure was one step
+  later, at the write.
+- 🚩 **The unit tests missed it because `InMemoryDataService` allowed nested transactions.**
+  The fake now throws exactly like SQLite; with that fidelity fix the order test fails first,
+  then passes. Lesson: a test double that is more permissive than the real dependency will
+  certify broken code.
+- ⚠️ **Known issue — inventory double-deduction on order import.** Shopify already decrements
+  stock when an order is placed, and product sync copies Shopify's number down; then order
+  import records a sale that deducts *again*. Observed: Shopify 8 → local 6. Self-corrects on
+  the next product sync (which overwrites from Shopify), but the local count is wrong in
+  between and spurious adjustments are recorded. Needs a product decision on who owns stock
+  truth before the paywall advertises this feature.
+- Gotcha for next time: the WPF app keeps its SQLite data in an uncheckpointed WAL while running,
+  so the DB can't be inspected externally until the app exits cleanly — verify through the UI.
+
+### 4.19 Export/Import tested for the first time — two serious bugs (2026-08-02, commit `28f2d9a`)
+The backup/restore feature (and a paywall lever) had **zero tests**. Writing the first eight
+surfaced two defects, both invisible in normal use:
+1. **Silent data loss on backup/restore.** The Inventory sheet exported 9 columns and omitted
+   `UnitOfMeasure`, `MinimumStockLevel`, `ExtraCostPerUnit`, `Supplier`, `Notes`. Restoring a
+   backup silently reset how an item is measured (90.5 **oz** of wax came back as "each"),
+   wiped restock levels, labor costs, suppliers and notes. Now 14 columns; imports read by
+   **header name** so old spreadsheets still work and a missing column never blanks a value.
+2. **Import crashed on mobile, *after* committing.** `import_history.json` used a relative
+   `Data/...` path resolved against the process working directory — outside the sandbox on
+   Android/iOS, directory never created. It's written *after* `CommitAsync()`, so the failure
+   hit the catch, which called `RollbackAsync()` on a committed transaction, throwing a second
+   exception that escaped the method entirely. On device: data imported, then unhandled crash,
+   real cause masked. Fixed via `IPathProvider` (absolute, sandboxed) + directory creation, a
+   `committed` flag so a committed transaction is never rolled back, and non-fatal history
+   bookkeeping. **This is very likely the pending "on-device Excel import round-trip" item.**
+
+Verified on the real desktop database (22 items incl. Shopify products, 20 sales incl. order
+#1001): export writes 14 columns; importing that backup into a *copy* restored everything with
+no duplicates and no field loss (6/6 assertions).
+
+### 4.20 Invoice layout bug + open gaps (2026-08-02, commit `ed68d61`)
+- **Bug: totals could fall off the invoice.** The item table paginated, but `DrawTotals`,
+  `DrawNotes` and `DrawThankYou` drew unconditionally at the cursor. With ~18 line items the
+  table ends low on page 1, so the **Subtotal/Tax/Total block rendered over the footer text and
+  ran off the bottom** — the customer's total, missing from their invoice. Fixed with an
+  `EnsureSpace()` page-break guard; long notes also break mid-block.
+- **Bug: footer only on the last page** of multi-page invoices → now drawn via an
+  `OnPageEnd` hook on every page.
+- Verified on real data (business "Soyful serene"): Shopify order invoice, a real 5-item
+  transaction, and an 18-item taxed invoice with long notes (now correctly 2 pages).
+- ✅ **Units now print on invoice lines** (commit `7dac541`). `Sale` gained `UnitOfMeasure`,
+  captured **at sale time** from the item (not looked up later) so a reprinted invoice keeps the
+  unit the goods were actually sold in. Lines read "2.5 oz" with unit price "$0.80/oz"; counted
+  items still read "3" / "$20.00". Migration defaults existing sales to `each`, so old invoices
+  are unchanged; Excel export/import carry the unit too.
+  **⚠ `Sale` is an EF entity — regenerate the compiled model on `worktree-onboarding`.**
+- ℹ️ **Invoice PDF size — measured, deliberately not changed.** ~1.4 MB on Windows vs ~55 KB on
+  Android. Cause: the SkiaSharp native build embeds whole typefaces (no subsetter), so the cost
+  is entirely the Windows system font. Measured alternatives for the same content:
+  Segoe UI/default 1.39 MB · Arial 1.51 MB · Tahoma 1.01 MB · **Verdana 0.41 MB**.
+  Every option trades the invoice's appearance for size, mobile (the primary product) is already
+  fine, and 1.4 MB is harmless for email or print — so not worth changing the desktop typeface.
+
+### 4.21 Barcode labels + testable scanning (2026-08-02, commit `c1ab314`)
+**New feature — generate a barcode for an item and print it on your product label.** A maker
+printing their own labels previously had no way to get a barcode at all.
+- `BarcodeService` (Core): `GenerateSku`, `CanEncode`, `CreateLabelPng`, `Decode`.
+- Generates **CODE_128** (default) + **QR**; reads 11 formats. **EAN-13/UPC-A deliberately not
+  generated** — those digits come from a paid GS1 company prefix and inventing them would
+  collide with real products. Users who own official barcodes scan/type them in as before; the
+  in-app copy explains own-vs-official and that official ones can simply be entered.
+- Generated SKUs (`SF-K7Q2M9`) avoid O/0/I/1/L so a code can be retyped from a label.
+- Labels: symbol + product-name caption + human-readable code, quiet zone, antialiasing off
+  (blurry edges/missing margins are why printed barcodes fail). 3.24″ × 0.99″ @300 DPI.
+- Mobile shares the PNG; WPF saves to Downloads and offers to open it.
+
+**Made scanning testable.** Decoding lived inside `BarcodeScanPage`, a MAUI page the test
+project cannot reference — *untestable by construction*. Moved into the shared service, so the
+camera path is now the tested path, and the generator supplies real barcodes as fixtures.
+
+Bugs fixed while extracting:
+1. **Pixel-format assumption** — the decoder assumed photos were BGRA32, but `SKBitmap.Decode`
+   returns whatever the source used, which **varies by platform**. Now normalised to BGRA8888.
+   Classic "works on Android, silently fails on iOS" shape. Guarded by an RGBA-input test.
+2. **QR encoded Latin-1** → "Lavender Candle — 8 oz" round-tripped mangled. Now UTF-8, with
+   error-correction level M for scuffed labels; `TryInverted` added for dark surfaces.
+
+21 new tests (137 total) incl. rotation 0/90/180/270, 40% downscale, blank/garbage input, and a
+full generate → scan → find-the-item loop.
+
+**Duplicate barcodes — found in real data, fixed three ways** (commits `827b657`, `c9e638d`):
+Blue Candle and Green Candle both carried SKU `13000`. `SelectItemBySku` takes the first match,
+so scanning that code silently added the **wrong product** to a sale.
+1. Saving an item whose code is already used now asks whether to give it its own code
+   (editing an item keeps its own code without prompting).
+2. `GenerateSku` accepts the codes already in use and never returns one of them.
+3. Excel import logs a warning naming every item in a clashing group.
+Live data repaired 2026-08-02 (DB backed up to `Data/backup_before_sku_fix_*` first): oldest
+item keeps the code, so Blue Candle kept `13000`, Green Candle → `SF-DSGHFC`; 0 duplicates.
+
+Then the ad-hoc numeric codes (`13000`, `140000`, `1000`, `34454` — likely prices typed into
+the SKU box) were replaced with generated ones (backup: `Data/backup_before_sku_rename_*`).
+Current candle codes: Blue `SF-6VXDUA`, Green `SF-DSGHFC`, Purple `SF-Y4CH6S`,
+Red `SF-E8RNTV`, Yellow `SF-XQSSGM`.
+**Snowboards were deliberately left on their `sku-hosted-1` style codes: those come from
+Shopify and `SyncProductToInventoryAsync` copies the variant SKU down on every product sync,
+so a local rename would just be overwritten.**
+
+**Bulk label printing + in-app explanation** (commit `081df97`). One-image-at-a-time labelling
+is unusable for a real product line, and nothing explained the physical workflow.
+- `CreateLabelSheetPdf`: US Letter PDF, grid with dashed cut guides, multi-page, N copies each,
+  **2.50″ × 1.28″** per label; per-label QR fallback for non-ASCII codes.
+- **Mobile:** Settings → *Barcodes & Labels* — tick products, choose copies, share the PDF;
+  tells you how many products still lack a code. **WPF:** *Print Labels* on the Inventory tab →
+  saves to Downloads.
+- `BarcodeHowToText` walks through make code → print → stick on product → scan at sale, plus
+  the two rules that actually bite: **print at 100%** ("fit to page" shrinks bars until they
+  stop scanning) and **one code per product**.
+
+📄 **Printable scan-test sheet** lives in `Downloads\StockAndFlow_TestBarcodes\PRINT_ME_test_sheet.png`
+— barcodes for real inventory items (so a scan should select the named item), the same code as
+QR, an unknown code (should report "no item found"), and a real EAN-13. Print at 100%, never
+"fit to page". Regenerate any time from the current database.
+
+⚠️ **Still hardware-only:** the actual camera capture (`MediaPicker.CapturePhotoAsync`) and a
+real USB scanner. Note `CHAT_LOG` previously claimed the WPF scanner collects keystrokes <50 ms
+apart — **it does not**; the code is simply an Enter handler on the search box, which works with
+real scanners but has no timing logic.
+
 ---
 
 ## 5. Bugs found & fixed during emulator testing
@@ -428,6 +590,9 @@ Two workflows added to the `worktree-onboarding` branch, triggered on `v*` tags:
 ## 6. Open items / what's NOT done yet
 
 ### CI / store delivery
+- **v1.1.5** tagged Aug 2, 2026 (WPF parity + credential hardening + pre-customer DB migration
+  fix) — **milestone: last planned engineering release before monetization work**. Android →
+  Google Play internal, iOS → TestFlight via tag CI.
 - **v1.1.4** live in both channels (Aug 1, 2026): Google Play internal testing + TestFlight.
 - Unit tests run on every push via `.github/workflows/tests.yml`.
 - Store listings not yet submitted: screenshots, descriptions, feature graphic, content rating, privacy policy.
@@ -497,6 +662,9 @@ SDK lives at `C:\Program Files (x86)\Android\android-sdk`; `adb` is in its `plat
 ---
 
 ## 9. Reference docs in the repo
+- `MONETIZATION_PLAN.md` — **locked 2026-08-02**: free tier (30 items, unlimited sales +
+  export, 5 invoices/mo), Pro $8.99/mo · $49.99/yr · $99.99 founding lifetime, testers get
+  lifetime Pro, RevenueCat + sync-code licensing (no accounts/backend). Next build phase.
 - `MOBILE_MIGRATION_PLAN.md` — the migration plan + what's portable.
 - `RELEASE_CHECKLIST.md` — store-release checklist with status.
 - `BUSINESS_PLAN.md` — product/business context.

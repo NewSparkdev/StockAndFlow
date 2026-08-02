@@ -70,6 +70,24 @@
                 <TextBlock Text="SKU" Style="{StaticResource LabelStyle}"/>
                 <TextBox Text="{Binding Sku, UpdateSourceTrigger=PropertyChanged}"/>
 
+                <!-- Barcode label -->
+                <Button Content="🏷  Create barcode label"
+                        Click="OnMakeBarcodeClick"
+                        HorizontalAlignment="Left"
+                        Padding="12,6"
+                        Margin="0,0,0,4"
+                        Background="#95A5A6"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        ToolTip="{Binding BarcodeHelpText}"/>
+                <TextBlock Text="Saves a printable barcode to your Downloads folder — great for markets, craft fairs and your own shop. Selling through a retailer or Amazon? Type or scan their official UPC/EAN into the SKU box instead (hover for details)."
+                           FontSize="11"
+                           Foreground="#7F8C8D"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,15"
+                           ToolTip="{Binding BarcodeHelpText}"/>
+
                 <!-- Category -->
                 <TextBlock Text="Category" Style="{StaticResource LabelStyle}"/>
                 <TextBox Text="{Binding Category, UpdateSourceTrigger=PropertyChanged}"/>

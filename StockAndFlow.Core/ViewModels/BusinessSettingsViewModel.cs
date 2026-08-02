@@ -124,6 +124,43 @@ namespace StockAndFlow.ViewModels
 
         public bool HasLogo => !string.IsNullOrWhiteSpace(LogoPath);
 
+        // Invoice display choices — what appears on generated customer invoices.
+        private bool _showLogoOnInvoice = true;
+        private bool _showPhoneOnInvoice = true;
+        private bool _showEmailOnInvoice = true;
+        private bool _showWebsiteOnInvoice = true;
+        private bool _showTaxIdOnInvoice = true;
+
+        public bool ShowLogoOnInvoice
+        {
+            get => _showLogoOnInvoice;
+            set => SetProperty(ref _showLogoOnInvoice, value);
+        }
+
+        public bool ShowPhoneOnInvoice
+        {
+            get => _showPhoneOnInvoice;
+            set => SetProperty(ref _showPhoneOnInvoice, value);
+        }
+
+        public bool ShowEmailOnInvoice
+        {
+            get => _showEmailOnInvoice;
+            set => SetProperty(ref _showEmailOnInvoice, value);
+        }
+
+        public bool ShowWebsiteOnInvoice
+        {
+            get => _showWebsiteOnInvoice;
+            set => SetProperty(ref _showWebsiteOnInvoice, value);
+        }
+
+        public bool ShowTaxIdOnInvoice
+        {
+            get => _showTaxIdOnInvoice;
+            set => SetProperty(ref _showTaxIdOnInvoice, value);
+        }
+
         public bool IsValid => !string.IsNullOrWhiteSpace(BusinessName);
 
         public ICommand SaveCommand { get; }
@@ -163,6 +200,11 @@ namespace StockAndFlow.ViewModels
                 DefaultTaxStateCode = _settings.DefaultTaxStateCode;
                 SelectedDefaultState = AllStates.FirstOrDefault(s => s.StateCode == _settings.DefaultTaxStateCode);
                 LogoPath = _settings.LogoPath;
+                ShowLogoOnInvoice = _settings.ShowLogoOnInvoice;
+                ShowPhoneOnInvoice = _settings.ShowPhoneOnInvoice;
+                ShowEmailOnInvoice = _settings.ShowEmailOnInvoice;
+                ShowWebsiteOnInvoice = _settings.ShowWebsiteOnInvoice;
+                ShowTaxIdOnInvoice = _settings.ShowTaxIdOnInvoice;
             }
             catch (Exception ex)
             {
@@ -186,6 +228,11 @@ namespace StockAndFlow.ViewModels
                 _settings.TaxId = TaxId;
                 _settings.DefaultTaxStateCode = DefaultTaxStateCode;
                 _settings.LogoPath = LogoPath;
+                _settings.ShowLogoOnInvoice = ShowLogoOnInvoice;
+                _settings.ShowPhoneOnInvoice = ShowPhoneOnInvoice;
+                _settings.ShowEmailOnInvoice = ShowEmailOnInvoice;
+                _settings.ShowWebsiteOnInvoice = ShowWebsiteOnInvoice;
+                _settings.ShowTaxIdOnInvoice = ShowTaxIdOnInvoice;
 
                 await _settingsService.SaveSettingsAsync(_settings);
                 CloseRequested?.Invoke(this, true);

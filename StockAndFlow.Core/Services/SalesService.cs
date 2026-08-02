@@ -88,6 +88,9 @@ namespace StockAndFlow.Services
                 InventoryItemId = inventoryItemId,
                 ItemName = item.Name,
                 Quantity = quantity,
+                // Captured now, not looked up later: the item's unit may change, but this
+                // sale (and any invoice reprinted from it) must keep the unit it was sold in.
+                UnitOfMeasure = item.UnitOfMeasure,
                 SalePricePerUnit = customSalePrice ?? item.SalePrice,
                 CostPerUnit = item.CostPerUnit,
                 CustomerName = customerName,

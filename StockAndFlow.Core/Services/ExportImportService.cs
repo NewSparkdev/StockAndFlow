@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
+using Serilog;
 using StockAndFlow.Models;
 
 namespace StockAndFlow.Services
@@ -20,13 +21,19 @@ namespace StockAndFlow.Services
             IDataService dataService,
             InventoryService inventoryService,
             SalesService salesService,
-            ExpenseService expenseService)
+            ExpenseService expenseService,
+            Platform.IPathProvider? pathProvider = null)
         {
             _dataService = dataService;
             _inventoryService = inventoryService;
             _salesService = salesService;
             _expenseService = expenseService;
-            _importHistoryFile = Path.Combine("Data", "import_history.json");
+            // Must be an absolute, writable location: a relative "Data" path resolves against the
+            // process working directory, which on Android/iOS is outside the app sandbox — writing
+            // there threw *after* the import had committed, masking the real result with a crash.
+            _importHistoryFile = Path.Combine(
+                pathProvider?.DataDirectory ?? Path.Combine(Directory.GetCurrentDirectory(), "Data"),
+                "import_history.json");
         }
 
         public async Task<string> ExportToExcelAsync(string filePath)
@@ -75,9 +82,17 @@ namespace StockAndFlow.Services
             sheet.Cell(1, 7).Value = "Quantity";
             sheet.Cell(1, 8).Value = "Profit Per Unit";
             sheet.Cell(1, 9).Value = "Total Value";
+            // Appended (not inserted) so spreadsheets exported by older versions still import.
+            // Omitting these made "backup to Excel" silently lose how an item is measured,
+            // its restock level, labor cost, supplier and notes.
+            sheet.Cell(1, 10).Value = "Unit";
+            sheet.Cell(1, 11).Value = "Min Stock Level";
+            sheet.Cell(1, 12).Value = "Extra Cost Per Unit";
+            sheet.Cell(1, 13).Value = "Supplier";
+            sheet.Cell(1, 14).Value = "Notes";
 
             // Style headers
-            var headerRange = sheet.Range(1, 1, 1, 9);
+            var headerRange = sheet.Range(1, 1, 1, 14);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -99,6 +114,12 @@ namespace StockAndFlow.Services
 
                 // Formula for Total Value
                 sheet.Cell(row, 9).FormulaA1 = $"=E{row}*G{row}";
+
+                sheet.Cell(row, 10).Value = item.UnitOfMeasure;
+                sheet.Cell(row, 11).Value = item.MinimumStockLevel;
+                sheet.Cell(row, 12).Value = item.ExtraCostPerUnit;
+                sheet.Cell(row, 13).Value = item.Supplier ?? "";
+                sheet.Cell(row, 14).Value = item.Notes ?? "";
 
                 row++;
             }
@@ -129,9 +150,10 @@ namespace StockAndFlow.Services
             sheet.Cell(1, 11).Value = "Profit";
             sheet.Cell(1, 12).Value = "Customer Name";
             sheet.Cell(1, 13).Value = "Notes";
+            sheet.Cell(1, 14).Value = "Unit";
 
             // Style headers
-            var headerRange = sheet.Range(1, 1, 1, 13);
+            var headerRange = sheet.Range(1, 1, 1, 14);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -156,6 +178,7 @@ namespace StockAndFlow.Services
 
                 sheet.Cell(row, 12).Value = sale.CustomerName ?? "";
                 sheet.Cell(row, 13).Value = sale.Notes ?? "";
+                sheet.Cell(row, 14).Value = sale.UnitOfMeasure;
 
                 row++;
             }
@@ -286,6 +309,7 @@ namespace StockAndFlow.Services
             }
 
             // Use transaction to ensure all imports succeed or fail together
+            var committed = false;
             using var transaction = await _dataService.BeginTransactionAsync();
             try
             {
@@ -317,15 +341,32 @@ namespace StockAndFlow.Services
 
                 // Commit transaction before recording import history
                 await transaction.CommitAsync();
+                committed = true;
 
-                // Record this import (outside transaction to avoid locking)
-                await RecordImportAsync(filePath);
+                // Bookkeeping for the "already imported" warning only — never let it fail the
+                // import that already succeeded.
+                try
+                {
+                    await RecordImportAsync(filePath);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Could not record import history at {Path}", _importHistoryFile);
+                }
 
                 result.Success = true;
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                // Only roll back work that is still open; rolling back a committed transaction
+                // throws and masks the original error.
+                if (!committed)
+                {
+                    try { await transaction.RollbackAsync(); }
+                    catch (Exception rollbackEx) { Log.Error(rollbackEx, "Import rollback failed"); }
+                }
+
+                Log.Error(ex, "Excel import failed for {File}", filePath);
                 result.Success = false;
                 result.ErrorMessage = $"Import failed: {ex.Message}";
             }
@@ -337,6 +378,7 @@ namespace StockAndFlow.Services
         {
             int added = 0, updated = 0;
             var existingItems = await _inventoryService.GetAllItemsAsync();
+            var headers = BuildHeaderMap(sheet);
 
             var rows = sheet.RowsUsed().Skip(1); // Skip header
 
@@ -376,10 +418,33 @@ namespace StockAndFlow.Services
                 item.CostPerUnit = (decimal)row.Cell(5).GetDouble();
                 item.SalePrice = (decimal)row.Cell(6).GetDouble();
                 item.QuantityOnHand = (decimal)row.Cell(7).GetDouble();
+
+                // Columns added later: absent in spreadsheets from older versions, so only
+                // apply them when the column exists — never blank out a value the file
+                // simply doesn't carry.
+                var unit = ReadString(row, headers, "Unit");
+                if (!string.IsNullOrWhiteSpace(unit))
+                    item.UnitOfMeasure = unit;
+
+                var minStock = ReadDecimal(row, headers, "Min Stock Level");
+                if (minStock.HasValue)
+                    item.MinimumStockLevel = minStock.Value;
+
+                var extraCost = ReadDecimal(row, headers, "Extra Cost Per Unit");
+                if (extraCost.HasValue)
+                    item.ExtraCostPerUnit = extraCost.Value;
+
+                if (headers.ContainsKey("Supplier"))
+                    item.Supplier = ReadString(row, headers, "Supplier");
+                if (headers.ContainsKey("Notes"))
+                    item.Notes = ReadString(row, headers, "Notes");
+
                 item.LastModifiedDate = DateTime.Now;
 
                 await _inventoryService.CreateOrUpdateItemAsync(item);
             }
+
+            WarnAboutDuplicateSkus(await _inventoryService.GetAllItemsAsync());
 
             return (added, updated);
         }
@@ -388,6 +453,7 @@ namespace StockAndFlow.Services
         {
             int added = 0, updated = 0;
             var existingSales = await _salesService.GetAllSalesAsync();
+            var headers = BuildHeaderMap(sheet);
 
             var rows = sheet.RowsUsed().Skip(1);
 
@@ -410,6 +476,11 @@ namespace StockAndFlow.Services
                     CustomerName = row.Cell(12).GetString(),
                     Notes = row.Cell(13).GetString()
                 };
+
+                // Column added later; spreadsheets from older versions predate measured sales.
+                var saleUnit = ReadString(row, headers, "Unit");
+                if (!string.IsNullOrWhiteSpace(saleUnit))
+                    sale.UnitOfMeasure = saleUnit;
 
                 // Set TransactionId if it exists, otherwise generate new
                 if (!string.IsNullOrWhiteSpace(transactionIdStr) && Guid.TryParse(transactionIdStr, out var transactionId))
@@ -497,28 +568,48 @@ namespace StockAndFlow.Services
 
         private async Task<bool> HasBeenImportedAsync(string filePath)
         {
-            if (!File.Exists(_importHistoryFile))
+            // Advisory only: if the history is unreadable, proceed without the warning rather
+            // than blocking an otherwise valid import.
+            try
+            {
+                if (!File.Exists(_importHistoryFile))
+                    return false;
+
+                var json = await File.ReadAllTextAsync(_importHistoryFile);
+                var history = System.Text.Json.JsonSerializer.Deserialize<List<ImportHistoryEntry>>(json) ?? new List<ImportHistoryEntry>();
+
+                var fileInfo = new FileInfo(filePath);
+                return history.Any(h => h.FileName == fileInfo.Name && h.FileSize == fileInfo.Length);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Could not read import history at {Path}", _importHistoryFile);
                 return false;
-
-            var json = await File.ReadAllTextAsync(_importHistoryFile);
-            var history = System.Text.Json.JsonSerializer.Deserialize<List<ImportHistoryEntry>>(json) ?? new List<ImportHistoryEntry>();
-
-            var fileInfo = new FileInfo(filePath);
-            return history.Any(h => h.FileName == fileInfo.Name && h.FileSize == fileInfo.Length);
+            }
         }
 
         private async Task RecordImportAsync(string filePath)
         {
-            List<ImportHistoryEntry> history;
+            List<ImportHistoryEntry> history = new();
 
             if (File.Exists(_importHistoryFile))
             {
-                var json = await File.ReadAllTextAsync(_importHistoryFile);
-                history = System.Text.Json.JsonSerializer.Deserialize<List<ImportHistoryEntry>>(json) ?? new List<ImportHistoryEntry>();
+                try
+                {
+                    var json = await File.ReadAllTextAsync(_importHistoryFile);
+                    history = System.Text.Json.JsonSerializer.Deserialize<List<ImportHistoryEntry>>(json) ?? new List<ImportHistoryEntry>();
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Corrupt history file — start a fresh one rather than failing the import.
+                    history = new List<ImportHistoryEntry>();
+                }
             }
             else
             {
-                history = new List<ImportHistoryEntry>();
+                var dir = Path.GetDirectoryName(_importHistoryFile);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
             }
 
             var fileInfo = new FileInfo(filePath);
@@ -531,6 +622,59 @@ namespace StockAndFlow.Services
 
             var newJson = System.Text.Json.JsonSerializer.Serialize(history, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(_importHistoryFile, newJson);
+        }
+
+        /// <summary>
+        /// A spreadsheet can introduce codes that clash with existing items. The import isn't
+        /// blocked (the user may be mid-cleanup), but a shared code means scanning it picks
+        /// whichever item matches first, so it must not pass unremarked.
+        /// </summary>
+        private static void WarnAboutDuplicateSkus(List<InventoryItem> items)
+        {
+            var clashes = items
+                .Where(i => !string.IsNullOrWhiteSpace(i.Sku))
+                .GroupBy(i => i.Sku!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .ToList();
+
+            foreach (var clash in clashes)
+            {
+                Log.Warning("Duplicate barcode {Sku} shared by {Count} items ({Names}) — scanning it is ambiguous",
+                    clash.Key, clash.Count(), string.Join(", ", clash.Select(i => i.Name)));
+            }
+        }
+
+        /// <summary>
+        /// Maps header text to column index so imports can tolerate spreadsheets written by
+        /// older versions (fewer columns) without reading values out of the wrong cells.
+        /// </summary>
+        private static Dictionary<string, int> BuildHeaderMap(IXLWorksheet sheet)
+        {
+            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var headerRow = sheet.Row(1);
+            foreach (var cell in headerRow.CellsUsed())
+            {
+                var name = cell.GetString().Trim();
+                if (!string.IsNullOrEmpty(name))
+                    map[name] = cell.Address.ColumnNumber;
+            }
+            return map;
+        }
+
+        private static string? ReadString(IXLRow row, Dictionary<string, int> headers, string column)
+            => headers.TryGetValue(column, out var index) ? row.Cell(index).GetString() : null;
+
+        private static decimal? ReadDecimal(IXLRow row, Dictionary<string, int> headers, string column)
+        {
+            if (!headers.TryGetValue(column, out var index))
+                return null;
+
+            var cell = row.Cell(index);
+            if (cell.IsEmpty())
+                return null;
+            if (cell.TryGetValue<double>(out var number))
+                return (decimal)number;
+            return decimal.TryParse(cell.GetString(), out var parsed) ? parsed : null;
         }
 
         private void ValidateFilePath(string filePath, string expectedExtension)

@@ -17,6 +17,15 @@
                 <Entry Grid.Column="0" Text="{Binding Sku}" Placeholder="Optional — or scan →" />
                 <Button Grid.Column="1" Text="📷 Scan" x:Name="ScanSkuButton" WidthRequest="90" />
             </Grid>
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="🏷  Create barcode label" x:Name="MakeBarcodeButton" />
+                <ctrl:HelpIcon HelpTitle="Which barcode do I need?"
+                               HelpText="{Binding BarcodeHelpText}"
+                               VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Label Text="Makes a printable barcode for your own labels — great for markets, craft fairs and your own shop. Selling through a retailer or Amazon? Scan or type their official barcode above instead."
+                   FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
 
             <Label Text="Category" />
             <Entry Text="{Binding Category}" Placeholder="Optional" />

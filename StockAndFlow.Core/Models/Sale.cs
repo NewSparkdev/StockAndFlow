@@ -42,6 +42,23 @@ namespace StockAndFlow.Models
         [Range(0, double.MaxValue, ErrorMessage = "Cost per unit must be 0 or greater")]
         public decimal CostPerUnit { get; set; }
 
+        /// <summary>
+        /// Unit the item was sold in ("each", "oz", "lb", …), captured at sale time so an
+        /// invoice reprinted years later still shows the unit it was actually sold in, even
+        /// if the inventory item has since been changed.
+        /// </summary>
+        public string UnitOfMeasure { get; set; } = "each";
+
+        /// <summary>True when this line was sold by weight/volume rather than counted.</summary>
+        public bool IsMeasured =>
+            !string.IsNullOrWhiteSpace(UnitOfMeasure) &&
+            !string.Equals(UnitOfMeasure, "each", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Quantity for display: "3" when counted, "2.5 oz" when measured.</summary>
+        public string QuantityDisplay => IsMeasured
+            ? $"{Quantity:0.###} {UnitOfMeasure}"
+            : $"{Quantity:0.###}";
+
         // Optional reference to Shopify order
         public string? ShopifyOrderId { get; set; }
         public string? ShopifyOrderNumber { get; set; }
