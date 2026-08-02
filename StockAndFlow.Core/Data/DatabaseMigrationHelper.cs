@@ -99,6 +99,13 @@ namespace StockAndFlow.Data
                 await CreateIndexIfNotExistsAsync(connection, "IX_Customers_Name", "Customers", "Name");
                 await CreateIndexIfNotExistsAsync(connection, "IX_Customers_Email", "Customers", "Email");
 
+                // Invoice display choices (all default ON to preserve existing invoice output)
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowLogoOnInvoice", "INTEGER NOT NULL DEFAULT 1");
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowPhoneOnInvoice", "INTEGER NOT NULL DEFAULT 1");
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowEmailOnInvoice", "INTEGER NOT NULL DEFAULT 1");
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowWebsiteOnInvoice", "INTEGER NOT NULL DEFAULT 1");
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowTaxIdOnInvoice", "INTEGER NOT NULL DEFAULT 1");
+
                 Log.Information("Database schema updates completed successfully");
             }
             catch (Exception ex)
@@ -126,6 +133,18 @@ namespace StockAndFlow.Data
 
         private static async Task AddColumnIfNotExistsAsync(SqliteConnection connection, string tableName, string columnName, string columnDefinition)
         {
+            // A missing table means this database predates it; EnsureCreated/CreateTableIfNotExists
+            // owns table creation, so skip rather than let ALTER TABLE throw.
+            using (var tableCheck = connection.CreateCommand())
+            {
+                tableCheck.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'";
+                if (Convert.ToInt32(await tableCheck.ExecuteScalarAsync()) == 0)
+                {
+                    Log.Debug("Table {Table} does not exist; skipping column {Column}", tableName, columnName);
+                    return;
+                }
+            }
+
             var checkSql = $"SELECT COUNT(*) FROM pragma_table_info('{tableName}') WHERE name='{columnName}'";
 
             using var checkCommand = connection.CreateCommand();

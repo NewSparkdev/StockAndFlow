@@ -19,6 +19,15 @@ namespace StockAndFlow.Models
         public string? LogoPath { get; set; }
         public DateTime LastModified { get; set; } = DateTime.Now;
 
+        // Invoice display choices: what appears on generated customer invoices.
+        // All default to true so existing invoices keep looking the same; a field also
+        // needs a value to print (blank fields are always skipped).
+        public bool ShowLogoOnInvoice { get; set; } = true;
+        public bool ShowPhoneOnInvoice { get; set; } = true;
+        public bool ShowEmailOnInvoice { get; set; } = true;
+        public bool ShowWebsiteOnInvoice { get; set; } = true;
+        public bool ShowTaxIdOnInvoice { get; set; } = true;
+
         // Helper property for full address
         public string FullAddress
         {

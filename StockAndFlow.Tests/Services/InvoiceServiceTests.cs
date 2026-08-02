@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using NSubstitute;
+using SkiaSharp;
 using StockAndFlow.Models;
 using StockAndFlow.Services;
 
@@ -67,6 +68,104 @@ namespace StockAndFlow.Tests.Services
                 bytes.Length.Should().BeGreaterThan(1000, "a rendered invoice should be a non-trivial PDF");
                 System.Text.Encoding.ASCII.GetString(bytes, 0, 5)
                     .Should().Be("%PDF-", "the output must be a valid PDF file");
+            }
+            finally
+            {
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+            }
+        }
+
+        /// <summary>Writes a small solid-color PNG to temp and returns its path.</summary>
+        private static string CreateTempLogo()
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"logo_{Guid.NewGuid():N}.png");
+            using var bmp = new SKBitmap(200, 80);
+            using (var canvas = new SKCanvas(bmp))
+            {
+                canvas.Clear(new SKColor(0x51, 0x2B, 0xD4));
+            }
+            using var img = SKImage.FromBitmap(bmp);
+            using var data = img.Encode(SKEncodedImageFormat.Png, 90);
+            using var fs = File.OpenWrite(path);
+            data.SaveTo(fs);
+            return path;
+        }
+
+        [Fact]
+        public async Task GenerateInvoiceAsync_EmbedsLogo_WhenEnabled()
+        {
+            var logoPath = CreateTempLogo();
+            var withLogoPdf = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+            var withoutLogoPdf = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+
+            try
+            {
+                var settings = new BusinessSettings { BusinessName = "Candle Co", LogoPath = logoPath };
+
+                settings.ShowLogoOnInvoice = true;
+                await CreateService(settings).GenerateInvoiceAsync(SampleTransaction(), withLogoPdf);
+
+                settings.ShowLogoOnInvoice = false;
+                await CreateService(settings).GenerateInvoiceAsync(SampleTransaction(), withoutLogoPdf);
+
+                new FileInfo(withLogoPdf).Length.Should().BeGreaterThan(
+                    new FileInfo(withoutLogoPdf).Length,
+                    "the enabled logo must actually be embedded in the PDF");
+            }
+            finally
+            {
+                foreach (var f in new[] { logoPath, withLogoPdf, withoutLogoPdf })
+                    if (File.Exists(f)) File.Delete(f);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateInvoiceAsync_MissingLogoFile_StillRenders()
+        {
+            var settings = new BusinessSettings
+            {
+                BusinessName = "Candle Co",
+                LogoPath = Path.Combine(Path.GetTempPath(), "does_not_exist_logo.png"),
+                ShowLogoOnInvoice = true
+            };
+            var outputPath = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+
+            try
+            {
+                await CreateService(settings).GenerateInvoiceAsync(SampleTransaction(), outputPath);
+                new FileInfo(outputPath).Length.Should().BeGreaterThan(1000,
+                    "a missing logo file must never break invoice generation");
+            }
+            finally
+            {
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateInvoiceAsync_AllDisplayTogglesOff_StillRendersValidPdf()
+        {
+            var settings = new BusinessSettings
+            {
+                BusinessName = "Candle Co",
+                Phone = "555-0100",
+                Email = "hello@candle.co",
+                Website = "candle.co",
+                TaxId = "12-3456789",
+                ShowLogoOnInvoice = false,
+                ShowPhoneOnInvoice = false,
+                ShowEmailOnInvoice = false,
+                ShowWebsiteOnInvoice = false,
+                ShowTaxIdOnInvoice = false
+            };
+            var outputPath = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+
+            try
+            {
+                await CreateService(settings).GenerateInvoiceAsync(SampleTransaction(), outputPath);
+
+                var bytes = await File.ReadAllBytesAsync(outputPath);
+                System.Text.Encoding.ASCII.GetString(bytes, 0, 5).Should().Be("%PDF-");
             }
             finally
             {

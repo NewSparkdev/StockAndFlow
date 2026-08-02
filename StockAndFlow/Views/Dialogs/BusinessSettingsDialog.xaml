@@ -128,6 +128,19 @@
                            Cursor="Hand"/>
                 </Grid>
 
+                <!-- Invoice display choices -->
+                <TextBlock Text="What appears on your invoices" Style="{StaticResource LabelStyle}" Margin="0,20,0,5"/>
+                <TextBlock Text="Only filled-in details can appear. Your business name and address always show."
+                          FontSize="11"
+                          Foreground="#7F8C8D"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,8"/>
+                <CheckBox Content="Logo" IsChecked="{Binding ShowLogoOnInvoice}" Margin="0,0,0,4"/>
+                <CheckBox Content="Phone" IsChecked="{Binding ShowPhoneOnInvoice}" Margin="0,0,0,4"/>
+                <CheckBox Content="Email" IsChecked="{Binding ShowEmailOnInvoice}" Margin="0,0,0,4"/>
+                <CheckBox Content="Website" IsChecked="{Binding ShowWebsiteOnInvoice}" Margin="0,0,0,4"/>
+                <CheckBox Content="Tax ID" IsChecked="{Binding ShowTaxIdOnInvoice}" Margin="0,0,0,4"/>
+
                 <TextBlock Text="* Required field"
                           FontSize="12"
                           Foreground="#7F8C8D"

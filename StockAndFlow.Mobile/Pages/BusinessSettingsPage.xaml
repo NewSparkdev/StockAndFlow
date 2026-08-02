@@ -105,6 +105,36 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- Invoice display choices -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="What appears on your invoices" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Only filled-in details can appear. Your business name and address always show."
+                               Style="{StaticResource Caption}" />
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Logo" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding ShowLogoOnInvoice}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Phone" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding ShowPhoneOnInvoice}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Email" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding ShowEmailOnInvoice}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Website" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding ShowWebsiteOnInvoice}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Tax ID" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding ShowTaxIdOnInvoice}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
             </VerticalStackLayout>
         </ScrollView>
 
