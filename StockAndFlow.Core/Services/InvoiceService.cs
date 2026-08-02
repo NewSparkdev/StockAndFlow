@@ -92,7 +92,10 @@ namespace StockAndFlow.Services
             using var stream = new SKFileWStream(outputPath);
             using var document = SKDocument.CreatePdf(stream);
 
-            var ctx = new RenderContext(document, regular, bold, italic);
+            var ctx = new RenderContext(document, regular, bold, italic)
+            {
+                OnPageEnd = c => DrawFooter(c, settings)
+            };
             ctx.BeginPage();
 
             DrawHeader(ctx, settings, transaction);
@@ -100,7 +103,6 @@ namespace StockAndFlow.Services
             DrawTotals(ctx, transaction);
             DrawNotes(ctx, transaction);
             DrawThankYou(ctx);
-            DrawFooter(ctx, settings);
 
             ctx.EndPage();
             document.Close();
@@ -280,11 +282,34 @@ namespace StockAndFlow.Services
             ctx.Y += RowHeight;
         }
 
+        /// <summary>
+        /// Lowest y a block may occupy before it collides with the footer strip.
+        /// </summary>
+        private const float ContentBottom = PageHeight - Margin - 44f;
+
+        /// <summary>
+        /// Starts a new page when <paramref name="needed"/> points wouldn't fit above the
+        /// footer. Without this, totals and notes drew straight over the footer text and off
+        /// the bottom of the page whenever the item table ended low.
+        /// </summary>
+        private static void EnsureSpace(RenderContext ctx, float needed)
+        {
+            if (ctx.Y + needed <= ContentBottom)
+                return;
+
+            ctx.EndPage();
+            ctx.BeginPage();
+            ctx.Y = Margin + 16f;
+        }
+
         private void DrawTotals(RenderContext ctx, SaleTransaction transaction)
         {
             var subtotal = transaction.Items.Sum(i => i.Subtotal);
             var tax = transaction.Items.Sum(i => i.TaxAmount);
             var total = transaction.Revenue; // subtotal + tax
+
+            // Subtotal + optional tax + total, plus the leading gap.
+            EnsureSpace(ctx, 24f + (tax > 0 ? 3 : 2) * 18f);
 
             const float labelRight = ContentRight - 120f;
             float y = ctx.Y + 24f;
@@ -311,11 +336,21 @@ namespace StockAndFlow.Services
             if (string.IsNullOrWhiteSpace(transaction.Notes))
                 return;
 
+            var lines = WrapText(ctx, transaction.Notes!, ctx.Regular, 10, ContentWidth).ToList();
+            EnsureSpace(ctx, 28f + 14f + lines.Count * 13f);
+
             float y = ctx.Y + 28f;
             ctx.Text("Notes:", ContentLeft, y, 11, ctx.Bold, Ink);
             y += 14f;
-            foreach (var line in WrapText(ctx, transaction.Notes!, ctx.Regular, 10, ContentWidth))
+            foreach (var line in lines)
             {
+                // A very long note can outrun the page on its own.
+                if (y > ContentBottom)
+                {
+                    ctx.Y = y;
+                    EnsureSpace(ctx, 13f);
+                    y = ctx.Y;
+                }
                 ctx.Text(line, ContentLeft, y, 10, ctx.Regular, Ink);
                 y += 13f;
             }
@@ -324,6 +359,7 @@ namespace StockAndFlow.Services
 
         private void DrawThankYou(RenderContext ctx)
         {
+            EnsureSpace(ctx, 30f);
             float y = ctx.Y + 30f;
             ctx.Text("Thank you for your business!", PageWidth / 2f, y, 12, ctx.Italic, GreyDark, SKTextAlign.Center);
             ctx.Y = y;
@@ -384,13 +420,20 @@ namespace StockAndFlow.Services
                 Italic = italic;
             }
 
+            /// <summary>Draws the page footer; runs for every page, not just the last one.</summary>
+            public Action<RenderContext>? OnPageEnd { get; set; }
+
             public void BeginPage()
             {
                 Canvas = _document.BeginPage(PageWidth, PageHeight);
                 Y = Margin;
             }
 
-            public void EndPage() => _document.EndPage();
+            public void EndPage()
+            {
+                OnPageEnd?.Invoke(this);
+                _document.EndPage();
+            }
 
             public void Text(string text, float x, float baseline, float size, SKTypeface typeface, SKColor color,
                 SKTextAlign align = SKTextAlign.Left)

@@ -173,6 +173,110 @@ namespace StockAndFlow.Tests.Services
             }
         }
 
+        /// <summary>Counts PDF page objects so pagination can be asserted.</summary>
+        private static int CountPdfPages(string path)
+        {
+            var text = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(path));
+            return System.Text.RegularExpressions.Regex.Matches(text, @"/Type\s*/Page[^s]").Count;
+        }
+
+        [Fact]
+        public async Task GenerateInvoiceAsync_ManyLineItems_PaginatesInsteadOfOverflowing()
+        {
+            var settings = new BusinessSettings { BusinessName = "Candle Co" };
+            var transaction = new SaleTransaction
+            {
+                TransactionId = Guid.NewGuid(),
+                SaleDate = DateTime.Now,
+                CustomerName = "Bulk Buyer",
+                Items = Enumerable.Range(1, 60).Select(i => new Sale
+                {
+                    ItemName = $"Candle Variety #{i}",
+                    Quantity = 1,
+                    SalePricePerUnit = 19.99m,
+                    CostPerUnit = 8m
+                }).ToList()
+            };
+            var outputPath = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+
+            try
+            {
+                await CreateService(settings).GenerateInvoiceAsync(transaction, outputPath);
+
+                CountPdfPages(outputPath).Should().BeGreaterThan(1,
+                    "60 line items cannot fit on one page — the table must paginate");
+            }
+            finally
+            {
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateInvoiceAsync_ItemsEndingNearPageBottom_KeepsTotalsOnPage()
+        {
+            // 18 rows is exactly what fits on page one, leaving the cursor just above the
+            // footer. Totals, notes and the thank-you line used to draw unconditionally at
+            // ctx.Y — landing on top of the footer text and running off the page bottom.
+            var settings = new BusinessSettings { BusinessName = "Candle Co", TaxId = "12-3456789" };
+            var transaction = new SaleTransaction
+            {
+                TransactionId = Guid.NewGuid(),
+                SaleDate = DateTime.Now,
+                Notes = string.Join(" ", Enumerable.Repeat("Handle with care.", 12)),
+                Items = Enumerable.Range(1, 18).Select(i => new Sale
+                {
+                    ItemName = $"Item {i}",
+                    Quantity = 1,
+                    SalePricePerUnit = 10m,
+                    CostPerUnit = 4m,
+                    TaxRate = 7.5m,
+                    TaxAmount = 0.75m
+                }).ToList()
+            };
+            var outputPath = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+
+            try
+            {
+                await CreateService(settings).GenerateInvoiceAsync(transaction, outputPath);
+
+                CountPdfPages(outputPath).Should().BeGreaterThan(1,
+                    "totals and notes that don't fit must flow onto a new page");
+            }
+            finally
+            {
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateInvoiceAsync_FractionalQuantity_Renders()
+        {
+            // NOTE: Sale carries no UnitOfMeasure, so an invoice for weight-sold goods shows
+            // a bare "2.5" with no "oz" — see CHAT_LOG §4.20. This guards the render path.
+            var settings = new BusinessSettings { BusinessName = "Candle Co" };
+            var transaction = new SaleTransaction
+            {
+                TransactionId = Guid.NewGuid(),
+                SaleDate = DateTime.Now,
+                Items = new List<Sale>
+                {
+                    new() { ItemName = "Soy Wax", Quantity = 2.5m, SalePricePerUnit = 0.80m, CostPerUnit = 0.30m }
+                }
+            };
+            var outputPath = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
+
+            try
+            {
+                await CreateService(settings).GenerateInvoiceAsync(transaction, outputPath);
+                new FileInfo(outputPath).Length.Should().BeGreaterThan(1000);
+            }
+            finally
+            {
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+            }
+        }
+
         [Fact]
         public async Task GenerateInvoiceAsync_HandlesWalkInCustomerAndNoTax()
         {
