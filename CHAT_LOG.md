@@ -227,9 +227,10 @@ existing WPF app. Both apps reference the same Core.
 - **Mobile (Android + iOS):** real camera capture via `MediaPicker.CapturePhotoAsync`; image
   decoded with **ZXing.Net** (`BarcodeReader`). Scanned value populates the SKU/Barcode field on
   Add/Edit Inventory and pre-fills search on Record Sale.
-- **WPF desktop:** USB HID barcode scanner support. Scanners appear as keyboards; a `PreviewKeyDown`
-  listener on the Record Sale window collects rapid keystrokes (< 50 ms apart) and fires the scan
-  handler when `Enter` arrives, bypassing normal text input.
+- **WPF desktop:** USB HID barcode scanner support. Scanners appear as keyboards, so the Record
+  Sale window's barcode box takes focus and `Enter` fires the SKU lookup.
+  *(Correction 2026-08-02: this entry previously described 50 ms keystroke-timing detection —
+  no such logic exists in the code, and none is needed for a real scanner.)*
 
 ### 4.10 Bill of Materials / Recipe feature (2026-07-xx, commits `fd22345`–`f965afc`)
 A "finished good" inventory item can now declare which other items it consumes per unit sold
@@ -482,6 +483,38 @@ no duplicates and no field loss (6/6 assertions).
   Segoe UI/default 1.39 MB · Arial 1.51 MB · Tahoma 1.01 MB · **Verdana 0.41 MB**.
   Every option trades the invoice's appearance for size, mobile (the primary product) is already
   fine, and 1.4 MB is harmless for email or print — so not worth changing the desktop typeface.
+
+### 4.21 Barcode labels + testable scanning (2026-08-02, commit `c1ab314`)
+**New feature — generate a barcode for an item and print it on your product label.** A maker
+printing their own labels previously had no way to get a barcode at all.
+- `BarcodeService` (Core): `GenerateSku`, `CanEncode`, `CreateLabelPng`, `Decode`.
+- Generates **CODE_128** (default) + **QR**; reads 11 formats. **EAN-13/UPC-A deliberately not
+  generated** — those digits come from a paid GS1 company prefix and inventing them would
+  collide with real products. Users who own official barcodes scan/type them in as before; the
+  in-app copy explains own-vs-official and that official ones can simply be entered.
+- Generated SKUs (`SF-K7Q2M9`) avoid O/0/I/1/L so a code can be retyped from a label.
+- Labels: symbol + product-name caption + human-readable code, quiet zone, antialiasing off
+  (blurry edges/missing margins are why printed barcodes fail). 3.24″ × 0.99″ @300 DPI.
+- Mobile shares the PNG; WPF saves to Downloads and offers to open it.
+
+**Made scanning testable.** Decoding lived inside `BarcodeScanPage`, a MAUI page the test
+project cannot reference — *untestable by construction*. Moved into the shared service, so the
+camera path is now the tested path, and the generator supplies real barcodes as fixtures.
+
+Bugs fixed while extracting:
+1. **Pixel-format assumption** — the decoder assumed photos were BGRA32, but `SKBitmap.Decode`
+   returns whatever the source used, which **varies by platform**. Now normalised to BGRA8888.
+   Classic "works on Android, silently fails on iOS" shape. Guarded by an RGBA-input test.
+2. **QR encoded Latin-1** → "Lavender Candle — 8 oz" round-tripped mangled. Now UTF-8, with
+   error-correction level M for scuffed labels; `TryInverted` added for dark surfaces.
+
+21 new tests (137 total) incl. rotation 0/90/180/270, 40% downscale, blank/garbage input, and a
+full generate → scan → find-the-item loop.
+
+⚠️ **Still hardware-only:** the actual camera capture (`MediaPicker.CapturePhotoAsync`) and a
+real USB scanner. Note `CHAT_LOG` previously claimed the WPF scanner collects keystrokes <50 ms
+apart — **it does not**; the code is simply an Enter handler on the search box, which works with
+real scanners but has no timing logic.
 
 ---
 
