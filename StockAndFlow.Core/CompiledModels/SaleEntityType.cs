@@ -20,7 +20,7 @@ namespace StockAndFlow.Data.CompiledModels
                 "StockAndFlow.Models.Sale",
                 typeof(Sale),
                 baseEntityType,
-                propertyCount: 17,
+                propertyCount: 18,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 6,
                 keyCount: 1);
@@ -150,6 +150,12 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(Sale).GetProperty("TransactionId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(Sale).GetField("_transactionId", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
+
+            var unitOfMeasure = runtimeEntityType.AddProperty(
+                "UnitOfMeasure",
+                typeof(string),
+                propertyInfo: typeof(Sale).GetProperty("UnitOfMeasure", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(Sale).GetField("<UnitOfMeasure>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

@@ -19,7 +19,7 @@ namespace StockAndFlow.Data.CompiledModels
                 "StockAndFlow.Models.BusinessSettings",
                 typeof(BusinessSettings),
                 baseEntityType,
-                propertyCount: 13,
+                propertyCount: 18,
                 keyCount: 1);
 
             var id = runtimeEntityType.AddProperty(
@@ -86,6 +86,41 @@ namespace StockAndFlow.Data.CompiledModels
                 propertyInfo: typeof(BusinessSettings).GetProperty("Phone", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(BusinessSettings).GetField("<Phone>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
+
+            var showEmailOnInvoice = runtimeEntityType.AddProperty(
+                "ShowEmailOnInvoice",
+                typeof(bool),
+                propertyInfo: typeof(BusinessSettings).GetProperty("ShowEmailOnInvoice", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(BusinessSettings).GetField("<ShowEmailOnInvoice>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var showLogoOnInvoice = runtimeEntityType.AddProperty(
+                "ShowLogoOnInvoice",
+                typeof(bool),
+                propertyInfo: typeof(BusinessSettings).GetProperty("ShowLogoOnInvoice", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(BusinessSettings).GetField("<ShowLogoOnInvoice>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var showPhoneOnInvoice = runtimeEntityType.AddProperty(
+                "ShowPhoneOnInvoice",
+                typeof(bool),
+                propertyInfo: typeof(BusinessSettings).GetProperty("ShowPhoneOnInvoice", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(BusinessSettings).GetField("<ShowPhoneOnInvoice>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var showTaxIdOnInvoice = runtimeEntityType.AddProperty(
+                "ShowTaxIdOnInvoice",
+                typeof(bool),
+                propertyInfo: typeof(BusinessSettings).GetProperty("ShowTaxIdOnInvoice", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(BusinessSettings).GetField("<ShowTaxIdOnInvoice>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var showWebsiteOnInvoice = runtimeEntityType.AddProperty(
+                "ShowWebsiteOnInvoice",
+                typeof(bool),
+                propertyInfo: typeof(BusinessSettings).GetProperty("ShowWebsiteOnInvoice", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(BusinessSettings).GetField("<ShowWebsiteOnInvoice>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var state = runtimeEntityType.AddProperty(
                 "State",
