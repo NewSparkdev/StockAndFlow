@@ -65,8 +65,15 @@ existing WPF app. Both apps reference the same Core.
 
 | Commit | What it did |
 |---|---|
+| `c49caff` | *(onboarding)* Merge everything; **regenerate compiled model**; bump to **v1.1.6** |
+| `081df97`–`c2d3aeb` | Bulk label sheet PDF + in-app barcode how-to; duplicate-barcode prevention; real-data SKU cleanup |
+| `c1ab314` | Barcode label generation; decoding extracted to a tested Core service (fixed platform pixel-format + UTF-8 QR bugs) |
+| `7dac541` | Units on invoice lines (`Sale.UnitOfMeasure`, captured at sale time) |
+| `ed68d61` | Invoice totals/notes no longer run off the page; footer on every page |
+| `28f2d9a` | Excel backup data loss (5 fields) + mobile import crash-after-commit; first export/import tests |
+| `652926b` | Fix Shopify order import crash (nested transaction — orders could never import) + make syncs diagnosable |
 | `21d66af` | Fix Shopify sync (was silently broken: PascalCase parsing of snake_case JSON = no-op syncs, no config UI, sunset API version, no pagination, order dedup never worked) + Shopify settings UI on both platforms. ✅ **Live-verified against a real dev store 2026-08-02** (see §4.18) |
-| `897342b` | Invoices: render business logo + per-field display toggles (**⚠ entity changed — regen compiled model on onboarding before next release**) |
+| `897342b` | Invoices: render business logo + per-field display toggles (entity changed — compiled model regenerated in `c49caff`) |
 | `95f9e89` | Fix upgrade crash for pre-customer DBs: migrate `Sales.CustomerId` + `Customers` table |
 | `60a9dfb` | Harden credential encryption: AES-GCM + "enc1:" marker, resilient key init, mobile migration, backup exclusions |
 | `30bd0db` | WPF parity: unit-of-measure picker, extra-costs field, BOM cost breakdown |
@@ -590,9 +597,14 @@ real scanners but has no timing logic.
 ## 6. Open items / what's NOT done yet
 
 ### CI / store delivery
+- **v1.1.6** tagged Aug 2, 2026 — the big correctness release. Shopify sync made to actually
+  work (5 bugs, live-verified), Excel backup data-loss + mobile import crash fixed, invoice
+  totals no longer fall off the page, units on invoice lines, barcode label generation +
+  bulk label sheets, duplicate-barcode prevention. **146 tests** (72 at v1.1.4).
+  **EF compiled model regenerated** for `Sale.UnitOfMeasure` and the `BusinessSettings`
+  columns, and verified to contain them before tagging.
 - **v1.1.5** tagged Aug 2, 2026 (WPF parity + credential hardening + pre-customer DB migration
-  fix) — **milestone: last planned engineering release before monetization work**. Android →
-  Google Play internal, iOS → TestFlight via tag CI.
+  fix). Android → Google Play internal, iOS → TestFlight via tag CI.
 - **v1.1.4** live in both channels (Aug 1, 2026): Google Play internal testing + TestFlight.
 - Unit tests run on every push via `.github/workflows/tests.yml`.
 - Store listings not yet submitted: screenshots, descriptions, feature graphic, content rating, privacy policy.
