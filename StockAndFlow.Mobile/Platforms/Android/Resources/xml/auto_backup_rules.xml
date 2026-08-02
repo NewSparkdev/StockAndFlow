@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-Android-12 equivalent of data_extraction_rules.xml — keep the two in sync. -->
+<full-backup-content>
+    <exclude domain="file" path="Data/settings.json" />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

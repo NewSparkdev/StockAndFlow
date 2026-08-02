@@ -74,21 +74,50 @@
                 <TextBlock Text="Category" Style="{StaticResource LabelStyle}"/>
                 <TextBox Text="{Binding Category, UpdateSourceTrigger=PropertyChanged}"/>
 
-                <!-- Cost Per Unit -->
-                <TextBlock Text="Cost Per Unit *" Style="{StaticResource LabelStyle}"/>
-                <TextBox Text="{Binding CostPerUnit, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                <!-- Unit of measure -->
+                <TextBlock Text="How do you measure this item?"
+                           Style="{StaticResource LabelStyle}"
+                           ToolTip="{Binding MeasureHelpText}"/>
+                <ComboBox ItemsSource="{Binding UnitOptions}"
+                          SelectedItem="{Binding SelectedUnit}"
+                          Margin="0,0,0,15"
+                          Padding="8"
+                          ToolTip="{Binding MeasureHelpText}"/>
 
-                <!-- Sale Price -->
-                <TextBlock Text="Sale Price *" Style="{StaticResource LabelStyle}"/>
-                <TextBox Text="{Binding SalePrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                <!-- Your cost -->
+                <TextBlock Text="{Binding CostLabel, StringFormat={}{0} *}"
+                           Style="{StaticResource LabelStyle}"
+                           ToolTip="{Binding CostHelpText}"/>
+                <TextBox Text="{Binding CostPerUnit, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                         IsReadOnly="{Binding HasBom}"
+                         ToolTip="{Binding CostHelpText}"/>
+                <TextBlock Text="{Binding CostBreakdownHint}"
+                           Visibility="{Binding HasBom, Converter={StaticResource BoolToVisibilityConverter}}"
+                           FontSize="11"
+                           Foreground="#3949AB"
+                           Margin="0,-10,0,15"
+                           TextWrapping="Wrap"/>
 
-                <!-- Quantity On Hand -->
-                <TextBlock Text="Quantity On Hand *" Style="{StaticResource LabelStyle}"/>
-                <TextBox Text="{Binding QuantityOnHand, UpdateSourceTrigger=PropertyChanged}"/>
+                <!-- Selling price -->
+                <TextBlock Text="{Binding PriceLabel, StringFormat={}{0} *}"
+                           Style="{StaticResource LabelStyle}"
+                           ToolTip="{Binding PriceHelpText}"/>
+                <TextBox Text="{Binding SalePrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                         ToolTip="{Binding PriceHelpText}"/>
 
-                <!-- Minimum Stock Level -->
-                <TextBlock Text="Minimum Stock Level" Style="{StaticResource LabelStyle}"/>
-                <TextBox Text="{Binding MinimumStockLevel, UpdateSourceTrigger=PropertyChanged}"/>
+                <!-- Quantity on hand -->
+                <TextBlock Text="{Binding QuantityLabel, StringFormat={}{0} *}"
+                           Style="{StaticResource LabelStyle}"
+                           ToolTip="{Binding QuantityHelpText}"/>
+                <TextBox Text="{Binding QuantityOnHand, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="{Binding QuantityHelpText}"/>
+
+                <!-- Low stock alert -->
+                <TextBlock Text="{Binding MinStockLabel}"
+                           Style="{StaticResource LabelStyle}"
+                           ToolTip="{Binding MinStockHelpText}"/>
+                <TextBox Text="{Binding MinimumStockLevel, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="{Binding MinStockHelpText}"/>
 
                 <!-- Supplier -->
                 <TextBlock Text="Supplier" Style="{StaticResource LabelStyle}"/>
@@ -178,6 +207,7 @@
                                     <Grid Margin="0,3">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="60"/>
                                             <ColumnDefinition Width="24"/>
                                         </Grid.ColumnDefinitions>
@@ -189,7 +219,13 @@
                                                    Margin="0,0,6,0"
                                                    Foreground="#3949AB"
                                                    FontWeight="SemiBold"/>
-                                        <Button Grid.Column="2"
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding LineCostDisplay}"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,0,6,0"
+                                                   Foreground="#3949AB"/>
+                                        <Button Grid.Column="3"
                                                 Content="✕"
                                                 Command="{Binding RemoveCommand}"
                                                 Padding="2"
@@ -202,6 +238,36 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <!-- Cost breakdown (feeds the "Your cost" field above) -->
+                        <StackPanel Visibility="{Binding HasBom, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    Margin="0,10,0,0">
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Materials cost per item" FontWeight="Bold" Foreground="#3949AB"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding MaterialsCost, StringFormat=C2}"
+                                           FontWeight="Bold"
+                                           Foreground="#3949AB"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="90"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Extra costs per item (labor, packaging)"
+                                           VerticalAlignment="Center"
+                                           ToolTip="{Binding ExtraCostHelpText}"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding ExtraCost, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                                         Margin="0"
+                                         HorizontalContentAlignment="Right"
+                                         ToolTip="{Binding ExtraCostHelpText}"/>
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

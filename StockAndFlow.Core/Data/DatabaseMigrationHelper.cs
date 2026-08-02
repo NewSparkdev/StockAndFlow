@@ -50,6 +50,7 @@ namespace StockAndFlow.Data
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_ShopifyProductId", "InventoryItems", "ShopifyProductId");
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_IsDeleted", "InventoryItems", "IsDeleted");
 
+                await CreateIndexIfNotExistsAsync(connection, "IX_Sales_TransactionId", "Sales", "TransactionId");
                 await CreateIndexIfNotExistsAsync(connection, "IX_Sales_SaleDate", "Sales", "SaleDate");
                 await CreateIndexIfNotExistsAsync(connection, "IX_Sales_InventoryItemId", "Sales", "InventoryItemId");
                 await CreateIndexIfNotExistsAsync(connection, "IX_Sales_ShopifyOrderId", "Sales", "ShopifyOrderId");
@@ -75,6 +76,28 @@ namespace StockAndFlow.Data
                     )");
                 await CreateIndexIfNotExistsAsync(connection, "IX_BomComponents_ParentItemId", "BomComponents", "ParentItemId");
                 await CreateIndexIfNotExistsAsync(connection, "IX_BomComponents_ComponentItemId", "BomComponents", "ComponentItemId");
+
+                // Customer feature: databases from before it lack the Sales.CustomerId link
+                // column and the Customers table entirely (EnsureCreated only builds schema
+                // for brand-new databases). Without these, every sales query fails after an
+                // upgrade with "no such column: s.CustomerId".
+                await AddColumnIfNotExistsAsync(connection, "Sales", "CustomerId", "TEXT NULL");
+
+                await CreateTableIfNotExistsAsync(connection, "Customers", @"
+                    CREATE TABLE Customers (
+                        Id TEXT NOT NULL PRIMARY KEY,
+                        Name TEXT NOT NULL,
+                        Email TEXT NULL,
+                        Phone TEXT NULL,
+                        Address TEXT NULL,
+                        Notes TEXT NULL,
+                        CreatedDate TEXT NOT NULL,
+                        LastModifiedDate TEXT NOT NULL,
+                        IsDeleted INTEGER NOT NULL DEFAULT 0,
+                        DeletedDate TEXT NULL
+                    )");
+                await CreateIndexIfNotExistsAsync(connection, "IX_Customers_Name", "Customers", "Name");
+                await CreateIndexIfNotExistsAsync(connection, "IX_Customers_Email", "Customers", "Email");
 
                 Log.Information("Database schema updates completed successfully");
             }

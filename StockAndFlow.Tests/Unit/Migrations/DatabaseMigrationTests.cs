@@ -26,8 +26,10 @@ public class DatabaseMigrationTests : IDisposable
     }
 
     /// <summary>
-    /// Creates a database with the pre-UnitOfMeasure schema: INTEGER quantity columns and
-    /// no IsDeleted/DeletedDate/UnitOfMeasure columns on InventoryItems, no BomComponents table.
+    /// Creates a database with the ORIGINAL desktop-release schema (initial commit): INTEGER
+    /// quantity columns, no IsDeleted/DeletedDate/UnitOfMeasure columns on InventoryItems,
+    /// no BomComponents table, no Customers table, and no CustomerId column on Sales
+    /// (CustomerName/Email existed from day one; the Customer entity came later).
     /// </summary>
     private async Task<Guid> CreateLegacyDatabaseAsync(int quantityOnHand = 90, int saleQuantity = 3)
     {
@@ -68,7 +70,6 @@ public class DatabaseMigrationTests : IDisposable
                 ShopifyOrderNumber TEXT NULL,
                 CustomerName TEXT NULL,
                 CustomerEmail TEXT NULL,
-                CustomerId TEXT NULL,
                 Notes TEXT NULL,
                 TaxStateCode TEXT NULL,
                 TaxRate TEXT NOT NULL,
@@ -194,6 +195,36 @@ public class DatabaseMigrationTests : IDisposable
 
         using var context = new StockAndFlowDbContext(_dbPath);
         context.InventoryItems.Single(i => i.Id == itemId).QuantityOnHand.Should().Be(90m);
+    }
+
+    [Fact]
+    public async Task Migration_AddsCustomerIdToSales_AndSalesStillLoad()
+    {
+        await CreateLegacyDatabaseAsync(saleQuantity: 3);
+
+        await DatabaseMigrationHelper.ApplySchemaUpdatesAsync(_dbPath);
+
+        // This exact query failed with "no such column: s.CustomerId" before the migration
+        // handled the customer feature.
+        using var context = new StockAndFlowDbContext(_dbPath);
+        var sale = context.Sales.Single();
+        sale.CustomerId.Should().BeNull("pre-customer sales have no linked customer");
+        sale.Quantity.Should().Be(3m);
+    }
+
+    [Fact]
+    public async Task Migration_CreatesCustomersTable()
+    {
+        await CreateLegacyDatabaseAsync();
+
+        await DatabaseMigrationHelper.ApplySchemaUpdatesAsync(_dbPath);
+
+        using var context = new StockAndFlowDbContext(_dbPath);
+        var customer = new StockAndFlow.Models.Customer { Name = "First Customer", Email = "c@example.com" };
+        context.Customers.Add(customer);
+        context.SaveChanges();
+
+        context.Customers.Single(c => c.Id == customer.Id).Name.Should().Be("First Customer");
     }
 
     [Fact]
