@@ -428,6 +428,9 @@ Two workflows added to the `worktree-onboarding` branch, triggered on `v*` tags:
 ## 6. Open items / what's NOT done yet
 
 ### CI / store delivery
+- **v1.1.5** tagged Aug 2, 2026 (WPF parity + credential hardening + pre-customer DB migration
+  fix) — **milestone: last planned engineering release before monetization work**. Android →
+  Google Play internal, iOS → TestFlight via tag CI.
 - **v1.1.4** live in both channels (Aug 1, 2026): Google Play internal testing + TestFlight.
 - Unit tests run on every push via `.github/workflows/tests.yml`.
 - Store listings not yet submitted: screenshots, descriptions, feature graphic, content rating, privacy policy.
