@@ -25,6 +25,12 @@ public partial class SettingsPage : ContentPage
 		await Navigation.PushAsync(new ShopifySettingsPage(vm));
 	}
 
+	private async void OnBarcodeLabelsTapped(object? sender, TappedEventArgs e)
+	{
+		var inventory = IPlatformApplication.Current!.Services.GetRequiredService<InventoryService>();
+		await Navigation.PushAsync(new BarcodeLabelsPage(inventory));
+	}
+
 	private async void OnExportImportTapped(object? sender, TappedEventArgs e)
 	{
 		var service = IPlatformApplication.Current!.Services.GetRequiredService<ExportImportService>();

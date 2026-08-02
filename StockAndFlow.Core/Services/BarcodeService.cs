@@ -234,6 +234,143 @@ namespace StockAndFlow.Services
         private static string Truncate(string text, int max)
             => text.Length <= max ? text : text.Substring(0, max - 1) + "…";
 
+        /// <summary>One product's label on a printed sheet.</summary>
+        public sealed record LabelRequest(string Code, string? Caption);
+
+        // US Letter at 72 dpi (PDF points), matching InvoiceService.
+        private const float SheetWidth = 612f;
+        private const float SheetHeight = 792f;
+        private const float SheetMargin = 36f;
+
+        /// <summary>
+        /// Builds a printable PDF of barcode labels laid out in a grid with cut guides —
+        /// labelling a product line one image at a time is unusable in practice.
+        /// Pages are US Letter; print at 100% (any "fit to page" scaling shrinks the bars
+        /// and can stop them scanning).
+        /// </summary>
+        /// <param name="labels">Codes and captions, in the order they should print.</param>
+        /// <param name="columns">Labels across the page.</param>
+        /// <param name="copiesEach">How many of each label (a product line usually needs several).</param>
+        public byte[] CreateLabelSheetPdf(IEnumerable<LabelRequest> labels, int columns = 3, int copiesEach = 1)
+        {
+            if (labels == null) throw new ArgumentNullException(nameof(labels));
+            if (columns < 1) columns = 1;
+            if (copiesEach < 1) copiesEach = 1;
+
+            var expanded = new List<LabelRequest>();
+            foreach (var label in labels)
+            {
+                if (string.IsNullOrWhiteSpace(label.Code)) continue;
+                for (int i = 0; i < copiesEach; i++)
+                    expanded.Add(label);
+            }
+            if (expanded.Count == 0)
+                throw new ArgumentException("No labels to print.", nameof(labels));
+
+            float cellWidth = (SheetWidth - SheetMargin * 2) / columns;
+            const float cellHeight = 92f;
+            int rows = (int)((SheetHeight - SheetMargin * 2) / cellHeight);
+            if (rows < 1) rows = 1;
+
+            return RenderSheet(expanded, columns, cellWidth, cellHeight, rows * columns);
+        }
+
+        private byte[] RenderSheet(List<LabelRequest> labels, int columns, float cellWidth,
+            float cellHeight, int perPage)
+        {
+            using var ms = new MemoryStream();
+            using (var stream = new SKManagedWStream(ms))
+            using (var document = SKDocument.CreatePdf(stream))
+            {
+                using var guide = new SKPaint
+                {
+                    Color = new SKColor(0xCC, 0xCC, 0xCC),
+                    StrokeWidth = 0.5f,
+                    Style = SKPaintStyle.Stroke,
+                    PathEffect = SKPathEffect.CreateDash(new[] { 3f, 3f }, 0)
+                };
+                using var codeFont = new SKPaint
+                {
+                    Color = SKColors.Black,
+                    TextSize = 8f,
+                    IsAntialias = true,
+                    TextAlign = SKTextAlign.Center,
+                    Typeface = SKTypeface.FromFamilyName(null, SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright) ?? SKTypeface.Default
+                };
+                using var nameFont = new SKPaint
+                {
+                    Color = new SKColor(0x44, 0x44, 0x44),
+                    TextSize = 7f,
+                    IsAntialias = true,
+                    TextAlign = SKTextAlign.Center,
+                    Typeface = SKTypeface.FromFamilyName(null, SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright) ?? SKTypeface.Default
+                };
+                using var black = new SKPaint { Color = SKColors.Black, IsAntialias = false, Style = SKPaintStyle.Fill };
+
+                SKCanvas? canvas = null;
+                for (int index = 0; index < labels.Count; index++)
+                {
+                    int slot = index % perPage;
+                    if (slot == 0)
+                    {
+                        canvas?.Flush();
+                        if (canvas != null) document.EndPage();
+                        canvas = document.BeginPage(SheetWidth, SheetHeight);
+                    }
+
+                    int row = slot / columns;
+                    int col = slot % columns;
+                    float x = SheetMargin + col * cellWidth;
+                    float y = SheetMargin + row * cellHeight;
+
+                    canvas!.DrawRect(x, y, cellWidth, cellHeight, guide);
+
+                    var label = labels[index];
+                    var symbology = CanEncode(label.Code, BarcodeSymbology.Code128)
+                        ? BarcodeSymbology.Code128
+                        : BarcodeSymbology.QrCode;
+                    var matrix = Encode(label.Code, symbology);
+
+                    float innerPad = 6f;
+                    float textBlock = string.IsNullOrWhiteSpace(label.Caption) ? 12f : 21f;
+                    float availableW = cellWidth - innerPad * 2;
+                    float availableH = cellHeight - innerPad * 2 - textBlock;
+
+                    if (symbology == BarcodeSymbology.QrCode)
+                    {
+                        float module = Math.Min(availableW / matrix.Width, availableH / matrix.Height);
+                        float qrW = matrix.Width * module;
+                        float startX = x + (cellWidth - qrW) / 2f;
+                        for (int mx = 0; mx < matrix.Width; mx++)
+                            for (int my = 0; my < matrix.Height; my++)
+                                if (matrix[mx, my])
+                                    canvas.DrawRect(startX + mx * module, y + innerPad + my * module, module, module, black);
+                    }
+                    else
+                    {
+                        float module = availableW / matrix.Width;
+                        float startX = x + (cellWidth - matrix.Width * module) / 2f;
+                        for (int mx = 0; mx < matrix.Width; mx++)
+                            if (matrix[mx, 0])
+                                canvas.DrawRect(startX + mx * module, y + innerPad, module, availableH, black);
+                    }
+
+                    float textY = y + innerPad + availableH + 9f;
+                    canvas.DrawText(label.Code, x + cellWidth / 2f, textY, codeFont);
+                    if (!string.IsNullOrWhiteSpace(label.Caption))
+                    {
+                        var caption = Truncate(label.Caption!, (int)(cellWidth / 3.4f));
+                        canvas.DrawText(caption, x + cellWidth / 2f, textY + 9f, nameFont);
+                    }
+                }
+
+                if (canvas != null) document.EndPage();
+                document.Close();
+            }
+
+            return ms.ToArray();
+        }
+
         /// <summary>
         /// Decodes a barcode from a photo. Returns null when nothing is found.
         /// </summary>

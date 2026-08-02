@@ -277,6 +277,15 @@
                                             Foreground="White"
                                             BorderThickness="0"
                                             Cursor="Hand"/>
+                                    <Button Content="🏷️ Print Labels"
+                                            Click="OnPrintLabelsClick"
+                                            Margin="8,0,0,0"
+                                            Padding="15,8"
+                                            Background="#7F8C8D"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            ToolTip="Create a printable barcode label sheet for every product that has a code."/>
                                 </StackPanel>
                             </Grid>
                         </Border>

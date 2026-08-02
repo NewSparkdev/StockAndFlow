@@ -218,6 +218,75 @@ public class BarcodeServiceTests
         match!.Name.Should().Be("Lavender Candle");
     }
 
+    private static int CountPdfPages(byte[] pdf)
+        => System.Text.RegularExpressions.Regex.Matches(
+            System.Text.Encoding.Latin1.GetString(pdf), @"/Type\s*/Page[^s]").Count;
+
+    [Fact]
+    public void LabelSheet_ProducesAValidPdf()
+    {
+        var labels = new[]
+        {
+            new BarcodeService.LabelRequest("SF-AAA111", "Lavender Candle"),
+            new BarcodeService.LabelRequest("SF-BBB222", "Soy Wax"),
+        };
+
+        var pdf = _service.CreateLabelSheetPdf(labels);
+
+        System.Text.Encoding.ASCII.GetString(pdf, 0, 5).Should().Be("%PDF-");
+        CountPdfPages(pdf).Should().Be(1);
+    }
+
+    [Fact]
+    public void LabelSheet_FlowsOntoExtraPages()
+    {
+        // 3 columns x 8 rows = 24 per page, so 30 labels must spill onto a second sheet.
+        var labels = Enumerable.Range(1, 30)
+            .Select(i => new BarcodeService.LabelRequest($"SF-ITEM{i:D3}", $"Item {i}"))
+            .ToArray();
+
+        var pdf = _service.CreateLabelSheetPdf(labels);
+
+        CountPdfPages(pdf).Should().BeGreaterThan(1);
+    }
+
+    [Fact]
+    public void LabelSheet_RepeatsEachLabelWhenCopiesRequested()
+    {
+        var one = _service.CreateLabelSheetPdf(
+            new[] { new BarcodeService.LabelRequest("SF-COPY01", "Candle") }, copiesEach: 1);
+        var many = _service.CreateLabelSheetPdf(
+            new[] { new BarcodeService.LabelRequest("SF-COPY01", "Candle") }, copiesEach: 40);
+
+        CountPdfPages(one).Should().Be(1);
+        CountPdfPages(many).Should().BeGreaterThan(1, "40 copies cannot fit on one sheet");
+    }
+
+    [Fact]
+    public void LabelSheet_SkipsBlankCodesAndRejectsAnEmptyRun()
+    {
+        var act = () => _service.CreateLabelSheetPdf(new[]
+        {
+            new BarcodeService.LabelRequest("", "No code"),
+            new BarcodeService.LabelRequest("   ", "Also no code"),
+        });
+
+        act.Should().Throw<ArgumentException>("printing a sheet of nothing is a mistake worth reporting");
+    }
+
+    [Fact]
+    public void LabelSheet_HandlesNonAsciiCodesByFallingBackToQr()
+    {
+        // Must not throw: the sheet picks QR per-label when CODE_128 can't carry the value.
+        var pdf = _service.CreateLabelSheetPdf(new[]
+        {
+            new BarcodeService.LabelRequest("CAFÉ-01", "Café Candle"),
+            new BarcodeService.LabelRequest("SF-PLAIN1", "Plain"),
+        });
+
+        System.Text.Encoding.ASCII.GetString(pdf, 0, 5).Should().Be("%PDF-");
+    }
+
     [Fact]
     public void Decode_HandlesRgba_NotJustBgra()
     {

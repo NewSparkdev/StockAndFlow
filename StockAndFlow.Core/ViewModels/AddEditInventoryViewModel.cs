@@ -217,6 +217,29 @@ namespace StockAndFlow.ViewModels
         public string PriceLabel => IsMeasured ? $"Selling price (per {Unit})" : "Selling price (each)";
 
         // Unit-aware help text for the tappable "?" icons
+        /// <summary>Plain-language walkthrough shown on the label-printing screen.</summary>
+        public static string BarcodeHowToText =>
+            "HOW BARCODES WORK HERE\n\n" +
+            "1. Give each product a code.\n" +
+            "   Tap \"Create barcode label\" when adding or editing an item and we'll make one " +
+            "for you, or type in your own.\n\n" +
+            "2. Print the labels.\n" +
+            "   Use \"Print labels\" to get a sheet of every product at once, then stick them on " +
+            "your jars, boxes or price tags. Print at 100% — if your printer offers \"fit to " +
+            "page\", turn it off, or the bars shrink and stop scanning.\n\n" +
+            "3. Scan when you sell.\n" +
+            "   On Record Sale, tap Scan and photograph the label. The item drops straight into " +
+            "the sale, so there's no hunting through a list at a busy market stall.\n\n" +
+            "4. Scan to find things too.\n" +
+            "   Scanning on the Add/Edit screen fills in the code, so you can point at an " +
+            "existing product to pull up its record.\n\n" +
+            "TIPS\n" +
+            "• Every product needs its own code. If two share one, a scan can't tell them " +
+            "apart — the app will warn you.\n" +
+            "• Keep labels flat and unwrinkled; a bent barcode is a barcode that won't scan.\n" +
+            "• Already sell through a shop or Amazon with official UPC/EAN barcodes? Just scan " +
+            "or type those in instead — the app reads them all.";
+
         public string BarcodeHelpText =>
             "There are two kinds of barcode, and most small sellers only need the first.\n\n" +
             "YOUR OWN (what this button makes)\n" +
