@@ -38,7 +38,8 @@ public partial class AddEditInventoryPage : ContentPage
 			// No SKU yet? Make one and put it in the field so the label and the item agree.
 			if (string.IsNullOrWhiteSpace(_viewModel.Sku))
 			{
-				_viewModel.Sku = barcode.GenerateSku();
+				// Pass the codes already in use so the new one can't collide.
+				_viewModel.Sku = barcode.GenerateSku(_viewModel.ExistingSkus);
 				await DisplayAlert("Barcode created",
 					$"This item had no code, so we made one: {_viewModel.Sku}\n\n" +
 					"Remember to save the item so the code sticks.",

@@ -65,6 +65,12 @@ namespace StockAndFlow.ViewModels
 
         public bool CanAddComponent => PendingComponent != null && PendingQty > 0;
 
+        /// <summary>
+        /// Codes already used by other items, so a generated barcode can avoid clashing.
+        /// Populated by <see cref="InitializeAsync"/>.
+        /// </summary>
+        public List<string?> ExistingSkus { get; } = new();
+
         public bool HasBom => BomComponents.Count > 0;
 
         /// <summary>What one unit of this item costs in raw materials: Σ(component cost × amount used).</summary>
@@ -360,6 +366,9 @@ namespace StockAndFlow.ViewModels
             AvailableComponents.Clear();
             foreach (var item in all.Where(i => i.Id != _originalItem.Id).OrderBy(i => i.Name))
                 AvailableComponents.Add(item);
+
+            ExistingSkus.Clear();
+            ExistingSkus.AddRange(all.Where(i => i.Id != _originalItem.Id).Select(i => i.Sku));
 
             if (_isEditMode)
             {

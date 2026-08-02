@@ -38,7 +38,8 @@ namespace StockAndFlow.Views.Dialogs
                 // No SKU yet? Make one and put it in the field so label and item agree.
                 if (string.IsNullOrWhiteSpace(vm.Sku))
                 {
-                    vm.Sku = barcode.GenerateSku();
+                    // Pass the codes already in use so the new one can't collide.
+                    vm.Sku = barcode.GenerateSku(vm.ExistingSkus);
                     MessageBox.Show(
                         $"This item had no code, so we made one: {vm.Sku}\n\nRemember to save the item so the code sticks.",
                         "Barcode created", MessageBoxButton.OK, MessageBoxImage.Information);

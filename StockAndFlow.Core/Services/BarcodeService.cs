@@ -42,13 +42,38 @@ namespace StockAndFlow.Services
         /// A short, unique, human-retypable code such as "SF-K7Q2M9". Not derived from the item
         /// name: names change and duplicate, and a barcode must stay stable and unique.
         /// </summary>
-        public string GenerateSku(int length = 6)
+        /// <param name="existingCodes">
+        /// Codes already in use. Supplying them guarantees no clash — two items sharing a code
+        /// makes scanning ambiguous, so the scanner adds whichever item it happens to find first.
+        /// </param>
+        public string GenerateSku(IEnumerable<string?>? existingCodes = null, int length = 6)
         {
             if (length < 4) length = 4;
-            var chars = new char[length];
-            for (int i = 0; i < length; i++)
-                chars[i] = SkuAlphabet[RandomNumberGenerator.GetInt32(SkuAlphabet.Length)];
-            return $"SF-{new string(chars)}";
+
+            var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (existingCodes != null)
+            {
+                foreach (var code in existingCodes)
+                {
+                    if (!string.IsNullOrWhiteSpace(code))
+                        taken.Add(code!.Trim());
+                }
+            }
+
+            for (int attempt = 0; attempt < 50; attempt++)
+            {
+                var chars = new char[length];
+                for (int i = 0; i < length; i++)
+                    chars[i] = SkuAlphabet[RandomNumberGenerator.GetInt32(SkuAlphabet.Length)];
+
+                var candidate = $"SF-{new string(chars)}";
+                if (!taken.Contains(candidate))
+                    return candidate;
+            }
+
+            // 50 collisions at 31^6 combinations means the pool really is crowded; widen it
+            // rather than hand back a duplicate.
+            return GenerateSku(existingCodes, length + 2);
         }
 
         /// <summary>Whether <paramref name="value"/> can be encoded in the given symbology.</summary>

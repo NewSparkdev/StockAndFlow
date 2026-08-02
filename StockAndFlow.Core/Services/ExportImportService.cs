@@ -444,6 +444,8 @@ namespace StockAndFlow.Services
                 await _inventoryService.CreateOrUpdateItemAsync(item);
             }
 
+            WarnAboutDuplicateSkus(await _inventoryService.GetAllItemsAsync());
+
             return (added, updated);
         }
 
@@ -620,6 +622,26 @@ namespace StockAndFlow.Services
 
             var newJson = System.Text.Json.JsonSerializer.Serialize(history, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(_importHistoryFile, newJson);
+        }
+
+        /// <summary>
+        /// A spreadsheet can introduce codes that clash with existing items. The import isn't
+        /// blocked (the user may be mid-cleanup), but a shared code means scanning it picks
+        /// whichever item matches first, so it must not pass unremarked.
+        /// </summary>
+        private static void WarnAboutDuplicateSkus(List<InventoryItem> items)
+        {
+            var clashes = items
+                .Where(i => !string.IsNullOrWhiteSpace(i.Sku))
+                .GroupBy(i => i.Sku!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .ToList();
+
+            foreach (var clash in clashes)
+            {
+                Log.Warning("Duplicate barcode {Sku} shared by {Count} items ({Names}) — scanning it is ambiguous",
+                    clash.Key, clash.Count(), string.Join(", ", clash.Select(i => i.Name)));
+            }
         }
 
         /// <summary>

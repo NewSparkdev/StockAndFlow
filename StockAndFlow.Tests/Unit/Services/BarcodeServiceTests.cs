@@ -56,6 +56,37 @@ public class BarcodeServiceTests
     }
 
     [Fact]
+    public void GenerateSku_NeverReturnsACodeAlreadyInUse()
+    {
+        // Force the collision path: every code the generator can make is already taken
+        // except a handful, so it must find one of the survivors rather than duplicate.
+        var service = new BarcodeService();
+        var taken = new List<string?>();
+        for (int i = 0; i < 200; i++) taken.Add(service.GenerateSku());
+        taken.Add(null);          // items with no code must not break the check
+        taken.Add("   ");
+
+        for (int i = 0; i < 50; i++)
+        {
+            var fresh = service.GenerateSku(taken);
+            taken.Should().NotContain(fresh, "a generated barcode must never clash with an existing one");
+            taken.Add(fresh);
+        }
+    }
+
+    [Fact]
+    public void GenerateSku_IgnoresCaseWhenAvoidingClashes()
+    {
+        var service = new BarcodeService();
+        var existing = new List<string?> { "sf-abcdef" };
+
+        // Repeated draws should never produce the same code in different casing, which the
+        // SKU lookup (case-insensitive) would treat as a duplicate.
+        for (int i = 0; i < 100; i++)
+            service.GenerateSku(existing).Should().NotBeEquivalentTo("SF-ABCDEF");
+    }
+
+    [Fact]
     public void GeneratedSku_IsEncodableAndScannable()
     {
         var sku = _service.GenerateSku();
