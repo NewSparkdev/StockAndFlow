@@ -439,6 +439,27 @@ enable toggle, store name + token with help text, Test Connection, Sync Now, liv
 - Gotcha for next time: the WPF app keeps its SQLite data in an uncheckpointed WAL while running,
   so the DB can't be inspected externally until the app exits cleanly — verify through the UI.
 
+### 4.19 Export/Import tested for the first time — two serious bugs (2026-08-02, commit `28f2d9a`)
+The backup/restore feature (and a paywall lever) had **zero tests**. Writing the first eight
+surfaced two defects, both invisible in normal use:
+1. **Silent data loss on backup/restore.** The Inventory sheet exported 9 columns and omitted
+   `UnitOfMeasure`, `MinimumStockLevel`, `ExtraCostPerUnit`, `Supplier`, `Notes`. Restoring a
+   backup silently reset how an item is measured (90.5 **oz** of wax came back as "each"),
+   wiped restock levels, labor costs, suppliers and notes. Now 14 columns; imports read by
+   **header name** so old spreadsheets still work and a missing column never blanks a value.
+2. **Import crashed on mobile, *after* committing.** `import_history.json` used a relative
+   `Data/...` path resolved against the process working directory — outside the sandbox on
+   Android/iOS, directory never created. It's written *after* `CommitAsync()`, so the failure
+   hit the catch, which called `RollbackAsync()` on a committed transaction, throwing a second
+   exception that escaped the method entirely. On device: data imported, then unhandled crash,
+   real cause masked. Fixed via `IPathProvider` (absolute, sandboxed) + directory creation, a
+   `committed` flag so a committed transaction is never rolled back, and non-fatal history
+   bookkeeping. **This is very likely the pending "on-device Excel import round-trip" item.**
+
+Verified on the real desktop database (22 items incl. Shopify products, 20 sales incl. order
+#1001): export writes 14 columns; importing that backup into a *copy* restored everything with
+no duplicates and no field loss (6/6 assertions).
+
 ---
 
 ## 5. Bugs found & fixed during emulator testing
