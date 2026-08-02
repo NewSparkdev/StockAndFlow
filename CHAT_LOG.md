@@ -470,14 +470,18 @@ no duplicates and no field loss (6/6 assertions).
   `OnPageEnd` hook on every page.
 - Verified on real data (business "Soyful serene"): Shopify order invoice, a real 5-item
   transaction, and an 18-item taxed invoice with long notes (now correctly 2 pages).
-- ⚠️ **Open gap — no unit of measure on invoice lines.** `Sale` doesn't record
-  `UnitOfMeasure`, so selling 2.5 **oz** of wax prints a bare "2.5" on the customer's invoice.
-  Fixing needs a `Sale` entity change (+migration +compiled-model regen) so historical invoices
-  keep the unit they were sold in. Matters for the measure-by-weight audience.
-- ⚠️ **Observation — invoice PDFs are ~1.4 MB on Windows** (was ~55 KB on Android): SkiaSharp
-  embeds three full typefaces (regular/bold/italic) and the Windows default font has huge glyph
-  coverage. Fine for printing, chunky for emailing. Fix would be selecting a lighter font or
-  subsetting.
+- ✅ **Units now print on invoice lines** (commit `7dac541`). `Sale` gained `UnitOfMeasure`,
+  captured **at sale time** from the item (not looked up later) so a reprinted invoice keeps the
+  unit the goods were actually sold in. Lines read "2.5 oz" with unit price "$0.80/oz"; counted
+  items still read "3" / "$20.00". Migration defaults existing sales to `each`, so old invoices
+  are unchanged; Excel export/import carry the unit too.
+  **⚠ `Sale` is an EF entity — regenerate the compiled model on `worktree-onboarding`.**
+- ℹ️ **Invoice PDF size — measured, deliberately not changed.** ~1.4 MB on Windows vs ~55 KB on
+  Android. Cause: the SkiaSharp native build embeds whole typefaces (no subsetter), so the cost
+  is entirely the Windows system font. Measured alternatives for the same content:
+  Segoe UI/default 1.39 MB · Arial 1.51 MB · Tahoma 1.01 MB · **Verdana 0.41 MB**.
+  Every option trades the invoice's appearance for size, mobile (the primary product) is already
+  fine, and 1.4 MB is harmless for email or print — so not worth changing the desktop typeface.
 
 ---
 
