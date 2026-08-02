@@ -438,12 +438,24 @@ enable toggle, store name + token with help text, Test Connection, Sync Now, liv
   The fake now throws exactly like SQLite; with that fidelity fix the order test fails first,
   then passes. Lesson: a test double that is more permissive than the real dependency will
   certify broken code.
-- ⚠️ **Known issue — inventory double-deduction on order import.** Shopify already decrements
-  stock when an order is placed, and product sync copies Shopify's number down; then order
-  import records a sale that deducts *again*. Observed: Shopify 8 → local 6. Self-corrects on
-  the next product sync (which overwrites from Shopify), but the local count is wrong in
-  between and spurious adjustments are recorded. Needs a product decision on who owns stock
-  truth before the paywall advertises this feature.
+- ✅ **Stock ownership settled (commit `1815277`): Stock & Flow owns the count.** Investigating
+  the reported double-deduction found a worse bug on the same line — `SyncProductToInventoryAsync`
+  copied Shopify's `inventory_quantity` into `QuantityOnHand` on **every** sync. Shopify only
+  knows its own orders, so **selling 5 at a market (10 → 5) and then syncing put the count back
+  to 10** — silently resurrecting sold stock for exactly the multi-channel maker this app targets.
+  The double-deduction was the same line from the other side (sync pulled Shopify's decremented
+  8 down, then order import deducted 2 more → 6). Removing the overwrite fixes both with no
+  special-casing:
+  `both 10 → online order 2 → Shopify 8, local 10 → sync (count untouched) + order imported −2 →
+  local 8 == Shopify → market sale 1 → local 7 → push → Shopify 7.`
+  - Routine sync updates **name/price/SKU only**; new products still take Shopify's count as
+    their opening figure.
+  - `SyncProductsAsync(adoptShopifyStockLevels: true)` + **"Use Shopify's stock counts"** button
+    for a deliberate stock-take adoption (confirms first — it discards in-person sales).
+  - `PushStockLevelsToShopifyAsync` sends counts up so the storefront stops overselling; opt-in
+    via `AppSettings.PushStockLevelsToShopify`.
+  - `UpdateInventoryQuantityInShopifyAsync` swallowed its own exceptions, so a bulk push counted
+    every failure as a success — now returns bool and rethrows for the bulk caller.
 - Gotcha for next time: the WPF app keeps its SQLite data in an uncheckpointed WAL while running,
   so the DB can't be inspected externally until the app exits cleanly — verify through the UI.
 
