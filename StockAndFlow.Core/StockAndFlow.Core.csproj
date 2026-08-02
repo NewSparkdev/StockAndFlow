@@ -19,6 +19,9 @@
     <!-- Invoices render via SkiaSharp's SKDocument PDF backend (works on Windows/Android/iOS).
          QuestPDF was removed: its bundled native Skia build does not load on mobile. -->
     <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <!-- Barcode generate + decode. Lives in Core (not just Mobile) so the WPF app can print
+         labels and so the decode path is reachable from tests. -->
+    <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />

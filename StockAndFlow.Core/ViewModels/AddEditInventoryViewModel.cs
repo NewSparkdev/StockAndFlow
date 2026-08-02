@@ -211,6 +211,22 @@ namespace StockAndFlow.ViewModels
         public string PriceLabel => IsMeasured ? $"Selling price (per {Unit})" : "Selling price (each)";
 
         // Unit-aware help text for the tappable "?" icons
+        public string BarcodeHelpText =>
+            "There are two kinds of barcode, and most small sellers only need the first.\n\n" +
+            "YOUR OWN (what this button makes)\n" +
+            "Free, unlimited, and instantly usable. It scans with this app and with ordinary " +
+            "barcode scanners, so it's all you need for craft fairs, markets, your own shop or " +
+            "your own website. We'll create a short code for the item if it doesn't have one.\n\n" +
+            "OFFICIAL RETAIL BARCODES (UPC / EAN)\n" +
+            "The numbers on supermarket products. Required if you want to sell through a " +
+            "retailer, a distributor or Amazon, because they have to be unique worldwide. They " +
+            "are issued by GS1 for a fee — no app can make one for you, and inventing one would " +
+            "clash with a real product.\n\n" +
+            "ALREADY HAVE OFFICIAL BARCODES?\n" +
+            "Use them here. Tap Scan and photograph the barcode, or just type the number into " +
+            "the SKU / Barcode box. The app reads every common format and will store whatever " +
+            "you give it.";
+
         public string MeasureHelpText =>
             "Most items are counted — 12 candles, 5 mugs — so leave this on \"By count\".\n\n" +
             "Pick a weight or volume unit for supplies you track in bulk, like candle wax. " +
