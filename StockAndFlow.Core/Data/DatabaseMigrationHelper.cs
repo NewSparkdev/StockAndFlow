@@ -99,6 +99,12 @@ namespace StockAndFlow.Data
                 await CreateIndexIfNotExistsAsync(connection, "IX_Customers_Name", "Customers", "Name");
                 await CreateIndexIfNotExistsAsync(connection, "IX_Customers_Email", "Customers", "Email");
 
+                // Sales-tax default + logo: added with the customer/tax feature but never
+                // migrated, so upgraded databases threw "no such column: b.DefaultTaxStateCode"
+                // on every Business Settings load.
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "DefaultTaxStateCode", "TEXT NULL");
+                await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "LogoPath", "TEXT NULL");
+
                 // Invoice display choices (all default ON to preserve existing invoice output)
                 await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowLogoOnInvoice", "INTEGER NOT NULL DEFAULT 1");
                 await AddColumnIfNotExistsAsync(connection, "BusinessSettings", "ShowPhoneOnInvoice", "INTEGER NOT NULL DEFAULT 1");

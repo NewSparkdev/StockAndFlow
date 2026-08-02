@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Serilog;
 using StockAndFlow.Models;
 
 namespace StockAndFlow.Services
@@ -38,9 +39,13 @@ namespace StockAndFlow.Services
         public event EventHandler<string>? SyncStatusChanged;
         public event EventHandler<Exception>? SyncError;
 
+        /// <summary>Raised after a sync that changed local data, so views can reload.</summary>
+        public event EventHandler? SyncCompleted;
+
         private bool _isEnabled;
         private string? _storeName;
         private string? _accessToken;
+        private int _salesImported;
 
         public bool IsConfigured => _isEnabled && !string.IsNullOrEmpty(_storeName) && !string.IsNullOrEmpty(_accessToken);
 
@@ -114,6 +119,27 @@ namespace StockAndFlow.Services
             return _httpClient.SendAsync(request);
         }
 
+        /// <summary>
+        /// Like EnsureSuccessStatusCode, but includes Shopify's error body in the message —
+        /// a bare "403 Forbidden" hides whether the cause is a missing scope, protected
+        /// customer data, or an expired token.
+        /// </summary>
+        private static async Task EnsureSuccessAsync(HttpResponseMessage response, string what)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            var body = string.Empty;
+            try { body = await response.Content.ReadAsStringAsync(); } catch { /* best effort */ }
+            if (body.Length > 500) body = body.Substring(0, 500);
+
+            Log.Error("Shopify {What} request failed: {Status} {Reason} — {Body}",
+                what, (int)response.StatusCode, response.ReasonPhrase, body);
+
+            throw new HttpRequestException(
+                $"Shopify returned {(int)response.StatusCode} {response.ReasonPhrase} for {what}. {body}");
+        }
+
         /// <summary>Extracts the rel="next" URL from Shopify's Link pagination header, if any.</summary>
         private static string? NextPageUrl(HttpResponseMessage response)
         {
@@ -173,10 +199,11 @@ namespace StockAndFlow.Services
                 while (url != null)
                 {
                     var response = await GetAsync(url);
-                    response.EnsureSuccessStatusCode();
+                    await EnsureSuccessAsync(response, "products");
 
                     var json = await response.Content.ReadAsStringAsync();
                     var page = JsonSerializer.Deserialize<ShopifyProductsResponse>(json, JsonOptions);
+                    Log.Information("Shopify products page returned {Count} products", page?.Products?.Count ?? 0);
                     if (page?.Products != null)
                         products.AddRange(page.Products);
 
@@ -202,10 +229,12 @@ namespace StockAndFlow.Services
 
                 await transaction.CommitAsync();
                 SyncStatusChanged?.Invoke(this, $"Sync completed: {products.Count} products");
+                SyncCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                Log.Error(ex, "Shopify product sync failed");
                 SyncError?.Invoke(this, ex);
                 SyncStatusChanged?.Invoke(this, $"Sync failed: {ex.Message}");
             }
@@ -260,7 +289,11 @@ namespace StockAndFlow.Services
             if (!IsConfigured)
                 return;
 
-            using var transaction = await _dataService.BeginTransactionAsync();
+            // NO outer transaction here: RecordSaleAsync opens its own (sale + inventory
+            // adjustment + BOM must be atomic together), and SQLite rejects nested
+            // transactions — which made every order import throw. Per-order atomicity is
+            // the right granularity anyway: a partial import is safe because ShopifyOrderId
+            // dedup means the next sync resumes where this one stopped.
             try
             {
                 SyncStatusChanged?.Invoke(this, "Fetching orders from Shopify...");
@@ -273,11 +306,14 @@ namespace StockAndFlow.Services
                 string? url = $"orders.json?status=any&limit={PageSize}{sinceParam}";
                 while (url != null)
                 {
+                    Log.Information("Shopify orders request: {Url}", url);
                     var response = await GetAsync(url);
-                    response.EnsureSuccessStatusCode();
+                    await EnsureSuccessAsync(response, "orders");
 
                     var json = await response.Content.ReadAsStringAsync();
                     var page = JsonSerializer.Deserialize<ShopifyOrdersResponse>(json, JsonOptions);
+                    Log.Information("Shopify orders page returned {Count} orders (payload {Length} chars)",
+                        page?.Orders?.Count ?? 0, json.Length);
                     if (page?.Orders != null)
                         orders.AddRange(page.Orders);
 
@@ -286,7 +322,6 @@ namespace StockAndFlow.Services
 
                 if (orders.Count == 0)
                 {
-                    await transaction.CommitAsync();
                     SyncStatusChanged?.Invoke(this, "No new orders found");
                     return;
                 }
@@ -297,17 +332,22 @@ namespace StockAndFlow.Services
                 var allInventoryItems = await _inventoryService.GetAllItemsAsync();
                 var existingSales = await _salesService.GetAllSalesAsync();
 
+                _salesImported = 0;
                 foreach (var order in orders)
                 {
                     await ProcessShopifyOrderAsync(order, allInventoryItems, existingSales);
                 }
 
-                await transaction.CommitAsync();
-                SyncStatusChanged?.Invoke(this, "Order sync completed");
+                Log.Information("Shopify order sync: {Orders} orders fetched, {Sales} sales imported",
+                    orders.Count, _salesImported);
+                SyncStatusChanged?.Invoke(this, _salesImported > 0
+                    ? $"Order sync completed: {_salesImported} new sale(s) from {orders.Count} order(s)"
+                    : $"Order sync completed: {orders.Count} order(s) fetched, none new to import");
+                SyncCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                Log.Error(ex, "Shopify order sync failed");
                 SyncError?.Invoke(this, ex);
                 SyncStatusChanged?.Invoke(this, $"Order sync failed: {ex.Message}");
             }
@@ -322,11 +362,17 @@ namespace StockAndFlow.Services
                 return;
 
             if (existingSales.Any(s => s.ShopifyOrderId == order.Id.ToString()))
+            {
+                Log.Debug("Shopify order {OrderId} already imported; skipping", order.Id);
                 return;
+            }
 
             var lineItems = order.LineItems ?? new List<ShopifyLineItem>();
             if (lineItems.Count == 0)
+            {
+                Log.Warning("Shopify order {OrderId} has no line items", order.Id);
                 return;
+            }
 
             foreach (var lineItem in lineItems)
             {
@@ -361,7 +407,18 @@ namespace StockAndFlow.Services
                         sale.ShopifyOrderId = order.Id.ToString();
                         sale.ShopifyOrderNumber = order.OrderNumber?.ToString();
                         await _dataService.SaveAsync(sale);
+                        existingSales.Add(sale);
+                        _salesImported++;
                     }
+                }
+                else
+                {
+                    // The finished good isn't in local inventory (product sync not run, or the
+                    // product was deleted in Shopify). Skipping silently used to make this look
+                    // like "nothing to import".
+                    Log.Warning("Shopify order {OrderId}: no local inventory item matches " +
+                                "variant {VariantId} / product {ProductId} — line item skipped",
+                        order.Id, lineItem.VariantId, lineItem.ProductId);
                 }
             }
         }

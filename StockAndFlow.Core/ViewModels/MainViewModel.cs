@@ -130,6 +130,10 @@ namespace StockAndFlow.ViewModels
             // Subscribe to Shopify events
             _shopifyService.SyncStatusChanged += OnShopifySyncStatusChanged;
 
+            // A sync (from the dashboard button or the Shopify Settings dialog) changes
+            // inventory and sales underneath the open tabs — reload them so the lists aren't stale.
+            _shopifyService.SyncCompleted += OnShopifySyncCompleted;
+
             // Keep the dashboard logo in sync with Business Settings.
             _settingsService.SettingsChanged += OnBusinessSettingsChanged;
 
@@ -261,6 +265,16 @@ namespace StockAndFlow.ViewModels
             UiDispatcher.Run(() => StatusMessage = status);
         }
 
+        private void OnShopifySyncCompleted(object? sender, EventArgs e)
+        {
+            UiDispatcher.Run(() =>
+            {
+                InventoryViewModel?.RefreshCommand.Execute(null);
+                SalesViewModel?.RefreshCommand.Execute(null);
+                _ = RefreshMetricsAsync();
+            });
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -268,6 +282,7 @@ namespace StockAndFlow.ViewModels
                 // Unsubscribe from events to prevent memory leaks
                 _calculationService.MetricsUpdated -= OnMetricsUpdated;
                 _shopifyService.SyncStatusChanged -= OnShopifySyncStatusChanged;
+                _shopifyService.SyncCompleted -= OnShopifySyncCompleted;
                 _settingsService.SettingsChanged -= OnBusinessSettingsChanged;
 
                 // Dispose of services

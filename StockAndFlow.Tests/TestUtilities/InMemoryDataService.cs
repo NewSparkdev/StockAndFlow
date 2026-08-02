@@ -139,10 +139,25 @@ public class InMemoryDataService : IDataService
         return Task.CompletedTask;
     }
 
+    /// <summary>Non-null while a transaction is open, so nesting can be rejected like SQLite does.</summary>
+    internal InMemoryTransaction? ActiveTransaction { get; set; }
+
     public Task<IDataTransaction> BeginTransactionAsync()
     {
         EnsureInitialized();
-        return Task.FromResult<IDataTransaction>(new InMemoryTransaction(this));
+
+        // The real SQLite connection throws "The connection is already in a transaction and
+        // cannot participate in another transaction." Mirror that here — silently allowing
+        // nesting let a production-breaking bug in ShopifyService.SyncOrdersAsync pass tests.
+        if (ActiveTransaction != null)
+        {
+            throw new InvalidOperationException(
+                "The connection is already in a transaction and cannot participate in another transaction.");
+        }
+
+        var transaction = new InMemoryTransaction(this);
+        ActiveTransaction = transaction;
+        return Task.FromResult<IDataTransaction>(transaction);
     }
 
     /// <summary>
@@ -211,7 +226,7 @@ public class InMemoryDataService : IDataService
     /// <summary>
     /// In-memory transaction implementation that supports commit and rollback.
     /// </summary>
-    private class InMemoryTransaction : IDataTransaction
+    internal class InMemoryTransaction : IDataTransaction
     {
         private readonly InMemoryDataService _dataService;
         private readonly Dictionary<Type, Dictionary<Guid, object>> _snapshot;
@@ -272,6 +287,10 @@ public class InMemoryDataService : IDataService
             }
 
             _disposed = true;
+            if (ReferenceEquals(_dataService.ActiveTransaction, this))
+            {
+                _dataService.ActiveTransaction = null;
+            }
         }
     }
 }
