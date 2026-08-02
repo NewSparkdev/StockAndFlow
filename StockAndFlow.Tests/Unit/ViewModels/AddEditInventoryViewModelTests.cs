@@ -28,6 +28,57 @@ public class AddEditInventoryViewModelTests
     }
 
     [Fact]
+    public async Task Save_WarnsWhenAnotherItemAlreadyUsesTheSameBarcode()
+    {
+        // Real data hit this: two candles shared SKU "13000", so scanning it silently
+        // selected whichever matched first.
+        var (data, inventory, bom) = CreateServices();
+        await inventory.CreateOrUpdateItemAsync(
+            new InventoryItem { Name = "Blue Candle", Sku = "13000", SalePrice = 20m, QuantityOnHand = 5 });
+
+        var dialogs = Substitute.For<IDialogService>();
+        dialogs.ShowConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+               .Returns(true); // user chooses "Let me change it"
+
+        var vm = new AddEditInventoryViewModel(inventory, bom, Substitute.For<IFilePickerService>(), dialogs);
+        await vm.InitializeAsync();
+        vm.Name = "Green Candle";
+        vm.Sku = "13000";
+        vm.SalePrice = 20m;
+
+        vm.SaveCommand.Execute(null);
+        await Task.Delay(150);
+
+        await dialogs.Received().ShowConfirmAsync(
+            Arg.Is<string>(t => t.Contains("Code already used")),
+            Arg.Is<string>(m => m.Contains("Blue Candle")),
+            Arg.Any<string>(), Arg.Any<string>());
+        (await inventory.GetAllItemsAsync()).Should().HaveCount(1,
+            "choosing to change the code must abandon the save");
+    }
+
+    [Fact]
+    public async Task Save_AllowsReusingItsOwnBarcodeWhenEditing()
+    {
+        var (data, inventory, bom) = CreateServices();
+        var item = await inventory.CreateOrUpdateItemAsync(
+            new InventoryItem { Name = "Blue Candle", Sku = "13000", SalePrice = 20m, QuantityOnHand = 5 });
+
+        var dialogs = Substitute.For<IDialogService>();
+        var vm = new AddEditInventoryViewModel(inventory, bom, item,
+            Substitute.For<IFilePickerService>(), dialogs);
+        await vm.InitializeAsync();
+        vm.SalePrice = 25m;
+
+        vm.SaveCommand.Execute(null);
+        await Task.Delay(150);
+
+        await dialogs.DidNotReceive().ShowConfirmAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+        (await inventory.GetAllItemsAsync()).Single().SalePrice.Should().Be(25m);
+    }
+
+    [Fact]
     public void AddingBomComponents_AutoFillsYourCostFromMaterials()
     {
         var (_, inventory, bom) = CreateServices();

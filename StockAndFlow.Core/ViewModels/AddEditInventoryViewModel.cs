@@ -398,6 +398,31 @@ namespace StockAndFlow.ViewModels
         {
             try
             {
+                // Two items sharing a code makes scanning ambiguous: the lookup takes the
+                // first match, so the wrong product gets added to the sale with no warning.
+                if (!string.IsNullOrWhiteSpace(Sku))
+                {
+                    var all = await _inventoryService.GetAllItemsAsync();
+                    var clash = all.FirstOrDefault(i =>
+                        i.Id != _originalItem.Id &&
+                        !string.IsNullOrWhiteSpace(i.Sku) &&
+                        string.Equals(i.Sku!.Trim(), Sku!.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                    if (clash != null)
+                    {
+                        var proceed = await _dialogService.ShowConfirmAsync(
+                            "Code already used",
+                            $"\"{clash.Name}\" already uses the code {clash.Sku}.\n\n" +
+                            "Scanning it won't know which item you mean, and may pick the wrong one. " +
+                            "Give this item its own code instead?",
+                            "Let me change it",
+                            "Save anyway");
+
+                        if (proceed)
+                            return;
+                    }
+                }
+
                 _originalItem.Name = Name;
                 _originalItem.Sku = Sku;
                 _originalItem.Category = Category;
