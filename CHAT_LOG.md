@@ -460,6 +460,25 @@ Verified on the real desktop database (22 items incl. Shopify products, 20 sales
 #1001): export writes 14 columns; importing that backup into a *copy* restored everything with
 no duplicates and no field loss (6/6 assertions).
 
+### 4.20 Invoice layout bug + open gaps (2026-08-02, commit `ed68d61`)
+- **Bug: totals could fall off the invoice.** The item table paginated, but `DrawTotals`,
+  `DrawNotes` and `DrawThankYou` drew unconditionally at the cursor. With ~18 line items the
+  table ends low on page 1, so the **Subtotal/Tax/Total block rendered over the footer text and
+  ran off the bottom** — the customer's total, missing from their invoice. Fixed with an
+  `EnsureSpace()` page-break guard; long notes also break mid-block.
+- **Bug: footer only on the last page** of multi-page invoices → now drawn via an
+  `OnPageEnd` hook on every page.
+- Verified on real data (business "Soyful serene"): Shopify order invoice, a real 5-item
+  transaction, and an 18-item taxed invoice with long notes (now correctly 2 pages).
+- ⚠️ **Open gap — no unit of measure on invoice lines.** `Sale` doesn't record
+  `UnitOfMeasure`, so selling 2.5 **oz** of wax prints a bare "2.5" on the customer's invoice.
+  Fixing needs a `Sale` entity change (+migration +compiled-model regen) so historical invoices
+  keep the unit they were sold in. Matters for the measure-by-weight audience.
+- ⚠️ **Observation — invoice PDFs are ~1.4 MB on Windows** (was ~55 KB on Android): SkiaSharp
+  embeds three full typefaces (regular/bold/italic) and the Windows default font has huge glyph
+  coverage. Fine for printing, chunky for emailing. Fix would be selecting a lighter font or
+  subsetting.
+
 ---
 
 ## 5. Bugs found & fixed during emulator testing
