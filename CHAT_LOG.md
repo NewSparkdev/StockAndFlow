@@ -65,7 +65,7 @@ existing WPF app. Both apps reference the same Core.
 
 | Commit | What it did |
 |---|---|
-| `21d66af` | Fix Shopify sync (was silently broken: PascalCase parsing of snake_case JSON = no-op syncs, no config UI, sunset API version, no pagination, order dedup never worked) + Shopify settings UI on both platforms. **Live dev-store verification still pending (needs free Shopify Partners account).** |
+| `21d66af` | Fix Shopify sync (was silently broken: PascalCase parsing of snake_case JSON = no-op syncs, no config UI, sunset API version, no pagination, order dedup never worked) + Shopify settings UI on both platforms. ✅ **Live-verified against a real dev store 2026-08-02** (see §4.18) |
 | `897342b` | Invoices: render business logo + per-field display toggles (**⚠ entity changed — regen compiled model on onboarding before next release**) |
 | `95f9e89` | Fix upgrade crash for pre-customer DBs: migrate `Sales.CustomerId` + `Customers` table |
 | `60a9dfb` | Harden credential encryption: AES-GCM + "enc1:" marker, resilient key init, mobile migration, backup exclusions |
@@ -389,6 +389,42 @@ Two workflows added to the `worktree-onboarding` branch, triggered on `v*` tags:
 - Both times: Android → Google Play Internal Testing (automatic), iOS → TestFlight (automatic
   upload; Apple processing ~10–30 min). CI runs monitored via the public GitHub API
   (`gh` CLI now installed for next time).
+
+### 4.18 Shopify sync: fixed, given a UI, and live-verified (2026-08-02, commit `21d66af`)
+**The feature had never worked.** Four defects, none of which would ever surface as an error:
+1. DTOs parsed Shopify's snake_case JSON with .NET defaults (PascalCase, strict) → every
+   response deserialized into empty objects → sync reported **"completed successfully" while
+   syncing nothing**.
+2. **No configuration UI existed on any platform** — the WPF "not configured" alert pointed at
+   Business Settings fields that don't exist. Credentials could not be entered at all.
+3. API version pinned to `2024-01`, sunset by Shopify in early 2025; no pagination (50-product
+   ceiling).
+4. Imported orders never got `ShopifyOrderId` stamped on the sale — the dedup key — so every
+   sync would have **re-imported all orders as duplicate sales and re-deducted inventory**.
+
+Fixes: explicit `JsonPropertyName` mappings + numbers-from-strings; nullable line-item
+product/variant ids (null for custom items); API version `2026-01` as a documented const;
+Link-header pagination at 250/page; order-id stamping; connection test now validates the body
+parses as a shop (wrong store names return HTML 200s); per-request auth headers instead of
+mutating a static `HttpClient.BaseAddress` (throws after first use — credentials could never be
+changed at runtime); store-name normalization (`https://x.myshopify.com/admin` → `x`);
+injectable `HttpMessageHandler` for tests. **13 new tests** against real-shape Shopify JSON.
+
+New **Shopify Sync** settings screen on both heads (shared `ShopifySettingsViewModel`):
+enable toggle, store name + token with help text, Test Connection, Sync Now, live status.
+
+**Live verification (2026-08-02)** — Shopify Partners → Dev Dashboard:
+- Dev store **`stockandflow-test.myshopify.com`** (Basic plan, sample data), org NewSpark.dev.
+- Custom app **"Stock & Flow"**, installed, scopes `read_products`, `read_orders`,
+  `read_inventory`, `write_inventory`. Admin API token is single-reveal — held by the user only.
+- ✅ Test Connection → connected. ✅ Sync Now → **real products appear in Inventory**.
+- ✅ Bonus proof of the credential work: the token is on disk as `enc1:`-prefixed DPAPI
+  ciphertext in `Data/settings.json` — the hardening from `60a9dfb` working on a real secret.
+- ⚠️ **Order→sale sync not yet live-verified** — the dev store's sample data contains no orders.
+  Covered by unit tests (incl. dedup + single deduction); to close the gap, place a test order
+  in the dev store admin and re-sync.
+- Gotcha for next time: the WPF app keeps its SQLite data in an uncheckpointed WAL while running,
+  so the DB can't be inspected externally until the app exits cleanly — verify through the UI.
 
 ---
 
