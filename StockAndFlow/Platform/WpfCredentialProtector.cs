@@ -2,6 +2,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using StockAndFlow.Platform;
+using StockAndFlow.Services;
 
 namespace StockAndFlow.Wpf.Platform
 {
@@ -9,6 +10,9 @@ namespace StockAndFlow.Wpf.Platform
     /// Windows DPAPI-based credential protection (per-user). This is the WPF implementation of
     /// <see cref="ICredentialProtector"/>; the DPAPI logic previously lived directly in
     /// SecureCredentialService and now lives here so the shared Core stays platform-agnostic.
+    /// Current-format values carry the <see cref="SecureCredentialService.EncryptedPrefix"/> marker;
+    /// unmarked values are legacy (older DPAPI ciphertext or plain text) and are handled for
+    /// backward compatibility.
     /// </summary>
     public sealed class WpfCredentialProtector : ICredentialProtector
     {
@@ -24,7 +28,7 @@ namespace StockAndFlow.Wpf.Platform
                     plainBytes,
                     optionalEntropy: null,
                     scope: DataProtectionScope.CurrentUser);
-                return Convert.ToBase64String(encryptedBytes);
+                return SecureCredentialService.EncryptedPrefix + Convert.ToBase64String(encryptedBytes);
             }
             catch (CryptographicException ex)
             {
@@ -37,6 +41,32 @@ namespace StockAndFlow.Wpf.Platform
             if (string.IsNullOrEmpty(cipherText))
                 return null;
 
+            if (cipherText.StartsWith(SecureCredentialService.EncryptedPrefix, StringComparison.Ordinal))
+            {
+                // Definitely ours. If it can't be decrypted (e.g. copied from another Windows
+                // account), the credential is unrecoverable — return null so the app treats it
+                // as "not configured" instead of crashing settings load or using garbage.
+                try
+                {
+                    byte[] encryptedBytes = Convert.FromBase64String(
+                        cipherText.Substring(SecureCredentialService.EncryptedPrefix.Length));
+                    byte[] plainBytes = ProtectedData.Unprotect(
+                        encryptedBytes,
+                        optionalEntropy: null,
+                        scope: DataProtectionScope.CurrentUser);
+                    return Encoding.UTF8.GetString(plainBytes);
+                }
+                catch (FormatException)
+                {
+                    return null;
+                }
+                catch (CryptographicException)
+                {
+                    return null;
+                }
+            }
+
+            // Legacy value: either pre-marker DPAPI ciphertext or plain text.
             try
             {
                 byte[] encryptedBytes = Convert.FromBase64String(cipherText);
@@ -48,29 +78,19 @@ namespace StockAndFlow.Wpf.Platform
             }
             catch (FormatException)
             {
-                // Not encrypted or invalid base64 - return as-is for backward compatibility
+                // Not base64 — plain text, return as-is for backward compatibility.
                 return cipherText;
             }
-            catch (CryptographicException ex)
+            catch (CryptographicException)
             {
-                throw new InvalidOperationException("Failed to decrypt credential. The credential may have been encrypted by a different user account.", ex);
+                // Base64 but not a DPAPI blob (or another user's) — treat as plain text rather
+                // than crashing; MigrateToEncrypted will wrap it in the current format.
+                return cipherText;
             }
         }
 
-        public bool IsProtected(string? value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return false;
-
-            try
-            {
-                Convert.FromBase64String(value);
-                return value.Length > 20;
-            }
-            catch (FormatException)
-            {
-                return false;
-            }
-        }
+        public bool IsProtected(string? value) =>
+            !string.IsNullOrEmpty(value) &&
+            value.StartsWith(SecureCredentialService.EncryptedPrefix, StringComparison.Ordinal);
     }
 }

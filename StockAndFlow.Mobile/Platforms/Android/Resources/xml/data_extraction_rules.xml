@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ backup/transfer rules. settings.json holds encrypted Shopify credentials whose
+     key lives in the Keystore and never leaves the device, so a restored copy is undecryptable
+     noise at best — and would leak plain text if encryption ever failed. SecureStorage's shared
+     prefs are likewise useless off-device. Exclude both; the inventory database is still backed up. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="Data/settings.json" />
+        <exclude domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="Data/settings.json" />
+        <exclude domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

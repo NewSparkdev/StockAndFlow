@@ -7,6 +7,8 @@ namespace StockAndFlow.Mobile;
 
 public partial class App : Application
 {
+	private readonly Task _credentialInit;
+
 	public App()
 	{
 		InitializeComponent();
@@ -15,9 +17,10 @@ public partial class App : Application
 		// metrics timer can fire on background threads).
 		UiDispatcher.Post = action => MainThread.BeginInvokeOnMainThread(action);
 
-		// Wire credential encryption to the platform SecureStorage-backed provider.
-		// Fire-and-forget: Shopify credentials are only needed after the dashboard has loaded.
-		_ = MauiCredentialProtector.InitializeAsync();
+		// Wire credential encryption to the platform SecureStorage-backed provider. Started here,
+		// awaited in InitializeAsync before anything reads or writes credentials — saving settings
+		// while the default passthrough provider is still active would store them unencrypted.
+		_credentialInit = MauiCredentialProtector.InitializeAsync();
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
@@ -71,7 +74,18 @@ public partial class App : Application
 		{
 			// InitializeAsync offloads the heavy EnsureDatabaseCreated work to the thread pool,
 			// so awaiting it here keeps the UI thread responsive.
-			await services.GetRequiredService<IDataService>().InitializeAsync();
+			var dataService = services.GetRequiredService<IDataService>();
+			await dataService.InitializeAsync();
+
+			// With the protector installed, upgrade any stored credentials that predate the
+			// current encrypted format (plain text or the old CBC layout) before any page can
+			// read or save settings.
+			await _credentialInit;
+			var settings = await dataService.GetSettingsAsync();
+			var before = (settings.ShopifyStoreNameEncrypted, settings.ShopifyApiKeyEncrypted, settings.ShopifyAccessTokenEncrypted);
+			settings.MigrateToEncrypted();
+			if (before != (settings.ShopifyStoreNameEncrypted, settings.ShopifyApiKeyEncrypted, settings.ShopifyAccessTokenEncrypted))
+				await dataService.SaveSettingsAsync(settings);
 
 			// Alert the user when any sale drops an item below its minimum stock level.
 			services.GetRequiredService<InventoryService>().LowStockDetected += async (_, item) =>

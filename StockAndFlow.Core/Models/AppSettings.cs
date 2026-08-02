@@ -55,32 +55,27 @@ namespace StockAndFlow.Models
         public int SyncIntervalMinutes { get; set; } = 60;
 
         /// <summary>
-        /// Migrates any existing plain-text credentials to encrypted format.
-        /// Call this after loading settings from JSON to handle backward compatibility.
+        /// Migrates stored credentials to the current encrypted format.
+        /// Call this after loading settings from JSON, once the platform protector is installed.
+        /// Handles both plain-text values and legacy ciphertext formats.
         /// </summary>
         public void MigrateToEncrypted()
         {
-            // If the stored value doesn't look encrypted, encrypt it
-            if (!string.IsNullOrEmpty(ShopifyStoreNameEncrypted) &&
-                !SecureCredentialService.IsEncrypted(ShopifyStoreNameEncrypted))
-            {
-                var plainValue = ShopifyStoreNameEncrypted;
-                ShopifyStoreNameEncrypted = SecureCredentialService.Encrypt(plainValue);
-            }
+            ShopifyStoreNameEncrypted = Reencrypt(ShopifyStoreNameEncrypted);
+            ShopifyApiKeyEncrypted = Reencrypt(ShopifyApiKeyEncrypted);
+            ShopifyAccessTokenEncrypted = Reencrypt(ShopifyAccessTokenEncrypted);
+        }
 
-            if (!string.IsNullOrEmpty(ShopifyApiKeyEncrypted) &&
-                !SecureCredentialService.IsEncrypted(ShopifyApiKeyEncrypted))
-            {
-                var plainValue = ShopifyApiKeyEncrypted;
-                ShopifyApiKeyEncrypted = SecureCredentialService.Encrypt(plainValue);
-            }
+        private static string? Reencrypt(string? stored)
+        {
+            if (string.IsNullOrEmpty(stored) || SecureCredentialService.IsEncrypted(stored))
+                return stored;
 
-            if (!string.IsNullOrEmpty(ShopifyAccessTokenEncrypted) &&
-                !SecureCredentialService.IsEncrypted(ShopifyAccessTokenEncrypted))
-            {
-                var plainValue = ShopifyAccessTokenEncrypted;
-                ShopifyAccessTokenEncrypted = SecureCredentialService.Encrypt(plainValue);
-            }
+            // Decrypt first: legacy-format ciphertext yields its plain text, actual plain text
+            // passes through unchanged. Encrypting the stored value directly would double-encrypt
+            // legacy ciphertext. Under the passthrough provider both calls are identity, so this
+            // is a no-op until the real protector is installed.
+            return SecureCredentialService.Encrypt(SecureCredentialService.Decrypt(stored));
         }
     }
 }

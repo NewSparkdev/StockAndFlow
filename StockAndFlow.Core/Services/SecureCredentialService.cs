@@ -13,6 +13,14 @@ namespace StockAndFlow.Services
     public static class SecureCredentialService
     {
         /// <summary>
+        /// Marker prepended to every value encrypted by the current protectors. Lets
+        /// <see cref="ICredentialProtector.IsProtected"/> answer definitively instead of
+        /// guessing from base64 shape (which misclassified base64-looking plain text).
+        /// Values without the marker are legacy: either an older ciphertext format or plain text.
+        /// </summary>
+        public const string EncryptedPrefix = "enc1:";
+
+        /// <summary>
         /// The platform credential protector. Host apps assign this once at startup.
         /// Defaults to a non-encrypting passthrough.
         /// </summary>
