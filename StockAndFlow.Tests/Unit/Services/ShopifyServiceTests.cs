@@ -160,7 +160,100 @@ public class ShopifyServiceTests : IDisposable
         var updated = items.Single(i => i.ShopifyProductId == "8001");
         updated.Name.Should().Be("Lavender Candle");
         updated.SalePrice.Should().Be(19.99m);
-        updated.QuantityOnHand.Should().Be(42m);
+        updated.QuantityOnHand.Should().Be(1m,
+            "Shopify owns the catalogue (name, price, SKU) but Stock & Flow owns the stock count");
+    }
+
+    [Fact]
+    public async Task SyncProducts_DoesNotOverwriteLocalStock_SoInPersonSalesSurvive()
+    {
+        // The bug this guards: a maker sells 5 at a market (10 -> 5), then syncs. Shopify never
+        // saw those sales so it still says 10, and copying that down silently resurrected the
+        // stock. Stock & Flow owns the count.
+        await ConfigureAsync();
+        var item = await _inventoryService.CreateOrUpdateItemAsync(new InventoryItem
+        {
+            Name = "Lavender Candle",
+            ShopifyProductId = "8001",
+            ShopifyVariantId = "9001",
+            SalePrice = 19.99m,
+            CostPerUnit = 8m,
+            QuantityOnHand = 10m
+        });
+
+        // Five sold in person.
+        await _salesService.RecordSaleAsync(item.Id, 5m);
+        (await _inventoryService.GetAllItemsAsync()).Single(i => i.Id == item.Id)
+            .QuantityOnHand.Should().Be(5m);
+
+        // Shopify still reports 42 for this variant (its own stale figure).
+        _handler.Respond("products.json", ProductsJson);
+        await _service.SyncProductsAsync();
+
+        var after = (await _inventoryService.GetAllItemsAsync()).Single(i => i.Id == item.Id);
+        after.QuantityOnHand.Should().Be(5m, "a routine sync must not resurrect stock sold in person");
+        after.SalePrice.Should().Be(19.99m, "prices and names still come down from Shopify");
+        after.Name.Should().Be("Lavender Candle");
+    }
+
+    [Fact]
+    public async Task SyncProducts_AdoptsShopifyStock_OnlyWhenExplicitlyAsked()
+    {
+        await ConfigureAsync();
+        var item = await _inventoryService.CreateOrUpdateItemAsync(new InventoryItem
+        {
+            Name = "Lavender Candle",
+            ShopifyProductId = "8001",
+            ShopifyVariantId = "9001",
+            SalePrice = 19.99m,
+            QuantityOnHand = 3m
+        });
+        _handler.Respond("products.json", ProductsJson);
+
+        await _service.SyncProductsAsync(adoptShopifyStockLevels: true);
+
+        (await _inventoryService.GetAllItemsAsync()).Single(i => i.Id == item.Id)
+            .QuantityOnHand.Should().Be(42m, "the deliberate action takes Shopify's number");
+    }
+
+    [Fact]
+    public async Task SyncProducts_StillSeedsStock_ForBrandNewProducts()
+    {
+        // First import has no local history to protect, so Shopify's count is the opening figure.
+        await ConfigureAsync();
+        _handler.Respond("products.json", ProductsJson);
+
+        await _service.SyncProductsAsync();
+
+        var created = (await _inventoryService.GetAllItemsAsync())
+            .Single(i => i.ShopifyProductId == "8001");
+        created.QuantityOnHand.Should().Be(42m);
+    }
+
+    [Fact]
+    public async Task OrderImport_AfterProductSync_LeavesStockMatchingShopify()
+    {
+        // The end-to-end sequence that used to drift: Shopify decremented on its side, product
+        // sync copied that reduced number down, then order import deducted again (10 -> 8 -> 6).
+        await ConfigureAsync();
+        var item = await _inventoryService.CreateOrUpdateItemAsync(new InventoryItem
+        {
+            Name = "Lavender Candle",
+            ShopifyProductId = "8001",
+            ShopifyVariantId = "9001",
+            SalePrice = 19.99m,
+            CostPerUnit = 8m,
+            QuantityOnHand = 44m       // Shopify reports 42 after selling 2
+        });
+        _handler.Respond("products.json", ProductsJson);
+        _handler.Respond("orders.json", OrdersJson);
+
+        await _service.SyncProductsAsync();
+        await _service.SyncOrdersAsync();
+
+        (await _inventoryService.GetAllItemsAsync()).Single(i => i.Id == item.Id)
+            .QuantityOnHand.Should().Be(42m,
+                "the order's 2 units come off exactly once, landing on Shopify's figure");
     }
 
     [Fact]

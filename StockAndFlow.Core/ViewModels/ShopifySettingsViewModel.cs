@@ -23,6 +23,7 @@ namespace StockAndFlow.ViewModels
         private string? _accessToken;
         private string? _statusMessage;
         private bool _isBusy;
+        private bool _pushStockLevels;
 
         public event EventHandler<bool>? CloseRequested;
 
@@ -56,6 +57,26 @@ namespace StockAndFlow.ViewModels
             set => SetProperty(ref _isBusy, value);
         }
 
+        /// <summary>Send local counts up to Shopify after each sync.</summary>
+        public bool PushStockLevels
+        {
+            get => _pushStockLevels;
+            set => SetProperty(ref _pushStockLevels, value);
+        }
+
+        public string StockOwnershipHelpText =>
+            "Stock & Flow keeps the real stock count.\n\n" +
+            "It's the only place that sees everything you sell — market stalls, craft fairs and " +
+            "your own shop as well as online orders. Shopify only ever knows about its own " +
+            "orders, so its number goes stale the moment you sell one in person.\n\n" +
+            "So a sync brings your online orders IN (they're recorded as sales and come off your " +
+            "stock), but it never overwrites your counts with Shopify's.\n\n" +
+            "Turn on \"Send my stock counts to Shopify\" and your storefront gets updated after " +
+            "each sync, so it won't sell something you already sold at a market.\n\n" +
+            "If you'd rather start over from Shopify's numbers — say you did a stock-take in " +
+            "Shopify's admin — use \"Use Shopify's stock counts\" below. That's a one-off; " +
+            "it overwrites your counts, so it asks first.";
+
         public string StoreNameHelpText =>
             "Your store's handle — the part before .myshopify.com. " +
             "Example: if your admin URL is candleco.myshopify.com, enter candleco. " +
@@ -69,6 +90,7 @@ namespace StockAndFlow.ViewModels
 
         public ICommand TestConnectionCommand { get; }
         public ICommand SyncNowCommand { get; }
+        public ICommand AdoptShopifyStockCommand { get; }
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
 
@@ -83,6 +105,7 @@ namespace StockAndFlow.ViewModels
 
             TestConnectionCommand = new RelayCommand(async () => await TestConnectionAsync(), () => !IsBusy);
             SyncNowCommand = new RelayCommand(async () => await SyncNowAsync(), () => !IsBusy);
+            AdoptShopifyStockCommand = new RelayCommand(async () => await AdoptShopifyStockAsync(), () => !IsBusy);
             SaveCommand = new RelayCommand(async () => await SaveAsync(), () => !IsBusy);
             CancelCommand = new RelayCommand(Cancel);
 
@@ -102,6 +125,7 @@ namespace StockAndFlow.ViewModels
                     ShopifyEnabled = settings.ShopifyEnabled;
                     StoreName = settings.ShopifyStoreName;
                     AccessToken = settings.ShopifyAccessToken;
+                    PushStockLevels = settings.PushStockLevelsToShopify;
                 });
             }
             catch (Exception ex)
@@ -117,6 +141,7 @@ namespace StockAndFlow.ViewModels
             settings.ShopifyEnabled = ShopifyEnabled;
             settings.ShopifyStoreName = StoreName?.Trim();
             settings.ShopifyAccessToken = AccessToken?.Trim();
+            settings.PushStockLevelsToShopify = PushStockLevels;
             await _dataService.SaveSettingsAsync(settings);
             await _shopifyService.InitializeAsync();
         }
@@ -182,12 +207,60 @@ namespace StockAndFlow.ViewModels
                     return;
                 }
 
+                // Products first (new items appear), then orders (they reference those items).
+                // Neither touches local stock counts except by recording the sales themselves.
                 await _shopifyService.SyncProductsAsync();
                 await _shopifyService.SyncOrdersAsync();
+
+                if (PushStockLevels)
+                    await _shopifyService.PushStockLevelsToShopifyAsync();
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Sync failed: {ex.Message}";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// One-off: replace local stock counts with Shopify's. Destructive, so it confirms first —
+        /// anything sold in person but not yet reflected in Shopify will be lost.
+        /// </summary>
+        private async Task AdoptShopifyStockAsync()
+        {
+            try
+            {
+                IsBusy = true;
+                await PersistAsync();
+
+                if (!_shopifyService.IsConfigured)
+                {
+                    StatusMessage = "Enter a store name and access token, and turn the integration on.";
+                    return;
+                }
+
+                var confirmed = await _dialogService.ShowConfirmAsync(
+                    "Use Shopify's stock counts?",
+                    "This replaces your stock counts with the numbers currently in Shopify.\n\n" +
+                    "Anything you've sold in person that Shopify doesn't know about will be added " +
+                    "back on. Only do this after a stock-take in Shopify.",
+                    "Use Shopify's counts",
+                    "Cancel");
+
+                if (!confirmed)
+                {
+                    StatusMessage = "Left your stock counts alone.";
+                    return;
+                }
+
+                await _shopifyService.SyncProductsAsync(adoptShopifyStockLevels: true);
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Couldn't take Shopify's counts: {ex.Message}";
             }
             finally
             {

@@ -71,6 +71,16 @@
                 <TextBlock Text="Shopify admin → Settings → Apps and sales channels → Develop apps → create an app with read_products, read_orders, write_inventory → install → copy the shpat_ token. Stored encrypted on this computer only."
                           FontSize="11" Foreground="#7F8C8D" Margin="0,3,0,0" TextWrapping="Wrap"/>
 
+                <TextBlock Text="Stock counts" Style="{StaticResource LabelStyle}" Margin="0,20,0,5"/>
+                <TextBlock Text="Stock &amp; Flow keeps the real count — it's the only place that sees your market and craft-fair sales too. Syncing brings online orders in; it never overwrites your counts."
+                          FontSize="11" Foreground="#7F8C8D" TextWrapping="Wrap" Margin="0,0,0,8"
+                          ToolTip="{Binding StockOwnershipHelpText}"/>
+                <CheckBox Content="Send my stock counts to Shopify after each sync"
+                          IsChecked="{Binding PushStockLevels}"
+                          ToolTip="{Binding StockOwnershipHelpText}"/>
+                <TextBlock Text="Keeps your storefront from selling something you already sold in person."
+                          FontSize="11" Foreground="#7F8C8D" TextWrapping="Wrap" Margin="24,2,0,0"/>
+
                 <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                     <Button Content="Test Connection"
                             Command="{Binding TestConnectionCommand}"
@@ -91,6 +101,15 @@
                           Foreground="#2C3E50"
                           Margin="0,12,0,0"
                           TextWrapping="Wrap"/>
+
+                <Border BorderBrush="#DDD" BorderThickness="0,1,0,0" Margin="0,16,0,8"/>
+                <TextBlock Text="Did a stock-take in Shopify's admin? This replaces your counts with theirs — it asks first."
+                          FontSize="11" Foreground="#7F8C8D" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <Button Content="Use Shopify's stock counts"
+                        Command="{Binding AdoptShopifyStockCommand}"
+                        HorizontalAlignment="Left"
+                        Padding="15,8"
+                        Background="#95A5A6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
 
             </StackPanel>
         </ScrollViewer>

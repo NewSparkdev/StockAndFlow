@@ -46,6 +46,8 @@ namespace StockAndFlow.Services
         private string? _storeName;
         private string? _accessToken;
         private int _salesImported;
+        private bool _adoptStockLevels;
+        private int _stockLevelsAdopted;
 
         public bool IsConfigured => _isEnabled && !string.IsNullOrEmpty(_storeName) && !string.IsNullOrEmpty(_accessToken);
 
@@ -184,10 +186,20 @@ namespace StockAndFlow.Services
             }
         }
 
-        public async Task SyncProductsAsync()
+        /// <summary>
+        /// Pulls products from Shopify.
+        /// </summary>
+        /// <param name="adoptShopifyStockLevels">
+        /// Normally false: Stock &amp; Flow owns stock counts because it is the only system that
+        /// sees in-person sales, so routine syncs must not touch local quantities. Pass true
+        /// only for a deliberate "use Shopify's counts" action.
+        /// </param>
+        public async Task SyncProductsAsync(bool adoptShopifyStockLevels = false)
         {
             if (!IsConfigured)
                 return;
+
+            _adoptStockLevels = adoptShopifyStockLevels;
 
             using var transaction = await _dataService.BeginTransactionAsync();
             try
@@ -222,13 +234,16 @@ namespace StockAndFlow.Services
                 // Load all items once to prevent N+1 queries
                 var allItems = await _inventoryService.GetAllItemsAsync();
 
+                _stockLevelsAdopted = 0;
                 foreach (var shopifyProduct in products)
                 {
                     await SyncProductToInventoryAsync(shopifyProduct, allItems);
                 }
 
                 await transaction.CommitAsync();
-                SyncStatusChanged?.Invoke(this, $"Sync completed: {products.Count} products");
+                SyncStatusChanged?.Invoke(this, adoptShopifyStockLevels
+                    ? $"Sync completed: {products.Count} products, {_stockLevelsAdopted} stock count(s) taken from Shopify"
+                    : $"Sync completed: {products.Count} products");
                 SyncCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -260,9 +275,19 @@ namespace StockAndFlow.Services
                 existingItem.Name = shopifyProduct.Title;
                 existingItem.LastModifiedDate = DateTime.Now;
                 existingItem.SalePrice = variant.Price;
-                existingItem.QuantityOnHand = variant.InventoryQuantity;
                 existingItem.Sku = variant.Sku ?? existingItem.Sku;
                 existingItem.LastSyncedAt = DateTime.Now;
+
+                // Stock count is NOT copied down on a routine sync. Shopify never sees
+                // in-person sales, so its number is stale the moment you sell at a market —
+                // overwriting from it silently resurrected stock that had already been sold,
+                // and (combined with order import deducting again) made counts drift.
+                // Only a deliberate "use Shopify's counts" action adopts their figure.
+                if (_adoptStockLevels)
+                {
+                    existingItem.QuantityOnHand = variant.InventoryQuantity;
+                    _stockLevelsAdopted++;
+                }
 
                 await _inventoryService.CreateOrUpdateItemAsync(existingItem);
             }
@@ -423,52 +448,123 @@ namespace StockAndFlow.Services
             }
         }
 
-        public async Task UpdateInventoryQuantityInShopifyAsync(InventoryItem item, long? locationId = null)
+        /// <summary>
+        /// Pushes local stock counts up to Shopify for every linked item, so the storefront
+        /// reflects goods already sold in person. Stock &amp; Flow is the source of truth for
+        /// counts, so this is the direction stock information should flow.
+        /// </summary>
+        public async Task PushStockLevelsToShopifyAsync()
+        {
+            if (!IsConfigured)
+                return;
+
+            var items = (await _inventoryService.GetAllItemsAsync())
+                .Where(i => !string.IsNullOrEmpty(i.ShopifyVariantId))
+                .ToList();
+
+            if (items.Count == 0)
+                return;
+
+            SyncStatusChanged?.Invoke(this, $"Sending stock counts to Shopify ({items.Count} items)...");
+
+            long? locationId = null;
+            int pushed = 0, failed = 0;
+            foreach (var item in items)
+            {
+                try
+                {
+                    // Resolve the location once and reuse it — one lookup per item would be
+                    // a needless round trip for every product.
+                    locationId ??= await GetPrimaryLocationIdAsync();
+                    if (locationId is null or 0)
+                        break;
+
+                    await UpdateInventoryQuantityInShopifyAsync(item, locationId, announce: false);
+                    pushed++;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    Log.Warning(ex, "Could not push stock for {Item} to Shopify", item.Name);
+                }
+            }
+
+            Log.Information("Pushed {Pushed} stock counts to Shopify ({Failed} failed)", pushed, failed);
+            SyncStatusChanged?.Invoke(this, failed == 0
+                ? $"Sent {pushed} stock count(s) to Shopify"
+                : $"Sent {pushed} stock count(s); {failed} failed (see log)");
+        }
+
+        private async Task<long?> GetPrimaryLocationIdAsync()
+        {
+            var response = await GetAsync("locations.json");
+            await EnsureSuccessAsync(response, "locations");
+            var json = await response.Content.ReadAsStringAsync();
+            var locations = JsonSerializer.Deserialize<ShopifyLocationsResponse>(json, JsonOptions);
+            return locations?.Locations?.FirstOrDefault()?.Id;
+        }
+
+        /// <summary>
+        /// Sends one item's local stock count to Shopify. Returns false if it couldn't be sent.
+        /// </summary>
+        /// <param name="announce">
+        /// Per-item status/error events. The bulk push turns these off and reports once at the
+        /// end, and needs failures to propagate so it can count them — hence the rethrow.
+        /// </param>
+        public async Task<bool> UpdateInventoryQuantityInShopifyAsync(
+            InventoryItem item, long? locationId = null, bool announce = true)
         {
             if (!IsConfigured || string.IsNullOrEmpty(item.ShopifyVariantId))
-                return;
+                return false;
 
             try
             {
                 // Get inventory item ID from variant
                 var variantResponse = await GetAsync($"variants/{item.ShopifyVariantId}.json");
-                variantResponse.EnsureSuccessStatusCode();
+                await EnsureSuccessAsync(variantResponse, "variant");
 
                 var variantJson = await variantResponse.Content.ReadAsStringAsync();
                 var variant = JsonSerializer.Deserialize<ShopifyVariantResponse>(variantJson, JsonOptions);
 
                 if (variant?.Variant?.InventoryItemId == null)
-                    return;
-
-                // Get location if not provided (use first location)
-                if (locationId == null)
                 {
-                    var locationsResponse = await GetAsync("locations.json");
-                    locationsResponse.EnsureSuccessStatusCode();
-                    var locationsJson = await locationsResponse.Content.ReadAsStringAsync();
-                    var locations = JsonSerializer.Deserialize<ShopifyLocationsResponse>(locationsJson, JsonOptions);
-                    locationId = locations?.Locations?.FirstOrDefault()?.Id ?? 0;
+                    Log.Warning("Shopify variant {VariantId} has no inventory_item_id; cannot set stock for {Item}",
+                        item.ShopifyVariantId, item.Name);
+                    return false;
                 }
 
-                if (locationId == 0)
-                    return;
+                locationId ??= await GetPrimaryLocationIdAsync();
+                if (locationId is null or 0)
+                {
+                    Log.Warning("No Shopify location available; cannot set stock for {Item}", item.Name);
+                    return false;
+                }
 
                 var updatePayload = new
                 {
                     location_id = locationId,
                     inventory_item_id = variant.Variant.InventoryItemId,
+                    // Shopify tracks whole units; fractional local stock (e.g. 90.5 oz) is
+                    // rounded for the storefront only — the local count stays exact.
                     available = (int)Math.Round(item.QuantityOnHand)
                 };
 
                 var response = await PostAsync("inventory_levels/set.json", updatePayload);
-                response.EnsureSuccessStatusCode();
+                await EnsureSuccessAsync(response, "inventory level");
 
-                SyncStatusChanged?.Invoke(this, $"Updated inventory for {item.Name}");
+                if (announce)
+                    SyncStatusChanged?.Invoke(this, $"Updated inventory for {item.Name}");
+                return true;
             }
             catch (Exception ex)
             {
+                if (!announce)
+                    throw;   // bulk caller counts and logs failures itself
+
+                Log.Error(ex, "Failed to push stock for {Item} to Shopify", item.Name);
                 SyncError?.Invoke(this, ex);
                 SyncStatusChanged?.Invoke(this, $"Failed to update {item.Name}: {ex.Message}");
+                return false;
             }
         }
     }
