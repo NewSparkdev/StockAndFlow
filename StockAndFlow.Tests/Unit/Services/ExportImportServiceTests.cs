@@ -132,6 +132,7 @@ public class ExportImportServiceTests : IDisposable
         sale.SalePricePerUnit.Should().Be(0.80m);
         sale.CustomerName.Should().Be("Jane Doe");
         sale.Notes.Should().Be("market stall");
+        sale.UnitOfMeasure.Should().Be("oz", "a restored invoice must still read '2.5 oz'");
     }
 
     [Fact]

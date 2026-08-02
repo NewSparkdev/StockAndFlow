@@ -250,10 +250,8 @@ namespace StockAndFlow.Tests.Services
         }
 
         [Fact]
-        public async Task GenerateInvoiceAsync_FractionalQuantity_Renders()
+        public async Task GenerateInvoiceAsync_MeasuredItem_Renders()
         {
-            // NOTE: Sale carries no UnitOfMeasure, so an invoice for weight-sold goods shows
-            // a bare "2.5" with no "oz" — see CHAT_LOG §4.20. This guards the render path.
             var settings = new BusinessSettings { BusinessName = "Candle Co" };
             var transaction = new SaleTransaction
             {
@@ -261,7 +259,8 @@ namespace StockAndFlow.Tests.Services
                 SaleDate = DateTime.Now,
                 Items = new List<Sale>
                 {
-                    new() { ItemName = "Soy Wax", Quantity = 2.5m, SalePricePerUnit = 0.80m, CostPerUnit = 0.30m }
+                    new() { ItemName = "Soy Wax", Quantity = 2.5m, UnitOfMeasure = "oz",
+                            SalePricePerUnit = 0.80m, CostPerUnit = 0.30m }
                 }
             };
             var outputPath = Path.Combine(Path.GetTempPath(), $"InvoiceTest_{Guid.NewGuid():N}.pdf");
@@ -275,6 +274,19 @@ namespace StockAndFlow.Tests.Services
             {
                 if (File.Exists(outputPath)) File.Delete(outputPath);
             }
+        }
+
+        [Theory]
+        [InlineData("oz", 2.5, "2.5 oz")]
+        [InlineData("lb", 1.25, "1.25 lb")]
+        [InlineData("each", 3, "3")]
+        [InlineData(null, 3, "3")]
+        public void QuantityDisplay_ShowsUnitOnlyForMeasuredGoods(string? unit, double qty, string expected)
+        {
+            var sale = new Sale { Quantity = (decimal)qty };
+            if (unit != null) sale.UnitOfMeasure = unit;
+
+            sale.QuantityDisplay.Should().Be(expected);
         }
 
         [Fact]

@@ -150,9 +150,10 @@ namespace StockAndFlow.Services
             sheet.Cell(1, 11).Value = "Profit";
             sheet.Cell(1, 12).Value = "Customer Name";
             sheet.Cell(1, 13).Value = "Notes";
+            sheet.Cell(1, 14).Value = "Unit";
 
             // Style headers
-            var headerRange = sheet.Range(1, 1, 1, 13);
+            var headerRange = sheet.Range(1, 1, 1, 14);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -177,6 +178,7 @@ namespace StockAndFlow.Services
 
                 sheet.Cell(row, 12).Value = sale.CustomerName ?? "";
                 sheet.Cell(row, 13).Value = sale.Notes ?? "";
+                sheet.Cell(row, 14).Value = sale.UnitOfMeasure;
 
                 row++;
             }
@@ -449,6 +451,7 @@ namespace StockAndFlow.Services
         {
             int added = 0, updated = 0;
             var existingSales = await _salesService.GetAllSalesAsync();
+            var headers = BuildHeaderMap(sheet);
 
             var rows = sheet.RowsUsed().Skip(1);
 
@@ -471,6 +474,11 @@ namespace StockAndFlow.Services
                     CustomerName = row.Cell(12).GetString(),
                     Notes = row.Cell(13).GetString()
                 };
+
+                // Column added later; spreadsheets from older versions predate measured sales.
+                var saleUnit = ReadString(row, headers, "Unit");
+                if (!string.IsNullOrWhiteSpace(saleUnit))
+                    sale.UnitOfMeasure = saleUnit;
 
                 // Set TransactionId if it exists, otherwise generate new
                 if (!string.IsNullOrWhiteSpace(transactionIdStr) && Guid.TryParse(transactionIdStr, out var transactionId))

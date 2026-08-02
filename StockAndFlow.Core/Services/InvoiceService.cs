@@ -262,8 +262,13 @@ namespace StockAndFlow.Services
 
                 float baseline = ctx.Y + RowHeight - CellPad;
                 ctx.Text(item.ItemName ?? string.Empty, ColItemX + CellPad, baseline, 11, ctx.Regular, Ink);
-                ctx.Text(item.Quantity.ToString(), ColQtyCenter, baseline, 11, ctx.Regular, Ink, SKTextAlign.Center);
-                ctx.Text($"${item.SalePricePerUnit:N2}", ColUnitEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
+                // "2.5 oz" for measured goods, "3" for counted — a bare number on a customer
+                // invoice is ambiguous for anything sold by weight or volume.
+                ctx.Text(item.QuantityDisplay, ColQtyCenter, baseline, 11, ctx.Regular, Ink, SKTextAlign.Center);
+                var unitPrice = item.IsMeasured
+                    ? $"${item.SalePricePerUnit:N2}/{item.UnitOfMeasure}"
+                    : $"${item.SalePricePerUnit:N2}";
+                ctx.Text(unitPrice, ColUnitEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
                 ctx.Text($"${item.Revenue:N2}", ColTotalEnd - CellPad, baseline, 11, ctx.Regular, Ink, SKTextAlign.Right);
 
                 ctx.Y += RowHeight;

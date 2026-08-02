@@ -83,6 +83,10 @@ namespace StockAndFlow.Data
                 // upgrade with "no such column: s.CustomerId".
                 await AddColumnIfNotExistsAsync(connection, "Sales", "CustomerId", "TEXT NULL");
 
+                // Unit the line was sold in, so invoices for weight/volume goods read
+                // "2.5 oz" instead of a bare "2.5". Pre-existing sales were counted.
+                await AddColumnIfNotExistsAsync(connection, "Sales", "UnitOfMeasure", "TEXT NOT NULL DEFAULT 'each'");
+
                 await CreateTableIfNotExistsAsync(connection, "Customers", @"
                     CREATE TABLE Customers (
                         Id TEXT NOT NULL PRIMARY KEY,

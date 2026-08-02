@@ -243,6 +243,19 @@ public class DatabaseMigrationTests : IDisposable
     }
 
     [Fact]
+    public async Task Migration_AddsSaleUnitOfMeasure_DefaultingToEach()
+    {
+        await CreateLegacyDatabaseAsync(saleQuantity: 3);
+
+        await DatabaseMigrationHelper.ApplySchemaUpdatesAsync(_dbPath);
+
+        using var context = new StockAndFlowDbContext(_dbPath);
+        var sale = context.Sales.Single();
+        sale.UnitOfMeasure.Should().Be("each", "sales predating measured goods were counted");
+        sale.QuantityDisplay.Should().Be("3", "counted sales must not sprout a unit suffix");
+    }
+
+    [Fact]
     public async Task Migration_AddsInvoiceDisplayColumns_DefaultingToShown()
     {
         await CreateLegacyDatabaseAsync();
