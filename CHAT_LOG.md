@@ -511,6 +511,22 @@ Bugs fixed while extracting:
 21 new tests (137 total) incl. rotation 0/90/180/270, 40% downscale, blank/garbage input, and a
 full generate → scan → find-the-item loop.
 
+**Duplicate barcodes — found in real data, fixed three ways** (commits `827b657`, `c9e638d`):
+Blue Candle and Green Candle both carried SKU `13000`. `SelectItemBySku` takes the first match,
+so scanning that code silently added the **wrong product** to a sale.
+1. Saving an item whose code is already used now asks whether to give it its own code
+   (editing an item keeps its own code without prompting).
+2. `GenerateSku` accepts the codes already in use and never returns one of them.
+3. Excel import logs a warning naming every item in a clashing group.
+Live data repaired 2026-08-02 (DB backed up to `Data/backup_before_sku_fix_*` first): oldest
+item keeps the code, so **Blue Candle kept `13000`, Green Candle → `SF-DSGHFC`**; 0 duplicates
+remain.
+
+📄 **Printable scan-test sheet** lives in `Downloads\StockAndFlow_TestBarcodes\PRINT_ME_test_sheet.png`
+— barcodes for real inventory items (so a scan should select the named item), the same code as
+QR, an unknown code (should report "no item found"), and a real EAN-13. Print at 100%, never
+"fit to page". Regenerate any time from the current database.
+
 ⚠️ **Still hardware-only:** the actual camera capture (`MediaPicker.CapturePhotoAsync`) and a
 real USB scanner. Note `CHAT_LOG` previously claimed the WPF scanner collects keystrokes <50 ms
 apart — **it does not**; the code is simply an Enter handler on the search box, which works with
