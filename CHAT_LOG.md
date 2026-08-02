@@ -500,6 +500,9 @@ SDK lives at `C:\Program Files (x86)\Android\android-sdk`; `adb` is in its `plat
 ---
 
 ## 9. Reference docs in the repo
+- `MONETIZATION_PLAN.md` — **locked 2026-08-02**: free tier (30 items, unlimited sales +
+  export, 5 invoices/mo), Pro $8.99/mo · $49.99/yr · $99.99 founding lifetime, testers get
+  lifetime Pro, RevenueCat + sync-code licensing (no accounts/backend). Next build phase.
 - `MOBILE_MIGRATION_PLAN.md` — the migration plan + what's portable.
 - `RELEASE_CHECKLIST.md` — store-release checklist with status.
 - `BUSINESS_PLAN.md` — product/business context.
