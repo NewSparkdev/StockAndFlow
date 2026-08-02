@@ -65,6 +65,7 @@ existing WPF app. Both apps reference the same Core.
 
 | Commit | What it did |
 |---|---|
+| `21d66af` | Fix Shopify sync (was silently broken: PascalCase parsing of snake_case JSON = no-op syncs, no config UI, sunset API version, no pagination, order dedup never worked) + Shopify settings UI on both platforms. **Live dev-store verification still pending (needs free Shopify Partners account).** |
 | `897342b` | Invoices: render business logo + per-field display toggles (**⚠ entity changed — regen compiled model on onboarding before next release**) |
 | `95f9e89` | Fix upgrade crash for pre-customer DBs: migrate `Sales.CustomerId` + `Customers` table |
 | `60a9dfb` | Harden credential encryption: AES-GCM + "enc1:" marker, resilient key init, mobile migration, backup exclusions |
