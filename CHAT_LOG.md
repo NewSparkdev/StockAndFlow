@@ -522,6 +522,17 @@ Live data repaired 2026-08-02 (DB backed up to `Data/backup_before_sku_fix_*` fi
 item keeps the code, so **Blue Candle kept `13000`, Green Candle → `SF-DSGHFC`**; 0 duplicates
 remain.
 
+**Bulk label printing + in-app explanation** (commit `081df97`). One-image-at-a-time labelling
+is unusable for a real product line, and nothing explained the physical workflow.
+- `CreateLabelSheetPdf`: US Letter PDF, grid with dashed cut guides, multi-page, N copies each,
+  **2.50″ × 1.28″** per label; per-label QR fallback for non-ASCII codes.
+- **Mobile:** Settings → *Barcodes & Labels* — tick products, choose copies, share the PDF;
+  tells you how many products still lack a code. **WPF:** *Print Labels* on the Inventory tab →
+  saves to Downloads.
+- `BarcodeHowToText` walks through make code → print → stick on product → scan at sale, plus
+  the two rules that actually bite: **print at 100%** ("fit to page" shrinks bars until they
+  stop scanning) and **one code per product**.
+
 📄 **Printable scan-test sheet** lives in `Downloads\StockAndFlow_TestBarcodes\PRINT_ME_test_sheet.png`
 — barcodes for real inventory items (so a scan should select the named item), the same code as
 QR, an unknown code (should report "no item found"), and a real EAN-13. Print at 100%, never
