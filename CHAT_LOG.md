@@ -519,8 +519,15 @@ so scanning that code silently added the **wrong product** to a sale.
 2. `GenerateSku` accepts the codes already in use and never returns one of them.
 3. Excel import logs a warning naming every item in a clashing group.
 Live data repaired 2026-08-02 (DB backed up to `Data/backup_before_sku_fix_*` first): oldest
-item keeps the code, so **Blue Candle kept `13000`, Green Candle → `SF-DSGHFC`**; 0 duplicates
-remain.
+item keeps the code, so Blue Candle kept `13000`, Green Candle → `SF-DSGHFC`; 0 duplicates.
+
+Then the ad-hoc numeric codes (`13000`, `140000`, `1000`, `34454` — likely prices typed into
+the SKU box) were replaced with generated ones (backup: `Data/backup_before_sku_rename_*`).
+Current candle codes: Blue `SF-6VXDUA`, Green `SF-DSGHFC`, Purple `SF-Y4CH6S`,
+Red `SF-E8RNTV`, Yellow `SF-XQSSGM`.
+**Snowboards were deliberately left on their `sku-hosted-1` style codes: those come from
+Shopify and `SyncProductToInventoryAsync` copies the variant SKU down on every product sync,
+so a local rename would just be overwritten.**
 
 **Bulk label printing + in-app explanation** (commit `081df97`). One-image-at-a-time labelling
 is unusable for a real product line, and nothing explained the physical workflow.
