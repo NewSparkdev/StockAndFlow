@@ -55,6 +55,13 @@ namespace StockAndFlow.Models
         public int SyncIntervalMinutes { get; set; } = 60;
 
         /// <summary>
+        /// Push local stock counts up to Shopify after a sync, so the storefront stops
+        /// overselling items already sold in person. Off by default: it writes to a live store,
+        /// which should be an explicit choice.
+        /// </summary>
+        public bool PushStockLevelsToShopify { get; set; }
+
+        /// <summary>
         /// Migrates stored credentials to the current encrypted format.
         /// Call this after loading settings from JSON, once the platform protector is installed.
         /// Handles both plain-text values and legacy ciphertext formats.

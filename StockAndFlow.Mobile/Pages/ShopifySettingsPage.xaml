@@ -51,6 +51,28 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- Stock counts -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="Stock counts" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                            <ctrl:HelpIcon HelpTitle="Who keeps the stock count?"
+                                           HelpText="{Binding StockOwnershipHelpText}" />
+                        </HorizontalStackLayout>
+                        <Label Text="Stock &amp; Flow keeps the real count — it's the only place that sees your market and craft-fair sales too. Syncing brings online orders in; it never overwrites your counts."
+                               Style="{StaticResource Caption}" />
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout VerticalOptions="Center" Spacing="2">
+                                <Label Text="Send my stock counts to Shopify" />
+                                <Label Text="Keeps your storefront from selling what you already sold in person."
+                                       Style="{StaticResource Caption}" />
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="1" IsToggled="{Binding PushStockLevels}" VerticalOptions="Center" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
                 <!-- Actions -->
                 <Border Style="{StaticResource Card}">
                     <VerticalStackLayout Spacing="12">
@@ -62,6 +84,13 @@
 
                         <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
                         <Label Text="{Binding StatusMessage}" Style="{StaticResource Caption}" />
+
+                        <BoxView HeightRequest="1" Color="#DDD" Margin="0,4" />
+                        <Label Text="Did a stock-take in Shopify's admin? This replaces your counts with theirs — it asks first."
+                               Style="{StaticResource Caption}" />
+                        <Button Text="Use Shopify's stock counts"
+                                Command="{Binding AdoptShopifyStockCommand}"
+                                Style="{StaticResource SecondaryButton}" />
                     </VerticalStackLayout>
                 </Border>
 
