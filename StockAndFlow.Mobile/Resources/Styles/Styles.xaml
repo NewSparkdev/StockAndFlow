@@ -420,13 +420,21 @@
                     </VisualState>
                     <VisualState x:Name="On">
                         <VisualState.Setters>
-                            <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray200}}" />
-                            <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
+                            <!-- The template this came from tinted the track with Secondary
+                                 (#DFD8F7) and Gray200, so an ON switch looked gray/off. The
+                                 track carries the brand colour and the thumb stays white. -->
+                            <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            <Setter Property="ThumbColor" Value="{StaticResource White}" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="Off">
                         <VisualState.Setters>
-                            <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+                            <!-- Thumb stays white in both states and the track carries the
+                                 meaning (grey off / brand purple on), as Material switches do.
+                                 A grey thumb here also leaked into the On state, so an enabled
+                                 switch showed a purple track with a grey knob. -->
+                            <Setter Property="ThumbColor" Value="{StaticResource White}" />
+                            <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
