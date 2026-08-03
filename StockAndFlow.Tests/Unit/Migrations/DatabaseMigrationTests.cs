@@ -243,6 +243,18 @@ public class DatabaseMigrationTests : IDisposable
     }
 
     [Fact]
+    public async Task Migration_AddsIsSellable_DefaultingToSellable()
+    {
+        var itemId = await CreateLegacyDatabaseAsync();
+
+        await DatabaseMigrationHelper.ApplySchemaUpdatesAsync(_dbPath);
+
+        using var context = new StockAndFlowDbContext(_dbPath);
+        context.InventoryItems.Single(i => i.Id == itemId).IsSellable.Should().BeTrue(
+            "upgrading must not make existing items vanish from the sales list");
+    }
+
+    [Fact]
     public async Task Migration_AddsSaleUnitOfMeasure_DefaultingToEach()
     {
         await CreateLegacyDatabaseAsync(saleQuantity: 3);

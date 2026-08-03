@@ -24,6 +24,28 @@ namespace StockAndFlow.Services
             return await _dataService.GetAllAsync<InventoryItem>();
         }
 
+        /// <summary>
+        /// Items a customer can actually buy. Supplies that exist only to build other products
+        /// (wicks, jars, wax) are excluded, so choosing what someone is buying isn't a hunt
+        /// through raw materials. They remain in inventory and still feed cost of goods.
+        /// </summary>
+        public async Task<List<InventoryItem>> GetSellableItemsAsync()
+        {
+            var items = await _dataService.GetAllAsync<InventoryItem>();
+            return items.Where(i => i.IsSellable).ToList();
+        }
+
+        /// <summary>
+        /// Ids of items used as a component in some other item's Bill of Materials. Used to
+        /// point out likely supplies without deciding for the user — an item can be both sold
+        /// directly and used as an ingredient (wax by the ounce, and in candles).
+        /// </summary>
+        public async Task<HashSet<Guid>> GetItemIdsUsedAsComponentsAsync()
+        {
+            var components = await _dataService.GetAllAsync<BomComponent>();
+            return components.Select(c => c.ComponentItemId).ToHashSet();
+        }
+
         public async Task<InventoryItem?> GetItemByIdAsync(Guid id)
         {
             return await _dataService.GetByIdAsync<InventoryItem>(id);

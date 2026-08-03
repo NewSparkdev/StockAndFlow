@@ -206,6 +206,59 @@ namespace StockAndFlow.ViewModels
             }
         }
 
+        private bool _isSellable = true;
+        private bool _isUsedAsComponent;
+
+        /// <summary>
+        /// Off for supplies that only exist to build other products. They stay in inventory and
+        /// still feed cost of goods, but are hidden when choosing what a customer is buying.
+        /// </summary>
+        public bool IsSellable
+        {
+            get => _isSellable;
+            set
+            {
+                if (SetProperty(ref _isSellable, value))
+                    OnPropertyChanged(nameof(SellableHint));
+            }
+        }
+
+        /// <summary>True when some other item's Bill of Materials consumes this one.</summary>
+        public bool IsUsedAsComponent
+        {
+            get => _isUsedAsComponent;
+            private set
+            {
+                if (SetProperty(ref _isUsedAsComponent, value))
+                {
+                    OnPropertyChanged(nameof(ShowSellableSuggestion));
+                    OnPropertyChanged(nameof(SellableHint));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Only nudge when the item is used as an ingredient *and* is still marked sellable —
+        /// plenty of makers legitimately sell an ingredient on its own (wax by the ounce), so
+        /// this suggests rather than decides.
+        /// </summary>
+        public bool ShowSellableSuggestion => IsUsedAsComponent && IsSellable;
+
+        public string SellableHint => IsSellable
+            ? (IsUsedAsComponent
+                ? "This item is used to make other products. If you don't sell it on its own, turn this off to keep it out of your sales list."
+                : "Shown when you record a sale.")
+            : "Hidden when recording a sale. Still tracked in inventory and still counted in your costs.";
+
+        public string SellableHelpText =>
+            "Leave this ON for anything a customer buys.\n\n" +
+            "Turn it OFF for supplies you only use to make other things — candle wicks, jars, " +
+            "wax, labels. They stay in your inventory, you keep tracking how many you have, and " +
+            "they still count towards what your products cost you. They just stop cluttering the " +
+            "list when you're recording a sale.\n\n" +
+            "Sell something both ways? Wax by the ounce as well as inside your candles? Leave it " +
+            "ON — it can be an ingredient and still be sold on its own.";
+
         public bool IsMeasured => SelectedUnit.Value != "each";
 
         private string Unit => SelectedUnit.Value;
@@ -368,6 +421,7 @@ namespace StockAndFlow.ViewModels
             QuantityOnHand = item.QuantityOnHand;
             MinimumStockLevel = item.MinimumStockLevel;
             SelectedUnit = UnitOption.FromValue(item.UnitOfMeasure);
+            IsSellable = item.IsSellable;
             Supplier = item.Supplier;
             Notes = item.Notes;
             ImagePath = item.ImagePath;
@@ -392,6 +446,10 @@ namespace StockAndFlow.ViewModels
 
             ExistingSkus.Clear();
             ExistingSkus.AddRange(all.Where(i => i.Id != _originalItem.Id).Select(i => i.Sku));
+
+            // Drives the "this is used to make other products" nudge.
+            var usedAsComponent = await _inventoryService.GetItemIdsUsedAsComponentsAsync();
+            UiDispatcher.Run(() => IsUsedAsComponent = usedAsComponent.Contains(_originalItem.Id));
 
             if (_isEditMode)
             {
@@ -464,6 +522,7 @@ namespace StockAndFlow.ViewModels
                 _originalItem.QuantityOnHand = QuantityOnHand;
                 _originalItem.MinimumStockLevel = MinimumStockLevel;
                 _originalItem.UnitOfMeasure = SelectedUnit.Value;
+                _originalItem.IsSellable = IsSellable;
                 _originalItem.Supplier = Supplier;
                 _originalItem.Notes = Notes;
                 _originalItem.ImagePath = ImagePath;

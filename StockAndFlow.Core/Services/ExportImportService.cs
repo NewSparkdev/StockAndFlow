@@ -90,9 +90,10 @@ namespace StockAndFlow.Services
             sheet.Cell(1, 12).Value = "Extra Cost Per Unit";
             sheet.Cell(1, 13).Value = "Supplier";
             sheet.Cell(1, 14).Value = "Notes";
+            sheet.Cell(1, 15).Value = "Sold To Customers";
 
             // Style headers
-            var headerRange = sheet.Range(1, 1, 1, 14);
+            var headerRange = sheet.Range(1, 1, 1, 15);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -120,6 +121,7 @@ namespace StockAndFlow.Services
                 sheet.Cell(row, 12).Value = item.ExtraCostPerUnit;
                 sheet.Cell(row, 13).Value = item.Supplier ?? "";
                 sheet.Cell(row, 14).Value = item.Notes ?? "";
+                sheet.Cell(row, 15).Value = item.IsSellable ? "Yes" : "No";
 
                 row++;
             }
@@ -438,6 +440,15 @@ namespace StockAndFlow.Services
                     item.Supplier = ReadString(row, headers, "Supplier");
                 if (headers.ContainsKey("Notes"))
                     item.Notes = ReadString(row, headers, "Notes");
+
+                var sold = ReadString(row, headers, "Sold To Customers");
+                if (!string.IsNullOrWhiteSpace(sold))
+                {
+                    // Spreadsheets get hand-edited, so accept the obvious spellings.
+                    item.IsSellable = !(sold.Trim().StartsWith("N", StringComparison.OrdinalIgnoreCase)
+                                        || sold.Trim() == "0"
+                                        || sold.Trim().Equals("false", StringComparison.OrdinalIgnoreCase));
+                }
 
                 item.LastModifiedDate = DateTime.Now;
 

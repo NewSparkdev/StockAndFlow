@@ -129,7 +129,9 @@ namespace StockAndFlow.ViewModels
         {
             try
             {
-                var items = await _inventoryService.GetAllItemsAsync();
+                // Sellable only: supplies like wicks and jars would otherwise clutter the list
+                // of things a customer is buying.
+                var items = await _inventoryService.GetSellableItemsAsync();
 
                 var cartItems = new System.Collections.Generic.List<CartItem>();
                 foreach (var item in items.OrderBy(i => i.Name))
@@ -288,23 +290,44 @@ namespace StockAndFlow.ViewModels
         }
 
         // Called by the barcode scan button — finds the item whose SKU matches and selects it.
-        public void SelectItemBySku(string barcode)
+        public async void SelectItemBySku(string barcode)
         {
-            UiDispatcher.Run(() =>
+            var match = AllItems.FirstOrDefault(i =>
+                !string.IsNullOrWhiteSpace(i.Sku) &&
+                string.Equals(i.Sku, barcode, StringComparison.OrdinalIgnoreCase));
+
+            if (match != null)
             {
-                var match = AllItems.FirstOrDefault(i =>
-                    !string.IsNullOrWhiteSpace(i.Sku) &&
-                    string.Equals(i.Sku, barcode, StringComparison.OrdinalIgnoreCase));
-                if (match != null)
+                UiDispatcher.Run(() =>
                 {
                     match.IsSelected = true;
                     UpdateCartProperties();
-                }
-                else
+                });
+                return;
+            }
+
+            // Scanning a supply item here is an easy mistake to make; "no item found" would
+            // be baffling when the label is right there in your hand.
+            string message = $"No item found with barcode: {barcode}";
+            try
+            {
+                var supply = (await _inventoryService.GetAllItemsAsync()).FirstOrDefault(i =>
+                    !i.IsSellable &&
+                    !string.IsNullOrWhiteSpace(i.Sku) &&
+                    string.Equals(i.Sku, barcode, StringComparison.OrdinalIgnoreCase));
+
+                if (supply != null)
                 {
-                    SaleFailed?.Invoke(this, $"No item found with barcode: {barcode}");
+                    message = $"\"{supply.Name}\" is marked as a supply, so it isn't sold to customers.\n\n" +
+                              "If you do sell it, edit the item and turn on \"I sell this to customers\".";
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                LogWarning("Could not check whether {Barcode} belongs to a supply item: {Error}", barcode, ex.Message);
+            }
+
+            UiDispatcher.Run(() => SaleFailed?.Invoke(this, message));
         }
 
         private void Cancel()
