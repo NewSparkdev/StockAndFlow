@@ -14,6 +14,7 @@ namespace StockAndFlow.ViewModels
     public class InventoryViewModel : ViewModelBase
     {
         private readonly InventoryService _inventoryService;
+        private readonly EntitlementService? _entitlements;
         private readonly IDialogService _dialogService;
         private readonly IEditorPresenter _editorPresenter;
 
@@ -86,11 +87,13 @@ namespace StockAndFlow.ViewModels
         public ICommand ViewDetailsCommand { get; }
         public ICommand RefreshCommand { get; }
 
-        public InventoryViewModel(InventoryService inventoryService, IDialogService dialogService, IEditorPresenter editorPresenter)
+        public InventoryViewModel(InventoryService inventoryService, IDialogService dialogService,
+            IEditorPresenter editorPresenter, EntitlementService? entitlements = null)
         {
             _inventoryService = inventoryService;
             _dialogService = dialogService;
             _editorPresenter = editorPresenter;
+            _entitlements = entitlements;
 
             AddItemCommand = new RelayCommand(async () => await AddItemAsync());
             EditItemCommand = new RelayCommand(async () => await EditItemAsync(), () => SelectedItem != null);
@@ -163,6 +166,18 @@ namespace StockAndFlow.ViewModels
 
         private async Task AddItemAsync()
         {
+            // Gate on creating, not editing: someone already over the limit must still be able
+            // to fix their own data.
+            if (_entitlements != null)
+            {
+                var check = await _entitlements.CanAddInventoryItemAsync();
+                if (!check.Allowed)
+                {
+                    await _dialogService.ShowAlertAsync(check.Title ?? "Upgrade needed", check.Message ?? string.Empty);
+                    return;
+                }
+            }
+
             await _editorPresenter.ShowAddInventoryAsync();
         }
 

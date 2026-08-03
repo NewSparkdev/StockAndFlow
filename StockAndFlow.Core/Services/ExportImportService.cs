@@ -36,6 +36,14 @@ namespace StockAndFlow.Services
                 "import_history.json");
         }
 
+        /// <summary>
+        /// Free-tier import allowance. Settable rather than injected to avoid a circular
+        /// dependency (EntitlementService needs InventoryService, which this also uses); the host
+        /// assigns it once at startup. Null means unrestricted, so tests and the desktop app
+        /// behave as before.
+        /// </summary>
+        public EntitlementService? Entitlements { get; set; }
+
         public async Task<string> ExportToExcelAsync(string filePath)
         {
             // Validate file path to prevent path traversal attacks
@@ -303,6 +311,20 @@ namespace StockAndFlow.Services
                 return result;
             }
 
+            // Free-tier import allowance. Checked before any work, and only counted after the
+            // import actually commits — a failed import must not burn an allowance.
+            if (Entitlements != null)
+            {
+                var check = await Entitlements.CanImportAsync();
+                if (!check.Allowed)
+                {
+                    result.Success = false;
+                    result.ErrorMessage = check.Message ?? "Import limit reached.";
+                    result.BlockedByEntitlement = check;
+                    return result;
+                }
+            }
+
             // Check if this file has been imported before
             if (await HasBeenImportedAsync(filePath))
             {
@@ -315,7 +337,11 @@ namespace StockAndFlow.Services
             using var transaction = await _dataService.BeginTransactionAsync();
             try
             {
-                using var workbook = new XLWorkbook(filePath);
+                // Read into memory and open from the stream rather than handing ClosedXML the
+                // path: when the file isn't a real spreadsheet, opening by path leaves a handle
+                // behind and the user can't delete or overwrite their own file afterwards.
+                using var fileBytes = new MemoryStream(await File.ReadAllBytesAsync(filePath));
+                using var workbook = new XLWorkbook(fileBytes);
 
                 // Import Inventory
                 if (workbook.Worksheets.Contains("Inventory"))
@@ -355,6 +381,9 @@ namespace StockAndFlow.Services
                 {
                     Log.Warning(ex, "Could not record import history at {Path}", _importHistoryFile);
                 }
+
+                if (Entitlements != null)
+                    await Entitlements.RecordImportAsync();
 
                 result.Success = true;
             }
@@ -743,6 +772,13 @@ namespace StockAndFlow.Services
     {
         public bool Success { get; set; }
         public string? ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Set when the import was refused by the free-tier allowance rather than failing.
+        /// Lets the UI offer an upgrade instead of showing an error.
+        /// </summary>
+        public EntitlementResult? BlockedByEntitlement { get; set; }
+
         public bool HasDuplicateWarning { get; set; }
         public string? DuplicateMessage { get; set; }
         public int InventoryAdded { get; set; }

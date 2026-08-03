@@ -17,6 +17,7 @@ namespace StockAndFlow.ViewModels
         private readonly IDataService _dataService;
         private readonly ShopifyService _shopifyService;
         private readonly IDialogService _dialogService;
+        private readonly EntitlementService? _entitlements;
 
         private bool _shopifyEnabled;
         private string? _storeName;
@@ -97,11 +98,13 @@ namespace StockAndFlow.ViewModels
         public ShopifySettingsViewModel(
             IDataService dataService,
             ShopifyService shopifyService,
-            IDialogService dialogService)
+            IDialogService dialogService,
+            EntitlementService? entitlements = null)
         {
             _dataService = dataService;
             _shopifyService = shopifyService;
             _dialogService = dialogService;
+            _entitlements = entitlements;
 
             TestConnectionCommand = new RelayCommand(async () => await TestConnectionAsync(), () => !IsBusy);
             SyncNowCommand = new RelayCommand(async () => await SyncNowAsync(), () => !IsBusy);
@@ -194,12 +197,33 @@ namespace StockAndFlow.ViewModels
             }
         }
 
+        /// <summary>
+        /// Shopify sync is Pro-only. Checked at the point of syncing rather than hiding the
+        /// screen, so a free user can see what they'd get and set it up ready.
+        /// </summary>
+        private async Task<bool> EnsureShopifyAllowedAsync()
+        {
+            if (_entitlements == null)
+                return true;
+
+            var check = _entitlements.CanUseShopifySync();
+            if (check.Allowed)
+                return true;
+
+            StatusMessage = check.Title;
+            await _dialogService.ShowAlertAsync(check.Title ?? "Pro feature", check.Message ?? string.Empty);
+            return false;
+        }
+
         private async Task SyncNowAsync()
         {
             try
             {
                 IsBusy = true;
                 await PersistAsync();
+
+                if (!await EnsureShopifyAllowedAsync())
+                    return;
 
                 if (!_shopifyService.IsConfigured)
                 {

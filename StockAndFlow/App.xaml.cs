@@ -114,7 +114,22 @@ namespace StockAndFlow
             services.AddSingleton<ExpenseService>();
             services.AddSingleton<CalculationService>();
             services.AddSingleton<ShopifyService>();
-            services.AddSingleton<ExportImportService>();
+            // Free/Pro gating. FreeEntitlementProvider until desktop licence keys land.
+            services.AddSingleton<IEntitlementProvider, FreeEntitlementProvider>();
+            services.AddSingleton<EntitlementService>();
+            services.AddSingleton<ExportImportService>(sp =>
+            {
+                var svc = new ExportImportService(
+                    sp.GetRequiredService<IDataService>(),
+                    sp.GetRequiredService<InventoryService>(),
+                    sp.GetRequiredService<SalesService>(),
+                    sp.GetRequiredService<ExpenseService>(),
+                    sp.GetRequiredService<IPathProvider>());
+                // Assigned rather than injected: EntitlementService also needs InventoryService,
+                // and constructor injection here would form a cycle.
+                svc.Entitlements = sp.GetRequiredService<EntitlementService>();
+                return svc;
+            });
             services.AddSingleton<BusinessSettingsService>();
             services.AddSingleton<InvoiceService>();
             services.AddSingleton<InventoryAdjustmentService>();

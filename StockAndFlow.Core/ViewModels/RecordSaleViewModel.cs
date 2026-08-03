@@ -16,6 +16,7 @@ namespace StockAndFlow.ViewModels
         private readonly InventoryService _inventoryService;
         private readonly BusinessSettingsService _businessSettingsService;
         private readonly InvoiceService _invoiceService;
+        private readonly EntitlementService? _entitlements;
 
         private string? _customerName;
         private string? _customerEmail;
@@ -84,12 +85,14 @@ namespace StockAndFlow.ViewModels
         public ICommand CancelCommand { get; }
 
         public RecordSaleViewModel(SalesService salesService, InventoryService inventoryService,
-            BusinessSettingsService businessSettingsService, InvoiceService invoiceService)
+            BusinessSettingsService businessSettingsService, InvoiceService invoiceService,
+            EntitlementService? entitlements = null)
         {
             _salesService = salesService;
             _inventoryService = inventoryService;
             _businessSettingsService = businessSettingsService;
             _invoiceService = invoiceService;
+            _entitlements = entitlements;
 
             // Load states
             States = new ObservableCollection<StateTaxInfo>(StateTaxInfo.GetAllStates());
@@ -335,8 +338,15 @@ namespace StockAndFlow.ViewModels
             CloseRequested?.Invoke(this, false);
         }
 
+        /// <summary>
+        /// Last entitlement refusal from <see cref="GenerateInvoiceAsync"/>, so the caller can
+        /// tell "you've used this month's invoices" apart from "something went wrong".
+        /// </summary>
+        public EntitlementResult? LastInvoiceBlock { get; private set; }
+
         public async Task<string?> GenerateInvoiceAsync(SaleTransaction transaction, string? outputPath = null)
         {
+            LastInvoiceBlock = null;
             try
             {
                 // Check if business settings are configured
@@ -346,9 +356,25 @@ namespace StockAndFlow.ViewModels
                     return null; // Caller should prompt for business settings
                 }
 
+                // The sale itself is already recorded by this point — only the PDF is capped.
+                if (_entitlements != null)
+                {
+                    var check = await _entitlements.CanGenerateInvoiceAsync();
+                    if (!check.Allowed)
+                    {
+                        LastInvoiceBlock = check;
+                        return null;
+                    }
+                }
+
                 // Generate the invoice (outputPath lets mobile target a sandbox-writable location;
                 // desktop passes null and the service uses the user's Downloads folder).
                 var invoicePath = await _invoiceService.GenerateInvoiceAsync(transaction, outputPath);
+
+                // Count it only after it actually rendered, so a failure doesn't burn an allowance.
+                if (invoicePath != null && _entitlements != null)
+                    await _entitlements.RecordInvoiceGeneratedAsync();
+
                 return invoicePath;
             }
             catch (Exception ex)
