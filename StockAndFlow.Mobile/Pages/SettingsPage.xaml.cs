@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using StockAndFlow.Platform;
 using StockAndFlow.Services;
 using StockAndFlow.ViewModels;
 
@@ -10,6 +11,53 @@ public partial class SettingsPage : ContentPage
 	{
 		InitializeComponent();
 		VersionLabel.Text = $"Version {AppInfo.Current.VersionString} ({AppInfo.Current.BuildString})";
+	}
+
+	protected override async void OnAppearing()
+	{
+		base.OnAppearing();
+		await RefreshPlanRowAsync();
+	}
+
+	/// <summary>
+	/// Shows what's left of the free allowances, so the limits are discoverable before someone
+	/// runs into one mid-sale.
+	/// </summary>
+	private async Task RefreshPlanRowAsync()
+	{
+		try
+		{
+			var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
+			if (entitlements.IsPro)
+			{
+				PlanTitleLabel.Text = "Stock & Flow Pro";
+				PlanSubtitleLabel.Text = "Active — thank you!";
+				return;
+			}
+
+			var slots = await entitlements.InventorySlotsRemainingAsync();
+			var invoices = await entitlements.InvoicesRemainingThisMonthAsync();
+
+			PlanTitleLabel.Text = "Free plan — see Pro";
+			PlanSubtitleLabel.Text =
+				$"{slots} of {EntitlementService.FreeInventoryItemLimit} item slots left · {invoices} invoices left this month";
+		}
+		catch
+		{
+			// Cosmetic only — never let the settings list fail to render over this.
+			PlanTitleLabel.Text = "Stock & Flow Pro";
+			PlanSubtitleLabel.Text = "Unlimited everything, plus Shopify sync";
+		}
+	}
+
+	private async void OnPlanTapped(object? sender, TappedEventArgs e)
+	{
+		var services = IPlatformApplication.Current!.Services;
+		var vm = new PaywallViewModel(
+			services.GetRequiredService<EntitlementService>(),
+			services.GetRequiredService<IDialogService>(),
+			services.GetRequiredService<IPurchaseService>());
+		await Navigation.PushAsync(new PaywallPage(vm));
 	}
 
 	private async void OnBusinessSettingsTapped(object? sender, TappedEventArgs e)

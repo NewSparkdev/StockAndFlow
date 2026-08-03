@@ -54,6 +54,25 @@
     <ScrollView>
         <VerticalStackLayout Padding="16,8,16,24">
 
+            <!-- PLAN -->
+            <Label Text="YOUR PLAN" Style="{StaticResource SectionHeader}" />
+
+            <Border Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Image Source="settings_about.png" Style="{StaticResource RowIcon}" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label x:Name="PlanTitleLabel" Text="Stock &amp; Flow Pro" Style="{StaticResource RowTitle}" />
+                        <Label x:Name="PlanSubtitleLabel" Text="Unlimited everything, plus Shopify sync" Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnPlanTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
             <!-- BUSINESS -->
             <Label Text="BUSINESS" Style="{StaticResource SectionHeader}" />
 

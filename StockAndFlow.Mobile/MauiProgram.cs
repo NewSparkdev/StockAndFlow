@@ -47,6 +47,7 @@ public static class MauiProgram
 		// Free/Pro gating. FreeEntitlementProvider until the store billing layer lands, so
 		// nothing is silently unlocked in the meantime.
 		services.AddSingleton<IEntitlementProvider, FreeEntitlementProvider>();
+		services.AddSingleton<IPurchaseService, UnavailablePurchaseService>();
 		services.AddSingleton<EntitlementService>();
 		services.AddSingleton<ExportImportService>(sp =>
 		{
