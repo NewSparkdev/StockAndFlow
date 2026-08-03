@@ -44,6 +44,14 @@ namespace StockAndFlow.Models
         public string UnitOfMeasure { get; set; } = "each";
         public string? Supplier { get; set; }
         public string? Notes { get; set; }
+
+        /// <summary>
+        /// Whether this item is something customers buy. False for supplies that only exist to
+        /// build other products (wicks, jars, wax) — they stay in inventory and still feed cost
+        /// of goods, but are hidden when choosing what a customer is buying.
+        /// Defaults to true so existing items keep appearing.
+        /// </summary>
+        public bool IsSellable { get; set; } = true;
         public string ImagePath { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
         public DateTime LastModifiedDate { get; set; }

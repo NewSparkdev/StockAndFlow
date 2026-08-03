@@ -43,6 +43,10 @@ namespace StockAndFlow.Data
                 // Labor/packaging cost on top of BOM materials cost
                 await AddColumnIfNotExistsAsync(connection, "InventoryItems", "ExtraCostPerUnit", "TEXT NOT NULL DEFAULT '0'");
 
+                // Supplies-only items are hidden when recording a sale. Existing items default
+                // to sellable so nothing disappears from anyone's list on upgrade.
+                await AddColumnIfNotExistsAsync(connection, "InventoryItems", "IsSellable", "INTEGER NOT NULL DEFAULT 1");
+
                 // Create indexes if they don't exist
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_Name", "InventoryItems", "Name");
                 await CreateIndexIfNotExistsAsync(connection, "IX_InventoryItems_Sku", "InventoryItems", "Sku");

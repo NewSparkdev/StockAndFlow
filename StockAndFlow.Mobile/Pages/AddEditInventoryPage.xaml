@@ -27,6 +27,17 @@
                    FontSize="12"
                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
 
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                    <Label Text="I sell this to customers" VerticalOptions="Center" />
+                    <ctrl:HelpIcon HelpTitle="I sell this to customers"
+                                   HelpText="{Binding SellableHelpText}" />
+                </HorizontalStackLayout>
+                <Switch Grid.Column="1" IsToggled="{Binding IsSellable}" VerticalOptions="Center" />
+            </Grid>
+            <Label Text="{Binding SellableHint}" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+
             <Label Text="Category" />
             <Entry Text="{Binding Category}" Placeholder="Optional" />
 

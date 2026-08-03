@@ -88,6 +88,19 @@
                            Margin="0,0,0,15"
                            ToolTip="{Binding BarcodeHelpText}"/>
 
+                <!-- Sellable -->
+                <CheckBox Content="I sell this to customers"
+                          IsChecked="{Binding IsSellable}"
+                          FontWeight="SemiBold"
+                          Margin="0,4,0,2"
+                          ToolTip="{Binding SellableHelpText}"/>
+                <TextBlock Text="{Binding SellableHint}"
+                           FontSize="11"
+                           Foreground="#7F8C8D"
+                           TextWrapping="Wrap"
+                           Margin="24,0,0,15"
+                           ToolTip="{Binding SellableHelpText}"/>
+
                 <!-- Category -->
                 <TextBlock Text="Category" Style="{StaticResource LabelStyle}"/>
                 <TextBox Text="{Binding Category, UpdateSourceTrigger=PropertyChanged}"/>
