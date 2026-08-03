@@ -61,6 +61,20 @@ namespace StockAndFlow.Models
         /// </summary>
         public bool PushStockLevelsToShopify { get; set; }
 
+        // ---- Free-tier usage counters ----
+        // Stored here (settings.json) rather than the database: they are per-install bookkeeping,
+        // not business records, and must never end up in an Excel backup a user could restore to
+        // reset their month.
+
+        /// <summary>Calendar month these counters belong to, "yyyy-MM". Null before first use.</summary>
+        public string? UsagePeriod { get; set; }
+
+        /// <summary>Invoices generated during <see cref="UsagePeriod"/>.</summary>
+        public int InvoicesThisPeriod { get; set; }
+
+        /// <summary>Excel imports performed during <see cref="UsagePeriod"/>.</summary>
+        public int ImportsThisPeriod { get; set; }
+
         /// <summary>
         /// Migrates stored credentials to the current encrypted format.
         /// Call this after loading settings from JSON, once the platform protector is installed.
