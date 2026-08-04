@@ -1,4 +1,5 @@
 using System.IO;
+using StockAndFlow.Mobile.Services;
 using StockAndFlow.Services;
 
 namespace StockAndFlow.Mobile.Pages;
@@ -125,6 +126,17 @@ public partial class ExportImportPage : ContentPage
 			});
 			if (file == null)
 				return; // user cancelled — stay on this page
+
+			// Free tier: 2 imports per month (export is never metered — the data is the user's).
+			// Consumed only after a file is actually chosen so a cancelled picker costs nothing.
+			var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
+			if (!await entitlements.TryConsumeMonthlyAllowanceAsync(
+				EntitlementService.ImportQuota, EntitlementService.FreeMaxImportsPerMonth))
+			{
+				await EntitlementService.ShowPaywallAsync(
+					$"The free plan includes {EntitlementService.FreeMaxImportsPerMonth} Excel imports per month — you've used them for now. They reset next month, or Pro makes them unlimited.");
+				return;
+			}
 
 			SetBusy(true);
 			var result = await _service.ImportFromExcelAsync(file.FullPath);

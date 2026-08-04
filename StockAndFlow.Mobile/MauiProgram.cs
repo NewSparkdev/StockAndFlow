@@ -1,4 +1,7 @@
 using System.IO;
+#if ANDROID || IOS
+using Maui.RevenueCat.InAppBilling;
+#endif
 using Microsoft.Extensions.Logging;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using StockAndFlow.Data;
@@ -62,6 +65,11 @@ public static class MauiProgram
 		services.AddSingleton<InvoiceService>();
 		services.AddSingleton<InventoryAdjustmentService>();
 		services.AddSingleton<CustomerService>();
+		services.AddSingleton<Services.EntitlementService>();
+#if ANDROID || IOS
+		// RevenueCat billing (used at runtime on iOS; Android still talks to Play directly).
+		services.AddRevenueCatBilling();
+#endif
 
 		// ViewModels
 		services.AddSingleton<MainViewModel>();

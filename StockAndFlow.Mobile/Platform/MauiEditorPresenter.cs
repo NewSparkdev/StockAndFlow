@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Mobile.Pages;
+using StockAndFlow.Mobile.Services;
 using StockAndFlow.Models;
 using StockAndFlow.Platform;
 using StockAndFlow.Services;
@@ -33,8 +35,21 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	private Task PushAsync(Page page) =>
 		MainThread.InvokeOnMainThreadAsync(() => Nav.PushModalAsync(new NavigationPage(page)));
 
-	public Task ShowAddInventoryAsync() =>
-		PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>()));
+	public async Task ShowAddInventoryAsync()
+	{
+		// MONETIZATION_PLAN.md: free tier caps setup at 30 items (incl. BOM raw materials).
+		var entitlements = _services.GetRequiredService<EntitlementService>();
+		if (!await entitlements.IsProAsync())
+		{
+			var items = await _services.GetRequiredService<InventoryService>().GetAllItemsAsync();
+			if (items.Count >= EntitlementService.FreeMaxInventoryItems
+				&& !await entitlements.EnsureProAsync(
+					$"The free plan includes {EntitlementService.FreeMaxInventoryItems} inventory items — you're using all of them. Pro removes the cap."))
+				return;
+		}
+
+		await PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>()));
+	}
 
 	public Task ShowEditInventoryAsync(InventoryItem item) =>
 		PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>(item)));
@@ -65,6 +80,7 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	public Task ShowAdjustmentDetailsAsync(InventoryAdjustment adjustment) =>
 		PushAsync(new AdjustmentDetailsPage(Create<AdjustmentDetailsViewModel>(adjustment)));
 
+	// Recording a sale is the app's heartbeat — MONETIZATION_PLAN.md forbids ever gating it.
 	public Task ShowRecordSaleAsync() =>
 		PushAsync(new RecordSalePage(Create<RecordSaleViewModel>()));
 
@@ -74,6 +90,7 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	public Task ShowSaleDetailsAsync(SaleTransaction sale) =>
 		PushAsync(new SaleDetailsPage(Create<SaleDetailsViewModel>(sale)));
 
+	// Export is always free (the data is the user's); the page itself meters imports monthly.
 	public async Task<bool> ShowExportImportAsync()
 	{
 		await PushAsync(new ExportImportPage(_services.GetRequiredService<ExportImportService>()));
