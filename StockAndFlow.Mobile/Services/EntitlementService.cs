@@ -238,13 +238,32 @@ public sealed class EntitlementService
 	private static async Task<bool> HasActivePurchaseAsync(IInAppBilling billing)
 	{
 		var subs = await billing.GetPurchasesAsync(ItemType.Subscription);
-		if (subs?.Any(p => p.State is PurchaseState.Purchased or PurchaseState.Restored
-			&& p.ProductId is MonthlyProductId or YearlyProductId) == true)
+		if (subs?.Any(IsActiveSubscription) == true)
 			return true;
 
 		var iaps = await billing.GetPurchasesAsync(ItemType.InAppPurchase);
 		return iaps?.Any(p => p.State is PurchaseState.Purchased or PurchaseState.Restored
 			&& p.ProductId == LifetimeProductId) == true;
+	}
+
+	private static bool IsActiveSubscription(InAppBillingPurchase p)
+	{
+		if (p.State is not (PurchaseState.Purchased or PurchaseState.Restored)
+			|| p.ProductId is not (MonthlyProductId or YearlyProductId))
+			return false;
+
+		// Google Play only reports active subscriptions, so the store's answer is trusted as-is.
+		if (DeviceInfo.Platform != DevicePlatform.iOS)
+			return true;
+
+		// iOS (StoreKit receipt) also returns lapsed subscriptions and exposes no expiry date,
+		// which would make a cancelled sub — or even a cancelled free trial — Pro forever.
+		// Interim leak-stop until the RevenueCat swap (which validates receipts properly):
+		// count a sub as active only while its latest transaction is younger than its billing
+		// period plus generous grace. Renewals write fresh transactions, so paying subscribers
+		// always stay inside the window.
+		var period = p.ProductId == MonthlyProductId ? TimeSpan.FromDays(45) : TimeSpan.FromDays(380);
+		return DateTime.UtcNow - p.TransactionDateUtc <= period;
 	}
 
 	private static async Task SafeDisconnectAsync(IInAppBilling billing)
