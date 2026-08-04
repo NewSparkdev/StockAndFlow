@@ -39,6 +39,11 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+		<!-- On this dev machine the VS-installed SDK (Program Files x86) is not writable, and the
+		     RevenueCat bindings' Gradle step must install SDK packages. Use the user-writable SDK
+		     (which also hosts the emulator) when it exists; CI runners are unaffected. -->
+		<AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' And Exists('$(LocalAppData)\Android\Sdk\platforms')">$(LocalAppData)\Android\Sdk</AndroidSdkDirectory>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -70,6 +75,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\StockAndFlow.Core\StockAndFlow.Core.csproj" />
+	</ItemGroup>
+
+	<!-- RevenueCat (community MAUI wrapper) — mobile stores only; the Windows head has no store billing. -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+		<PackageReference Include="Kebechet.Maui.RevenueCat.InAppBilling" Version="5.4.4" />
 	</ItemGroup>
 
 	<!--
