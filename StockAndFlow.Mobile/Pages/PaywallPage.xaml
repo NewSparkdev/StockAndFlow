@@ -37,7 +37,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Yearly — Best Value" FontSize="17" FontAttributes="Bold" />
                     <Label x:Name="YearlyPriceLabel" Text="$49.99 / year" FontSize="15" />
-                    <Label Text="7-day free trial, then billed yearly. Saves ~54% vs monthly."
+                    <Label Text="7-day free trial, then billed yearly. Saves ~48% vs monthly."
                            Style="{StaticResource Caption}" />
                     <Button Text="Start Free Trial"
                             BackgroundColor="{StaticResource Primary}"
@@ -49,7 +49,7 @@
             <Border Style="{StaticResource ListCard}">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Monthly" FontSize="17" FontAttributes="Bold" />
-                    <Label x:Name="MonthlyPriceLabel" Text="$8.99 / month" FontSize="15" />
+                    <Label x:Name="MonthlyPriceLabel" Text="$7.99 / month" FontSize="15" />
                     <Label Text="7-day free trial, then billed monthly. Cancel anytime."
                            Style="{StaticResource Caption}" />
                     <Button Text="Start Free Trial"
