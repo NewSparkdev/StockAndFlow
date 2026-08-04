@@ -1,4 +1,5 @@
 using System.IO;
+using StockAndFlow.Mobile.Services;
 using StockAndFlow.Models;
 using StockAndFlow.ViewModels;
 
@@ -36,6 +37,17 @@ public partial class RecordSalePage : ContentPage
 		{
 			await DisplayAlert("Business details needed",
 				"Add your business name and details in Settings before generating invoices.", "OK");
+			return;
+		}
+
+		// Free tier: 5 invoices per month, resets monthly (the sale itself is already recorded
+		// and is never gated — only the PDF nicety is metered).
+		var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
+		if (!await entitlements.TryConsumeMonthlyAllowanceAsync(
+			EntitlementService.InvoiceQuota, EntitlementService.FreeMaxInvoicesPerMonth))
+		{
+			await EntitlementService.ShowPaywallAsync(
+				$"The free plan includes {EntitlementService.FreeMaxInvoicesPerMonth} PDF invoices per month — you've used them for now. They reset next month, or Pro makes them unlimited.");
 			return;
 		}
 

@@ -71,7 +71,7 @@ public class HostPage : ContentPage
 			return;
 
 		// Free tier includes only the dashboard's basic reporting; the full Reports section is Pro.
-		if (id == "reports" && !_entitlements.IsPro)
+		if (id == "reports" && !_entitlements.IsProCached)
 		{
 			_bar.Active = CurrentSection; // Snap the bar highlight back.
 			_ = _entitlements.EnsureProAsync("Advanced reports are a Pro feature. The dashboard gives you the basics for free.");

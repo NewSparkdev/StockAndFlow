@@ -38,10 +38,7 @@ public partial class SettingsPage : ContentPage
 
 	private async void OnExportImportTapped(object? sender, TappedEventArgs e)
 	{
-		var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
-		if (!await entitlements.EnsureProAsync("Excel import and export is a Pro feature."))
-			return;
-
+		// Export is always free; the page itself meters imports monthly.
 		var service = IPlatformApplication.Current!.Services.GetRequiredService<ExportImportService>();
 		await Navigation.PushModalAsync(new NavigationPage(new ExportImportPage(service)));
 	}

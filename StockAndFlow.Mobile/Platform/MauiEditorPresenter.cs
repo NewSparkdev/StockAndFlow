@@ -37,13 +37,14 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 
 	public async Task ShowAddInventoryAsync()
 	{
+		// MONETIZATION_PLAN.md: free tier caps setup at 30 items (incl. BOM raw materials).
 		var entitlements = _services.GetRequiredService<EntitlementService>();
-		if (!entitlements.IsPro)
+		if (!await entitlements.IsProAsync())
 		{
 			var items = await _services.GetRequiredService<InventoryService>().GetAllItemsAsync();
 			if (items.Count >= EntitlementService.FreeMaxInventoryItems
 				&& !await entitlements.EnsureProAsync(
-					$"You've reached the free limit of {EntitlementService.FreeMaxInventoryItems} inventory items. Upgrade to Pro for unlimited items."))
+					$"The free plan includes {EntitlementService.FreeMaxInventoryItems} inventory items — you're using all of them. Pro removes the cap."))
 				return;
 		}
 
@@ -79,23 +80,9 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	public Task ShowAdjustmentDetailsAsync(InventoryAdjustment adjustment) =>
 		PushAsync(new AdjustmentDetailsPage(Create<AdjustmentDetailsViewModel>(adjustment)));
 
-	public async Task ShowRecordSaleAsync()
-	{
-		var entitlements = _services.GetRequiredService<EntitlementService>();
-		if (!entitlements.IsPro)
-		{
-			var yearStart = new DateTime(DateTime.Now.Year, 1, 1);
-			var sales = await _services.GetRequiredService<SalesService>()
-				.GetSalesByDateRangeAsync(yearStart, DateTime.Now);
-			var transactionsThisYear = sales.Select(s => s.TransactionId).Distinct().Count();
-			if (transactionsThisYear >= EntitlementService.FreeMaxSalesPerYear
-				&& !await entitlements.EnsureProAsync(
-					$"You've reached the free limit of {EntitlementService.FreeMaxSalesPerYear} sales this year. Upgrade to Pro for unlimited sales."))
-				return;
-		}
-
-		await PushAsync(new RecordSalePage(Create<RecordSaleViewModel>()));
-	}
+	// Recording a sale is the app's heartbeat — MONETIZATION_PLAN.md forbids ever gating it.
+	public Task ShowRecordSaleAsync() =>
+		PushAsync(new RecordSalePage(Create<RecordSaleViewModel>()));
 
 	public Task ShowEditSaleAsync(SaleTransaction sale) =>
 		PushAsync(new EditSalePage(Create<EditSaleViewModel>(sale)));
@@ -103,12 +90,9 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	public Task ShowSaleDetailsAsync(SaleTransaction sale) =>
 		PushAsync(new SaleDetailsPage(Create<SaleDetailsViewModel>(sale)));
 
+	// Export is always free (the data is the user's); the page itself meters imports monthly.
 	public async Task<bool> ShowExportImportAsync()
 	{
-		if (!await _services.GetRequiredService<EntitlementService>().EnsureProAsync(
-			"Excel import and export is a Pro feature."))
-			return false;
-
 		await PushAsync(new ExportImportPage(_services.GetRequiredService<ExportImportService>()));
 		// Imports raise service-change events that dependent views react to; no explicit refresh signal needed.
 		return false;
