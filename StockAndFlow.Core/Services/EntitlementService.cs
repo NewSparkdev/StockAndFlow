@@ -132,6 +132,40 @@ namespace StockAndFlow.Services
                 "in person.");
         }
 
+        /// <summary>
+        /// Standard handling for a refused action: explain it, offer the upgrade screen, and open
+        /// it if they say yes. Keeps every gate behaving identically instead of each screen
+        /// inventing its own flow.
+        /// </summary>
+        /// <returns>True if the user is now Pro and the caller may proceed.</returns>
+        public async Task<bool> OfferUpgradeAsync(
+            EntitlementResult refusal,
+            IDialogService dialogs,
+            IPaywallPresenter? paywall)
+        {
+            if (refusal.Allowed) return true;
+
+            // With nowhere to send them, still say why the action didn't happen.
+            if (paywall == null)
+            {
+                await dialogs.ShowAlertAsync(refusal.Title ?? "Upgrade needed", refusal.Message ?? string.Empty);
+                return false;
+            }
+
+            var wantsToSee = await dialogs.ShowConfirmAsync(
+                refusal.Title ?? "Upgrade needed",
+                refusal.Message ?? string.Empty,
+                "See Pro",
+                "Not now");
+
+            if (!wantsToSee) return false;
+
+            await paywall.ShowPaywallAsync(refusal.BlockedBy);
+
+            // They may have bought while the screen was open.
+            return IsPro;
+        }
+
         // ---- Usage recording ----
 
         /// <summary>

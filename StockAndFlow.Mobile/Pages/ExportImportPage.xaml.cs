@@ -129,6 +129,17 @@ public partial class ExportImportPage : ContentPage
 			SetBusy(true);
 			var result = await _service.ImportFromExcelAsync(file.FullPath);
 
+			// Out of this month's imports — offer the upgrade rather than reporting a failure.
+			if (result.BlockedByEntitlement is { } blocked)
+			{
+				var services = IPlatformApplication.Current!.Services;
+				await services.GetRequiredService<StockAndFlow.Services.EntitlementService>()
+					.OfferUpgradeAsync(blocked,
+						services.GetRequiredService<StockAndFlow.Platform.IDialogService>(),
+						services.GetRequiredService<StockAndFlow.Platform.IPaywallPresenter>());
+				return;
+			}
+
 			var summary =
 				$"Inventory: +{result.InventoryAdded} added, {result.InventoryUpdated} updated\n" +
 				$"Sales: +{result.SalesAdded} added, {result.SalesUpdated} updated\n" +

@@ -116,6 +116,8 @@ namespace StockAndFlow
             services.AddSingleton<ShopifyService>();
             // Free/Pro gating. FreeEntitlementProvider until desktop licence keys land.
             services.AddSingleton<IEntitlementProvider, FreeEntitlementProvider>();
+            services.AddSingleton<IPurchaseService, UnavailablePurchaseService>();
+            services.AddSingleton<IPaywallPresenter>(sp => new WpfPaywallPresenter(sp));
             services.AddSingleton<EntitlementService>();
             services.AddSingleton<ExportImportService>(sp =>
             {

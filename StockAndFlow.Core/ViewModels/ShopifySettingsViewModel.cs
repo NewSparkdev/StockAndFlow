@@ -18,6 +18,7 @@ namespace StockAndFlow.ViewModels
         private readonly ShopifyService _shopifyService;
         private readonly IDialogService _dialogService;
         private readonly EntitlementService? _entitlements;
+        private readonly IPaywallPresenter? _paywall;
 
         private bool _shopifyEnabled;
         private string? _storeName;
@@ -99,12 +100,14 @@ namespace StockAndFlow.ViewModels
             IDataService dataService,
             ShopifyService shopifyService,
             IDialogService dialogService,
-            EntitlementService? entitlements = null)
+            EntitlementService? entitlements = null,
+            IPaywallPresenter? paywall = null)
         {
             _dataService = dataService;
             _shopifyService = shopifyService;
             _dialogService = dialogService;
             _entitlements = entitlements;
+            _paywall = paywall;
 
             TestConnectionCommand = new RelayCommand(async () => await TestConnectionAsync(), () => !IsBusy);
             SyncNowCommand = new RelayCommand(async () => await SyncNowAsync(), () => !IsBusy);
@@ -211,8 +214,10 @@ namespace StockAndFlow.ViewModels
                 return true;
 
             StatusMessage = check.Title;
-            await _dialogService.ShowAlertAsync(check.Title ?? "Pro feature", check.Message ?? string.Empty);
-            return false;
+            var nowPro = await _entitlements.OfferUpgradeAsync(check, _dialogService, _paywall);
+            if (nowPro)
+                StatusMessage = null;
+            return nowPro;
         }
 
         private async Task SyncNowAsync()

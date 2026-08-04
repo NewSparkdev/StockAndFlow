@@ -1,5 +1,7 @@
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Models;
+using StockAndFlow.Platform;
 using StockAndFlow.ViewModels;
 
 namespace StockAndFlow.Mobile.Pages;
@@ -51,6 +53,16 @@ public partial class RecordSalePage : ContentPage
 					Title = "Invoice",
 					File = new ShareFile(generated)
 				});
+			}
+			else if (_viewModel.LastInvoiceBlock is { } blocked)
+			{
+				// Out of this month's invoices — an upgrade offer, not an error. The sale itself
+				// is already saved.
+				var services = IPlatformApplication.Current!.Services;
+				await services.GetRequiredService<StockAndFlow.Services.EntitlementService>()
+					.OfferUpgradeAsync(blocked,
+						services.GetRequiredService<IDialogService>(),
+						services.GetRequiredService<IPaywallPresenter>());
 			}
 			else
 			{

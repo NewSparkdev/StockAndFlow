@@ -15,6 +15,7 @@ namespace StockAndFlow.ViewModels
     {
         private readonly InventoryService _inventoryService;
         private readonly EntitlementService? _entitlements;
+        private readonly IPaywallPresenter? _paywall;
         private readonly IDialogService _dialogService;
         private readonly IEditorPresenter _editorPresenter;
 
@@ -88,12 +89,14 @@ namespace StockAndFlow.ViewModels
         public ICommand RefreshCommand { get; }
 
         public InventoryViewModel(InventoryService inventoryService, IDialogService dialogService,
-            IEditorPresenter editorPresenter, EntitlementService? entitlements = null)
+            IEditorPresenter editorPresenter, EntitlementService? entitlements = null,
+            IPaywallPresenter? paywall = null)
         {
             _inventoryService = inventoryService;
             _dialogService = dialogService;
             _editorPresenter = editorPresenter;
             _entitlements = entitlements;
+            _paywall = paywall;
 
             AddItemCommand = new RelayCommand(async () => await AddItemAsync());
             EditItemCommand = new RelayCommand(async () => await EditItemAsync(), () => SelectedItem != null);
@@ -173,8 +176,10 @@ namespace StockAndFlow.ViewModels
                 var check = await _entitlements.CanAddInventoryItemAsync();
                 if (!check.Allowed)
                 {
-                    await _dialogService.ShowAlertAsync(check.Title ?? "Upgrade needed", check.Message ?? string.Empty);
-                    return;
+                    // If they upgrade on the paywall, carry straight on into the editor rather
+                    // than making them tap Add again.
+                    var nowPro = await _entitlements.OfferUpgradeAsync(check, _dialogService, _paywall);
+                    if (!nowPro) return;
                 }
             }
 

@@ -115,6 +115,95 @@ public class FeatureGateTests
         await editor.Received().ShowEditInventoryAsync(Arg.Any<InventoryItem>());
     }
 
+    // ---- Gate offers the paywall ----
+
+    private sealed class RecordingPaywall : IPaywallPresenter
+    {
+        public int Shown { get; private set; }
+        public ProFeature? LastFeature { get; private set; }
+        public Action? OnShown { get; set; }
+
+        public Task ShowPaywallAsync(ProFeature? triggeredBy = null)
+        {
+            Shown++;
+            LastFeature = triggeredBy;
+            OnShown?.Invoke();
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task RefusedAction_OffersThePaywall_AndPassesTheFeatureThatTriggeredIt()
+    {
+        await FillInventoryAsync(EntitlementService.FreeInventoryItemLimit);
+        var (ent, _) = Entitlements();
+        var dialogs = Substitute.For<IDialogService>();
+        dialogs.ShowConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+               .Returns(true);   // user taps "See Pro"
+        var paywall = new RecordingPaywall();
+        var editor = Substitute.For<IEditorPresenter>();
+        var vm = new InventoryViewModel(_inventory, dialogs, editor, ent, paywall);
+
+        vm.AddItemCommand.Execute(null);
+        await Task.Delay(200);
+
+        paywall.Shown.Should().Be(1);
+        paywall.LastFeature.Should().Be(ProFeature.UnlimitedInventoryItems,
+            "the screen should lead with what the user was trying to do");
+        await editor.DidNotReceive().ShowAddInventoryAsync();
+    }
+
+    [Fact]
+    public async Task DecliningTheOffer_DoesNotOpenThePaywall()
+    {
+        await FillInventoryAsync(EntitlementService.FreeInventoryItemLimit);
+        var (ent, _) = Entitlements();
+        var dialogs = Substitute.For<IDialogService>();
+        dialogs.ShowConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+               .Returns(false);  // "Not now"
+        var paywall = new RecordingPaywall();
+        var vm = new InventoryViewModel(_inventory, dialogs, Substitute.For<IEditorPresenter>(), ent, paywall);
+
+        vm.AddItemCommand.Execute(null);
+        await Task.Delay(200);
+
+        paywall.Shown.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task UpgradingOnThePaywall_ContinuesTheOriginalAction()
+    {
+        // The point of the whole flow: someone who pays mid-gate shouldn't have to find the
+        // button again.
+        await FillInventoryAsync(EntitlementService.FreeInventoryItemLimit);
+        var (ent, provider) = Entitlements();
+        var dialogs = Substitute.For<IDialogService>();
+        dialogs.ShowConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+               .Returns(true);
+        var paywall = new RecordingPaywall { OnShown = () => provider.IsPro = true };
+        var editor = Substitute.For<IEditorPresenter>();
+        var vm = new InventoryViewModel(_inventory, dialogs, editor, ent, paywall);
+
+        vm.AddItemCommand.Execute(null);
+        await Task.Delay(200);
+
+        await editor.Received().ShowAddInventoryAsync();
+    }
+
+    [Fact]
+    public async Task WithNoPaywallPresenter_TheRefusalIsStillExplained()
+    {
+        await FillInventoryAsync(EntitlementService.FreeInventoryItemLimit);
+        var (ent, _) = Entitlements();
+        var dialogs = Substitute.For<IDialogService>();
+        var vm = new InventoryViewModel(_inventory, dialogs, Substitute.For<IEditorPresenter>(), ent);
+
+        vm.AddItemCommand.Execute(null);
+        await Task.Delay(200);
+
+        await dialogs.Received().ShowAlertAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+    }
+
     // ---- Import gate ----
 
     private ExportImportService ImportService(EntitlementService ent) =>
