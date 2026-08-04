@@ -54,6 +54,28 @@
     <ScrollView>
         <VerticalStackLayout Padding="16,8,16,24">
 
+            <!-- PRO (hidden on the Windows desktop edition and for existing Pro users) -->
+            <Label x:Name="ProHeader" Text="STOCK &amp; FLOW PRO" Style="{StaticResource SectionHeader}" />
+
+            <Border x:Name="ProRow" Style="{StaticResource SettingsRow}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Style="{StaticResource IconChip}">
+                        <Label Text="★" FontSize="20" TextColor="White"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                        <Label x:Name="ProRowTitle" Text="Upgrade to Pro" Style="{StaticResource RowTitle}" />
+                        <Label x:Name="ProRowSubtitle"
+                               Text="Unlimited items, invoices, imports, reports and Shopify sync"
+                               Style="{StaticResource RowSubtitle}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Style="{StaticResource Chevron}" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnUpgradeTapped" />
+                </Border.GestureRecognizers>
+            </Border>
+
             <!-- BUSINESS -->
             <Label Text="BUSINESS" Style="{StaticResource SectionHeader}" />
 

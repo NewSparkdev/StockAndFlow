@@ -13,6 +13,32 @@ public partial class SettingsPage : ContentPage
 		VersionLabel.Text = $"Version {AppInfo.Current.VersionString} ({AppInfo.Current.BuildString})";
 	}
 
+	protected override async void OnAppearing()
+	{
+		base.OnAppearing();
+
+		// Desktop edition has no store billing; Pro users see their status instead of an upsell.
+		if (DeviceInfo.Platform == DevicePlatform.WinUI)
+		{
+			ProHeader.IsVisible = false;
+			ProRow.IsVisible = false;
+			return;
+		}
+
+		var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
+		if (await entitlements.IsProAsync())
+		{
+			ProRowTitle.Text = "Stock & Flow Pro is active";
+			ProRowSubtitle.Text = "Thanks for supporting the app! Manage or restore purchases";
+		}
+	}
+
+	private async void OnUpgradeTapped(object? sender, TappedEventArgs e)
+	{
+		// The paywall doubles as the plan-status / restore-purchases screen for Pro users.
+		await Navigation.PushModalAsync(new NavigationPage(new PaywallPage()));
+	}
+
 	private async void OnBusinessSettingsTapped(object? sender, TappedEventArgs e)
 	{
 		var vm = IPlatformApplication.Current!.Services.GetRequiredService<BusinessSettingsViewModel>();
