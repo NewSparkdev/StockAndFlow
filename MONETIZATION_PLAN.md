@@ -80,6 +80,31 @@ sign-up screen — buying Pro is a Face ID / fingerprint tap.
   store account. (Inventory *data* moves via Excel export/backup, unchanged.)
 - **Subscriptions:** renewals, cancellations, refunds all handled by the stores.
 
+### One licence, three platforms (decided 2026-08-03)
+
+**Buy once on a phone; use Pro on iPhone, Android and PC.** Purchases happen only on the two
+platforms that have stores; the desktop app never takes payment, which keeps it outside store
+payment rules entirely and means **no desktop payment stack to build** — no Paddle/Gumroad, no
+licence-key issuing, no VAT handling.
+
+| | Free tier | After unlocking |
+|---|---|---|
+| iPhone / Android | 30 items · 5 invoices/mo · 2 imports/mo | Unlimited + Shopify sync |
+| **PC (WPF)** | **Same limits** | Same unlock, entered as a sync code |
+
+- **PC is free-with-limits, not Pro-only.** A blank wall on desktop just gets uninstalled;
+  the same free tier makes desktop another surface where users meet the limits and convert.
+  They lose nothing by using it free, since they can't pay there anyway.
+- Desktop reaches RevenueCat over its **REST API** (the mobile SDK isn't available there), so all
+  three platforms resolve the same entitlement from the same sync code.
+- **Entitlement is cached locally on desktop** and re-validated occasionally with a grace period.
+  A network drop must never lock someone out mid-workday.
+- **A lapsed subscription re-applies the limits but never gates data.** Viewing, editing and
+  Excel export stay available forever — locking someone out of their own local file would be
+  worse than any cloud app doing it.
+- Desktop already enforces the free-tier gates as of `b15e0f1`, which is exactly this model;
+  the only missing piece is the unlock path, which waits on RevenueCat.
+
 ### Cross-platform license (Android ⇄ iOS) — "sync code"
 The stores never share purchases across ecosystems, so cross-platform needs a shared
 entitlement record. Chosen approach — **RevenueCat custom app-user IDs, no server of
@@ -100,11 +125,11 @@ ignorable at our scale); a lost code falls back to store restore + regenerate.
 Ship order: per-store entitlements at launch; sync-code screen at launch **or** first
 update — it is a small increment on top of RevenueCat, not a rebuild.
 
-### Desktop (WPF) — deferred
-No store, so it eventually needs license keys (Paddle or Gumroad; they handle payment +
-key issuance cheaply). RevenueCat has no native Windows SDK (REST API is possible).
-**Policy decision deferred:** whether a mobile lifetime license also unlocks desktop.
-Mobile launch does not depend on any of this.
+### Desktop (WPF) — settled 2026-08-03
+~~Needs its own licence keys via Paddle/Gumroad~~ — **no longer required.** Desktop takes no
+payment; a phone purchase unlocks it via sync code (see "One licence, three platforms" above).
+RevenueCat's REST API covers the lack of a Windows SDK. Mobile launch does not depend on any
+of this.
 
 ---
 
@@ -151,7 +176,8 @@ Rough order: 1 → 2 (fully testable with a fake provider, no store setup needed
 
 ## 6. Open questions (decide later, none block launch)
 
-- Does mobile lifetime unlock the future desktop version?
+- ~~Does mobile lifetime unlock the future desktop version?~~ **Yes — decided 2026-08-03, see
+  "One licence, three platforms".**
 - Exact timing/size of the post-launch lifetime price raise ($99.99 → ~$149).
 - Whether the 30-item cap needs a "counts only finished goods, not BOM materials"
   carve-out if free users feel squeezed (watch tester feedback).
