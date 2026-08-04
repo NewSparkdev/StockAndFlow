@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StockAndFlow.Mobile.Pages.PaywallPage"
+             Title="Stock &amp; Flow Pro">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Close" Clicked="OnCloseClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14" MaximumWidthRequest="720" HorizontalOptions="Fill">
+
+            <Label x:Name="ReasonLabel"
+                   FontSize="14"
+                   IsVisible="False"
+                   TextColor="{StaticResource Primary}"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Text="Go Pro. Grow without limits."
+                   FontSize="24" FontAttributes="Bold"
+                   HorizontalTextAlignment="Center" />
+
+            <VerticalStackLayout Spacing="6">
+                <Label Text="✓  Unlimited inventory items" FontSize="15" />
+                <Label Text="✓  Unlimited sales" FontSize="15" />
+                <Label Text="✓  Advanced reports and charts" FontSize="15" />
+                <Label Text="✓  Excel import and export" FontSize="15" />
+                <Label Text="✓  Shopify sync" FontSize="15" />
+            </VerticalStackLayout>
+
+            <Border Style="{StaticResource ListCard}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Yearly — Best Value" FontSize="17" FontAttributes="Bold" />
+                    <Label x:Name="YearlyPriceLabel" Text="$49.99 / year" FontSize="15" />
+                    <Label Text="7-day free trial, then billed yearly. Saves 48% vs monthly."
+                           Style="{StaticResource Caption}" />
+                    <Button Text="Start Free Trial"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            Clicked="OnYearlyClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource ListCard}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Monthly" FontSize="17" FontAttributes="Bold" />
+                    <Label x:Name="MonthlyPriceLabel" Text="$7.99 / month" FontSize="15" />
+                    <Label Text="7-day free trial, then billed monthly. Cancel anytime."
+                           Style="{StaticResource Caption}" />
+                    <Button Text="Start Free Trial"
+                            Clicked="OnMonthlyClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource ListCard}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Lifetime" FontSize="17" FontAttributes="Bold" />
+                    <Label x:Name="LifetimePriceLabel" Text="$99.99 one time" FontSize="15" />
+                    <Label Text="Pay once, own every Pro feature forever."
+                           Style="{StaticResource Caption}" />
+                    <Button Text="Buy Lifetime"
+                            Clicked="OnLifetimeClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <ActivityIndicator x:Name="BusySpinner" IsRunning="False" IsVisible="False" />
+
+            <Button Text="Restore Purchases"
+                    BackgroundColor="Transparent"
+                    TextColor="{StaticResource Primary}"
+                    Clicked="OnRestoreClicked" />
+
+            <Label Text="Subscriptions renew automatically until cancelled in your device's store settings."
+                   Style="{StaticResource Caption}"
+                   HorizontalTextAlignment="Center" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

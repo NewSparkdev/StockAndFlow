@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using StockAndFlow.Mobile.Services;
 using StockAndFlow.Services;
 using StockAndFlow.ViewModels;
 
@@ -21,6 +22,10 @@ public partial class SettingsPage : ContentPage
 
 	private async void OnShopifySettingsTapped(object? sender, TappedEventArgs e)
 	{
+		var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
+		if (!await entitlements.EnsureProAsync("Shopify sync is a Pro feature."))
+			return;
+
 		var vm = IPlatformApplication.Current!.Services.GetRequiredService<ShopifySettingsViewModel>();
 		await Navigation.PushAsync(new ShopifySettingsPage(vm));
 	}
@@ -33,6 +38,10 @@ public partial class SettingsPage : ContentPage
 
 	private async void OnExportImportTapped(object? sender, TappedEventArgs e)
 	{
+		var entitlements = IPlatformApplication.Current!.Services.GetRequiredService<EntitlementService>();
+		if (!await entitlements.EnsureProAsync("Excel import and export is a Pro feature."))
+			return;
+
 		var service = IPlatformApplication.Current!.Services.GetRequiredService<ExportImportService>();
 		await Navigation.PushModalAsync(new NavigationPage(new ExportImportPage(service)));
 	}

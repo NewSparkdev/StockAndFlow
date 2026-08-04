@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using StockAndFlow.Mobile.Pages;
+using StockAndFlow.Mobile.Services;
 using StockAndFlow.Models;
 using StockAndFlow.Platform;
 using StockAndFlow.Services;
@@ -33,8 +35,20 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	private Task PushAsync(Page page) =>
 		MainThread.InvokeOnMainThreadAsync(() => Nav.PushModalAsync(new NavigationPage(page)));
 
-	public Task ShowAddInventoryAsync() =>
-		PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>()));
+	public async Task ShowAddInventoryAsync()
+	{
+		var entitlements = _services.GetRequiredService<EntitlementService>();
+		if (!entitlements.IsPro)
+		{
+			var items = await _services.GetRequiredService<InventoryService>().GetAllItemsAsync();
+			if (items.Count >= EntitlementService.FreeMaxInventoryItems
+				&& !await entitlements.EnsureProAsync(
+					$"You've reached the free limit of {EntitlementService.FreeMaxInventoryItems} inventory items. Upgrade to Pro for unlimited items."))
+				return;
+		}
+
+		await PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>()));
+	}
 
 	public Task ShowEditInventoryAsync(InventoryItem item) =>
 		PushAsync(new AddEditInventoryPage(Create<AddEditInventoryViewModel>(item)));
@@ -65,8 +79,23 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 	public Task ShowAdjustmentDetailsAsync(InventoryAdjustment adjustment) =>
 		PushAsync(new AdjustmentDetailsPage(Create<AdjustmentDetailsViewModel>(adjustment)));
 
-	public Task ShowRecordSaleAsync() =>
-		PushAsync(new RecordSalePage(Create<RecordSaleViewModel>()));
+	public async Task ShowRecordSaleAsync()
+	{
+		var entitlements = _services.GetRequiredService<EntitlementService>();
+		if (!entitlements.IsPro)
+		{
+			var yearStart = new DateTime(DateTime.Now.Year, 1, 1);
+			var sales = await _services.GetRequiredService<SalesService>()
+				.GetSalesByDateRangeAsync(yearStart, DateTime.Now);
+			var transactionsThisYear = sales.Select(s => s.TransactionId).Distinct().Count();
+			if (transactionsThisYear >= EntitlementService.FreeMaxSalesPerYear
+				&& !await entitlements.EnsureProAsync(
+					$"You've reached the free limit of {EntitlementService.FreeMaxSalesPerYear} sales this year. Upgrade to Pro for unlimited sales."))
+				return;
+		}
+
+		await PushAsync(new RecordSalePage(Create<RecordSaleViewModel>()));
+	}
 
 	public Task ShowEditSaleAsync(SaleTransaction sale) =>
 		PushAsync(new EditSalePage(Create<EditSaleViewModel>(sale)));
@@ -76,6 +105,10 @@ public sealed class MauiEditorPresenter : IEditorPresenter
 
 	public async Task<bool> ShowExportImportAsync()
 	{
+		if (!await _services.GetRequiredService<EntitlementService>().EnsureProAsync(
+			"Excel import and export is a Pro feature."))
+			return false;
+
 		await PushAsync(new ExportImportPage(_services.GetRequiredService<ExportImportService>()));
 		// Imports raise service-change events that dependent views react to; no explicit refresh signal needed.
 		return false;

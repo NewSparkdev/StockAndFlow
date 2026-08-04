@@ -62,6 +62,7 @@ public static class MauiProgram
 		services.AddSingleton<InvoiceService>();
 		services.AddSingleton<InventoryAdjustmentService>();
 		services.AddSingleton<CustomerService>();
+		services.AddSingleton<Services.EntitlementService>();
 
 		// ViewModels
 		services.AddSingleton<MainViewModel>();
