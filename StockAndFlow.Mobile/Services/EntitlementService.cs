@@ -1,6 +1,6 @@
 using Plugin.InAppBilling;
 using StockAndFlow.Mobile.Pages;
-#if ANDROID || IOS
+#if IOS
 using Maui.RevenueCat.InAppBilling.Enums;
 using Maui.RevenueCat.InAppBilling.Models;
 using Maui.RevenueCat.InAppBilling.Services;
@@ -78,7 +78,7 @@ public sealed class EntitlementService
 
 		await EnsureLoadedAsync();
 
-#if ANDROID || IOS
+#if IOS
 		if (UseRevenueCat)
 		{
 			try
@@ -116,7 +116,7 @@ public sealed class EntitlementService
 	/// <summary>Buys the given product. Returns true when the user ends up entitled.</summary>
 	public async Task<(bool Success, string? Error)> PurchaseAsync(string productId)
 	{
-#if ANDROID || IOS
+#if IOS
 		if (UseRevenueCat)
 			return await RevenueCatPurchaseAsync(productId);
 #endif
@@ -151,6 +151,11 @@ public sealed class EntitlementService
 		{
 			return (false, ex.Message);
 		}
+		catch (Exception)
+		{
+			// Billing library missing/broken on this device must never crash the app.
+			return (false, "Purchases aren't available on this device right now. Please try again later.");
+		}
 		finally
 		{
 			await SafeDisconnectAsync(billing);
@@ -160,7 +165,7 @@ public sealed class EntitlementService
 	/// <summary>Restores previous purchases (reinstall / new device). Returns true when Pro was found.</summary>
 	public async Task<(bool Success, string? Error)> RestoreAsync()
 	{
-#if ANDROID || IOS
+#if IOS
 		if (UseRevenueCat)
 		{
 			try
@@ -191,6 +196,10 @@ public sealed class EntitlementService
 		{
 			return (false, ex.Message);
 		}
+		catch (Exception)
+		{
+			return (false, "Purchases aren't available on this device right now. Please try again later.");
+		}
 		finally
 		{
 			await SafeDisconnectAsync(billing);
@@ -201,7 +210,7 @@ public sealed class EntitlementService
 	public async Task<IReadOnlyDictionary<string, string>> GetDisplayPricesAsync()
 	{
 		var prices = new Dictionary<string, string>();
-#if ANDROID || IOS
+#if IOS
 		if (UseRevenueCat)
 		{
 			try
@@ -286,7 +295,7 @@ public sealed class EntitlementService
 			return nav?.PushModalAsync(new NavigationPage(new PaywallPage(reason))) ?? Task.CompletedTask;
 		});
 
-#if ANDROID || IOS
+#if IOS
 	private IRevenueCatBilling GetRevenueCat()
 	{
 		var rc = (IRevenueCatBilling)_services.GetService(typeof(IRevenueCatBilling))!;
