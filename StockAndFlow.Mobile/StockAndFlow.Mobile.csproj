@@ -77,8 +77,11 @@
 		<ProjectReference Include="..\StockAndFlow.Core\StockAndFlow.Core.csproj" />
 	</ItemGroup>
 
-	<!-- RevenueCat (community MAUI wrapper) — mobile stores only; the Windows head has no store billing. -->
-	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+	<!-- RevenueCat (community MAUI wrapper) — iOS ONLY. Referencing it on Android pulls in a
+	     newer Google BillingClient binding that breaks Plugin.InAppBilling at runtime
+	     (MissingMethodException on Builder.EnablePendingPurchases). Android talks to Play
+	     directly until its billing moves to RevenueCat too. -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
 		<PackageReference Include="Kebechet.Maui.RevenueCat.InAppBilling" Version="5.4.4" />
 	</ItemGroup>
 

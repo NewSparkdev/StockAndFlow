@@ -1,5 +1,5 @@
 using System.IO;
-#if ANDROID || IOS
+#if IOS
 using Maui.RevenueCat.InAppBilling;
 #endif
 using Microsoft.Extensions.Logging;
@@ -66,7 +66,7 @@ public static class MauiProgram
 		services.AddSingleton<InventoryAdjustmentService>();
 		services.AddSingleton<CustomerService>();
 		services.AddSingleton<Services.EntitlementService>();
-#if ANDROID || IOS
+#if IOS
 		// RevenueCat billing (used at runtime on iOS; Android still talks to Play directly).
 		services.AddRevenueCatBilling();
 #endif
