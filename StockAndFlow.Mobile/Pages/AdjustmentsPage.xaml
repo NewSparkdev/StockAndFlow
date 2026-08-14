@@ -10,7 +10,7 @@
         <ToolbarItem Text="Refresh" Command="{Binding RefreshCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,*" Padding="10" RowSpacing="8" MaximumWidthRequest="900" HorizontalOptions="Center">
+    <Grid RowDefinitions="Auto,*" Padding="10" RowSpacing="8" MaximumWidthRequest="900" HorizontalOptions="Fill">
 
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8" Padding="0,0,0,8">
             <Label Text="From" VerticalOptions="Center"/>

@@ -4,7 +4,7 @@
              xmlns:models="clr-namespace:StockAndFlow.Models;assembly=StockAndFlow.Core"
              x:Class="StockAndFlow.Mobile.Pages.InventoryPage">
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="8" MaximumWidthRequest="900" HorizontalOptions="Center">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="8" MaximumWidthRequest="900" HorizontalOptions="Fill">
 
         <SearchBar Grid.Row="0" Placeholder="Search items..." Text="{Binding SearchText}" />
 

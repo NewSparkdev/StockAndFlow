@@ -6,7 +6,7 @@
              Title="Record Adjustment">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Center">
+        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Fill">
 
             <Label Text="Item" />
             <Picker ItemsSource="{Binding InventoryItems}"

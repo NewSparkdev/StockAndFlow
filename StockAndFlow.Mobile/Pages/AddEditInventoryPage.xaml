@@ -7,7 +7,7 @@
              Title="{Binding DialogTitle}">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Center">
+        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="720" HorizontalOptions="Fill">
 
             <Label Text="Name" />
             <Entry Text="{Binding Name}" Placeholder="Item name" />
