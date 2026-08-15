@@ -3,10 +3,10 @@
 	<application android:allowBackup="true" android:fullBackupContent="@xml/auto_backup_rules" android:dataExtractionRules="@xml/data_extraction_rules" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"></application>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
-	<!-- Logo picking: Android 13+ uses the permission-less Photo Picker; these let the gallery
-	     picker work (and prompt) on older devices. Import/export use SAF + MediaStore, which need
-	     no storage permission on any version. -->
-	<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+	<!-- Logo picking: Android 13+ uses the permission-less Photo Picker, so READ_MEDIA_IMAGES must
+	     stay out of the manifest (Play's photo/video policy rejects it for one-off picking); this
+	     legacy permission covers the gallery picker on API <= 32 only. Import/export use
+	     SAF + MediaStore, which need no storage permission on any version. -->
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 	<!-- Barcode scanner -->
 	<uses-permission android:name="android.permission.CAMERA" />
