@@ -28,7 +28,7 @@
 		<ApplicationId>dev.newspark.stockandflow</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>1.1.9</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
@@ -70,18 +70,17 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.Maui" Version="2.0.0-rc4.5" />
 		<PackageReference Include="ZXing.Net" Version="0.16.9" />
-		<PackageReference Include="Plugin.InAppBilling" Version="8.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\StockAndFlow.Core\StockAndFlow.Core.csproj" />
 	</ItemGroup>
 
-	<!-- RevenueCat (community MAUI wrapper) — iOS ONLY. Referencing it on Android pulls in a
-	     newer Google BillingClient binding that breaks Plugin.InAppBilling at runtime
-	     (MissingMethodException on Builder.EnablePendingPurchases). Android talks to Play
-	     directly until its billing moves to RevenueCat too. -->
-	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+	<!-- RevenueCat (community MAUI wrapper) — the single billing backend on Android AND iOS.
+	     On Android its native SDK carries Google Play Billing Library 8+, which Play requires
+	     for every app update from 2026-08-30 (Plugin.InAppBilling capped out at Billing v7
+	     and was removed). -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
 		<PackageReference Include="Kebechet.Maui.RevenueCat.InAppBilling" Version="5.4.4" />
 	</ItemGroup>
 

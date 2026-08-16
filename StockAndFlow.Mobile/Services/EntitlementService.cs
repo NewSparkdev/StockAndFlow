@@ -1,6 +1,5 @@
-using Plugin.InAppBilling;
 using StockAndFlow.Mobile.Pages;
-#if IOS
+#if ANDROID || IOS
 using Maui.RevenueCat.InAppBilling.Enums;
 using Maui.RevenueCat.InAppBilling.Models;
 using Maui.RevenueCat.InAppBilling.Services;
@@ -14,11 +13,12 @@ namespace StockAndFlow.Mobile.Services;
 /// 2026-08-02): a 30-item setup cap plus monthly-reset invoice/import allowances — sales
 /// recording and Excel export are never gated.
 ///
-/// Billing backends (per the plan's licensing architecture):
-///  - iOS: RevenueCat — server-side receipt validation gives exact subscription expiry,
-///    which the raw StoreKit receipt path cannot (a cancelled sub/trial would stay Pro).
-///  - Android: Plugin.InAppBilling — Google Play already reports only active subs;
-///    switches to RevenueCat once the Play app is configured in the RevenueCat project.
+/// Billing backend: RevenueCat on both Android and iOS (the plan's licensing architecture).
+///  - iOS: server-side receipt validation gives exact subscription expiry, which the raw
+///    StoreKit receipt path cannot (a cancelled sub/trial would stay Pro).
+///  - Android: RevenueCat's SDK carries Google Play Billing Library 8+, required by Play
+///    for all updates from 2026-08-30 (Plugin.InAppBilling capped out at Billing v7 and
+///    was removed).
 ///  - Windows: desktop edition, licensed separately — never gated.
 ///
 /// The entitlement is cached in SecureStorage so Pro keeps working offline; RefreshAsync
@@ -32,8 +32,9 @@ public sealed class EntitlementService
 	public const string YearlyProductId = "stockandflow.pro.yearly";
 	public const string LifetimeProductId = "stockandflow.pro.lifetime";
 
-	// RevenueCat public SDK key for the App Store app (public by design — safe to embed).
+	// RevenueCat public SDK keys (public by design — safe to embed).
 	private const string RevenueCatAppleApiKey = "appl_LneDRhuYQGRVHyrllMTYpswqlWO";
+	private const string RevenueCatGoogleApiKey = "goog_yXYLRkkkbUeRxqZEXcbqLZFjQzi";
 
 	// Free-tier limits (MONETIZATION_PLAN.md §2).
 	public const int FreeMaxInventoryItems = 30;   // Setup-time cap, includes BOM raw materials.
@@ -52,8 +53,6 @@ public sealed class EntitlementService
 	{
 		_services = services;
 	}
-
-	private static bool UseRevenueCat => DeviceInfo.Platform == DevicePlatform.iOS;
 
 	/// <summary>
 	/// Cached answer without touching SecureStorage — for synchronous call sites after
@@ -78,181 +77,83 @@ public sealed class EntitlementService
 
 		await EnsureLoadedAsync();
 
-#if IOS
-		if (UseRevenueCat)
-		{
-			try
-			{
-				var owns = await RevenueCatHasProAsync();
-				await SetProAsync(owns);
-			}
-			catch
-			{
-				// Offline or RevenueCat hiccup — keep the cached answer.
-			}
-			return;
-		}
-#endif
-
-		var billing = CrossInAppBilling.Current;
+#if ANDROID || IOS
 		try
 		{
-			if (!await billing.ConnectAsync())
-				return; // Store unreachable — keep the cached answer.
-
-			var owns = await HasActivePurchaseAsync(billing);
+			var owns = await RevenueCatHasProAsync();
 			await SetProAsync(owns);
 		}
 		catch
 		{
-			// Offline or store hiccup — keep the cached answer.
+			// Offline or RevenueCat hiccup — keep the cached answer.
 		}
-		finally
-		{
-			await SafeDisconnectAsync(billing);
-		}
+#endif
 	}
 
 	/// <summary>Buys the given product. Returns true when the user ends up entitled.</summary>
 	public async Task<(bool Success, string? Error)> PurchaseAsync(string productId)
 	{
-#if IOS
-		if (UseRevenueCat)
-			return await RevenueCatPurchaseAsync(productId);
-#endif
-		var billing = CrossInAppBilling.Current;
+#if ANDROID || IOS
 		try
 		{
-			if (!await billing.ConnectAsync())
-				return (false, "The store is not reachable right now. Please try again later.");
-
-			var itemType = productId == LifetimeProductId ? ItemType.InAppPurchase : ItemType.Subscription;
-			var purchase = await billing.PurchaseAsync(productId, itemType);
-			if (purchase == null)
-				return (false, null); // Cancelled.
-
-			if (purchase.State is PurchaseState.Purchased or PurchaseState.Restored)
-			{
-				// Google Play requires acknowledgment or the purchase auto-refunds after 3 days.
-				try { await billing.FinalizePurchaseAsync([purchase.TransactionIdentifier]); }
-				catch { /* Already acknowledged. */ }
-
-				await SetProAsync(true);
-				return (true, null);
-			}
-
-			return (false, "The purchase could not be completed.");
-		}
-		catch (InAppBillingPurchaseException ex) when (ex.PurchaseError == PurchaseError.UserCancelled)
-		{
-			return (false, null);
-		}
-		catch (InAppBillingPurchaseException ex)
-		{
-			return (false, ex.Message);
+			return await RevenueCatPurchaseAsync(productId);
 		}
 		catch (Exception)
 		{
 			// Billing library missing/broken on this device must never crash the app.
 			return (false, "Purchases aren't available on this device right now. Please try again later.");
 		}
-		finally
-		{
-			await SafeDisconnectAsync(billing);
-		}
+#else
+		await Task.CompletedTask;
+		return (false, "Purchases aren't available on this platform.");
+#endif
 	}
 
 	/// <summary>Restores previous purchases (reinstall / new device). Returns true when Pro was found.</summary>
 	public async Task<(bool Success, string? Error)> RestoreAsync()
 	{
-#if IOS
-		if (UseRevenueCat)
-		{
-			try
-			{
-				var rc = GetRevenueCat();
-				await rc.RestoreTransactions();
-				var owns = await RevenueCatHasProAsync();
-				await SetProAsync(owns);
-				return (owns, owns ? null : "No previous Pro purchase was found for this account.");
-			}
-			catch (Exception ex)
-			{
-				return (false, ex.Message);
-			}
-		}
-#endif
-		var billing = CrossInAppBilling.Current;
+#if ANDROID || IOS
 		try
 		{
-			if (!await billing.ConnectAsync())
-				return (false, "The store is not reachable right now. Please try again later.");
-
-			var owns = await HasActivePurchaseAsync(billing);
+			var rc = GetRevenueCat();
+			await rc.RestoreTransactions();
+			var owns = await RevenueCatHasProAsync();
 			await SetProAsync(owns);
 			return (owns, owns ? null : "No previous Pro purchase was found for this account.");
 		}
-		catch (InAppBillingPurchaseException ex)
+		catch (Exception ex)
 		{
 			return (false, ex.Message);
 		}
-		catch (Exception)
-		{
-			return (false, "Purchases aren't available on this device right now. Please try again later.");
-		}
-		finally
-		{
-			await SafeDisconnectAsync(billing);
-		}
+#else
+		await Task.CompletedTask;
+		return (false, "Purchases aren't available on this platform.");
+#endif
 	}
 
 	/// <summary>Store-localized display prices keyed by product id; empty on failure.</summary>
 	public async Task<IReadOnlyDictionary<string, string>> GetDisplayPricesAsync()
 	{
 		var prices = new Dictionary<string, string>();
-#if IOS
-		if (UseRevenueCat)
-		{
-			try
-			{
-				var packages = await RevenueCatGetCurrentPackagesAsync();
-				foreach (var package in packages)
-				{
-					var id = package.Product?.Sku;
-					var price = package.Product?.Pricing?.PriceLocalized;
-					if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(price))
-						prices[id] = price;
-				}
-			}
-			catch
-			{
-				// Paywall falls back to its static price labels.
-			}
-			return prices;
-		}
-#endif
-		var billing = CrossInAppBilling.Current;
+#if ANDROID || IOS
 		try
 		{
-			if (!await billing.ConnectAsync())
-				return prices;
-
-			var subs = await billing.GetProductInfoAsync(ItemType.Subscription, [MonthlyProductId, YearlyProductId]);
-			foreach (var p in subs ?? [])
-				prices[p.ProductId] = p.LocalizedPrice;
-
-			var iaps = await billing.GetProductInfoAsync(ItemType.InAppPurchase, [LifetimeProductId]);
-			foreach (var p in iaps ?? [])
-				prices[p.ProductId] = p.LocalizedPrice;
+			var packages = await RevenueCatGetCurrentPackagesAsync();
+			foreach (var package in packages)
+			{
+				var id = NormalizeProductId(package.Product?.Sku);
+				var price = package.Product?.Pricing?.PriceLocalized;
+				if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(price))
+					prices[id] = price;
+			}
 		}
 		catch
 		{
 			// Paywall falls back to its static price labels.
 		}
-		finally
-		{
-			await SafeDisconnectAsync(billing);
-		}
+#else
+		await Task.CompletedTask;
+#endif
 		return prices;
 	}
 
@@ -295,13 +196,28 @@ public sealed class EntitlementService
 			return nav?.PushModalAsync(new NavigationPage(new PaywallPage(reason))) ?? Task.CompletedTask;
 		});
 
-#if IOS
+#if ANDROID || IOS
 	private IRevenueCatBilling GetRevenueCat()
 	{
 		var rc = (IRevenueCatBilling)_services.GetService(typeof(IRevenueCatBilling))!;
 		if (!rc.IsInitialized())
-			rc.Initialize(RevenueCatAppleApiKey);
+		{
+			var apiKey = DeviceInfo.Platform == DevicePlatform.Android
+				? RevenueCatGoogleApiKey
+				: RevenueCatAppleApiKey;
+			rc.Initialize(apiKey);
+		}
 		return rc;
+	}
+
+	// Play products come back as "productId:basePlanId" (e.g. "stockandflow.pro.monthly:monthly");
+	// App Store products are the bare id. Strip the base plan so both stores key identically.
+	private static string? NormalizeProductId(string? sku)
+	{
+		if (string.IsNullOrEmpty(sku))
+			return sku;
+		var colon = sku.IndexOf(':');
+		return colon < 0 ? sku : sku[..colon];
 	}
 
 	private async Task<bool> RevenueCatHasProAsync()
@@ -312,12 +228,11 @@ public sealed class EntitlementService
 			throw new InvalidOperationException("RevenueCat returned no customer info.");
 
 		// ActiveSubscriptions is receipt-validated by RevenueCat: expired/cancelled subs
-		// are excluded, which is the whole point of the swap. Lifetime is a non-consumable
-		// so any past purchase of it counts.
-		if (info.ActiveSubscriptions?.Any(p => p is MonthlyProductId or YearlyProductId) == true)
+		// are excluded. Lifetime is a non-consumable so any past purchase of it counts.
+		if (info.ActiveSubscriptions?.Any(p => NormalizeProductId(p) is MonthlyProductId or YearlyProductId) == true)
 			return true;
 
-		return info.AllPurchasedIdentifiers?.Contains(LifetimeProductId) == true;
+		return info.AllPurchasedIdentifiers?.Any(p => NormalizeProductId(p) == LifetimeProductId) == true;
 	}
 
 	private async Task<List<PackageDto>> RevenueCatGetCurrentPackagesAsync()
@@ -333,7 +248,7 @@ public sealed class EntitlementService
 		try
 		{
 			var packages = await RevenueCatGetCurrentPackagesAsync();
-			var package = packages.FirstOrDefault(p => p.Product?.Sku == productId);
+			var package = packages.FirstOrDefault(p => NormalizeProductId(p.Product?.Sku) == productId);
 			if (package == null)
 				return (false, "This product is not available right now. Please try again later.");
 
@@ -385,37 +300,5 @@ public sealed class EntitlementService
 		{
 			// SecureStorage unavailable — the in-memory cache still covers this session.
 		}
-	}
-
-	private static async Task<bool> HasActivePurchaseAsync(IInAppBilling billing)
-	{
-		var subs = await billing.GetPurchasesAsync(ItemType.Subscription);
-		if (subs?.Any(IsActiveSubscription) == true)
-			return true;
-
-		var iaps = await billing.GetPurchasesAsync(ItemType.InAppPurchase);
-		return iaps?.Any(p => p.State is PurchaseState.Purchased or PurchaseState.Restored
-			&& p.ProductId == LifetimeProductId) == true;
-	}
-
-	private static bool IsActiveSubscription(InAppBillingPurchase p)
-	{
-		if (p.State is not (PurchaseState.Purchased or PurchaseState.Restored)
-			|| p.ProductId is not (MonthlyProductId or YearlyProductId))
-			return false;
-
-		// Google Play only reports active subscriptions, so the store's answer is trusted as-is.
-		// (iOS goes through RevenueCat and never reaches this code path.)
-		if (DeviceInfo.Platform != DevicePlatform.iOS)
-			return true;
-
-		var period = p.ProductId == MonthlyProductId ? TimeSpan.FromDays(45) : TimeSpan.FromDays(380);
-		return DateTime.UtcNow - p.TransactionDateUtc <= period;
-	}
-
-	private static async Task SafeDisconnectAsync(IInAppBilling billing)
-	{
-		try { await billing.DisconnectAsync(); }
-		catch { /* Nothing useful to do. */ }
 	}
 }

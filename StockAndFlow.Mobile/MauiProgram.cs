@@ -1,5 +1,5 @@
 using System.IO;
-#if IOS
+#if ANDROID || IOS
 using Maui.RevenueCat.InAppBilling;
 #endif
 using Microsoft.Extensions.Logging;
@@ -66,8 +66,9 @@ public static class MauiProgram
 		services.AddSingleton<InventoryAdjustmentService>();
 		services.AddSingleton<CustomerService>();
 		services.AddSingleton<Services.EntitlementService>();
-#if IOS
-		// RevenueCat billing (used at runtime on iOS; Android still talks to Play directly).
+#if ANDROID || IOS
+		// RevenueCat billing on both stores. On Android its SDK carries Play Billing
+		// Library 8+, which Play requires for all app updates from 2026-08-30.
 		services.AddRevenueCatBilling();
 #endif
 
