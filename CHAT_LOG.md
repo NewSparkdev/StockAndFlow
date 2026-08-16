@@ -4,7 +4,7 @@
 > Branch for all this work: **`maui-migration`** (base: `main`).
 > **Releases ship from `worktree-onboarding`** (checked out at `.claude/worktrees/onboarding`) —
 > it carries the CI workflows, version number, EF compiled model, and all `v*` tags.
-> Last updated: **2026-08-02**.
+> Last updated: **2026-08-15**.
 
 ---
 
@@ -569,6 +569,71 @@ real USB scanner. Note `CHAT_LOG` previously claimed the WPF scanner collects ke
 apart — **it does not**; the code is simply an Enter handler on the search box, which works with
 real scanners but has no timing logic.
 
+### 4.22 Monetization shipped — paywall, gates, store products (2026-08-03 → 08-05)
+- **Free-tier gates + paywall** built per `MONETIZATION_PLAN.md` (locked 2026-08-02):
+  `EntitlementService` is the single free-vs-Pro decision point; gates on the 30-item inventory
+  cap, imports (2/mo), PDF invoices (5/mo), and the Reports tab; gate refusals route to
+  `PaywallPage` (not a dead-end alert). Entitlement cached in SecureStorage; monthly quotas in
+  Preferences (`quota_{feature}_{yyyyMM}`). **Windows head always unlocked.** Monthly price
+  decided at **$7.99** (overrides the plan's $8.99; plan doc not edited).
+- **Billing stack**: iOS uses **RevenueCat** (Kebechet.Maui.RevenueCat.InAppBilling 5.4.4;
+  dashboard project "NewSpark.Dev", entitlement "NewSpark.Dev Pro", offering `default`);
+  Android stays on **Plugin.InAppBilling 8.0.5** until the Play app is added to RevenueCat.
+  Shipped via **PR #4** (merged `8b3d0c9`).
+- **Products live on both stores, same IDs**: `stockandflow.pro.monthly` $7.99 + 7-day trial,
+  `.yearly` $49.99 + 7-day trial, `.lifetime` $99.99. Apple: "Prepare for Submission" (submit
+  WITH next app version + review screenshots). Play: Active as of 2026-08-05. Money setup
+  complete on both stores (Apple Paid Apps + W-9; Play payouts verified).
+- **Android billing crash fixed** (**PR #5**, merged `e7face0`): the RevenueCat wrapper package
+  pulled a newer BillingClient binding that broke Plugin.InAppBilling
+  (`MissingMethodException: Builder.EnablePendingPurchases` on purchase tap). Fix: RC packages
+  scoped to the iOS TFM only, `#if IOS` in EntitlementService/MauiProgram, catch-all fallbacks
+  in Purchase/Restore. Emulator-verified: gate → paywall (correct prices) → graceful
+  "Purchase Failed" (emulators can't buy); Settings shows "Upgrade to Pro".
+
+### 4.23 Google Play closed testing launched — approved same day (2026-08-15)
+The full path from "is Android ready for closed testing?" to a running 12-tester production
+qualification, in one session:
+
+- **Blockers found via Play Console audit**: app was Draft; closed track (Alpha) had
+  countries + testers set but no release; **two App content declarations unstarted** —
+  Advertising ID (blocks any release targeting Android 13+) and Photo & video permissions
+  (triggered by `READ_MEDIA_IMAGES` in the manifest).
+- **Advertising ID declaration**: answered **No** (no ads, no ad-ID SDKs; Play Billing doesn't
+  use it; RevenueCat compiled out of Android) and saved.
+- **Photo & video permissions**: did NOT justify — **removed `READ_MEDIA_IMAGES` from the
+  manifest instead** (commit `06b2d4c`, version **1.1.8**). Play policy rejects that permission
+  for one-off picking (our logo picker); Android 13+ already uses the permission-less Photo
+  Picker via `MediaPicker.PickPhotoAsync`, and API ≤ 32 keeps legacy `READ_EXTERNAL_STORAGE`
+  (not covered by the declaration). The declaration requirement clears itself once no active
+  artifact carries the permission.
+- **Git auth root-caused at last**: the recurring 403-as-`Ramesusxd` happened because
+  `~/.gitconfig` routed github.com credentials to **GitHub CLI** (`gh auth git-credential`),
+  which is logged in as the wrong account — GCM was never consulted. Fixed:
+  `git config --global --unset-all credential.https://github.com.helper`, then
+  `GCM_INTERACTIVE=always GCM_GITHUB_AUTHMODES=browser git credential-manager github login`
+  (browser OAuth; device-code mode kept failing). Pushes now work non-interactively.
+  Note: gh CLI **does** exist (`C:\Program Files\GitHub CLI\gh.exe`) but as `Ramesusxd`;
+  gist helper entries still point at it.
+- **Build**: Android Release CI **run 18** on `06b2d4c` → AAB version code 28 (1.1.8),
+  auto-uploaded to internal testing.
+- **Closed-testing release**: bundle 28 added from library to "Closed testing - Alpha",
+  release "28 (1.1.8)", en-US release notes, full rollout. All **15 staged changes**
+  (release + store listing + every declaration incl. the 9 actioned on Jul 22) sent for
+  Google's **first review** — **approved the same day** ("App update published"; app status
+  now **"Closed testing"**). Only review warnings: no deobfuscation file / native debug
+  symbols (benign, same as every build).
+- **Testers**: web opt-in `https://play.google.com/apps/testing/dev.newspark.stockandflow`.
+  "Internal Testers" email list grew 5 → 7 (added `alwayzsmilin00@gmail.com`,
+  `bakerjustin171@gmail.com`); **`ebbygirl05@yahoo.com` rejected — Play tester emails must be
+  Google accounts** (need her Gmail). A hired testing company (requirements brief: 15 Google
+  accounts, 14 consecutive days, 3–4 real sessions/week, no IAP purchases) brought the count
+  to **~30 opted in**.
+- **Production countdown**: dashboard now shows "12+ testers opted-in" ✅; the 14-day
+  qualification run **started 2026-08-15** → "Apply for production" unlocks **~2026-08-29**
+  if the count stays ≥ 12. Google's production questionnaire asks about recruitment and
+  engagement quality — collect tester feedback + ship a fix or two during the window.
+
 ---
 
 ## 5. Bugs found & fixed during emulator testing
@@ -619,7 +684,16 @@ real scanners but has no timing logic.
   fix). Android → Google Play internal, iOS → TestFlight via tag CI.
 - **v1.1.4** live in both channels (Aug 1, 2026): Google Play internal testing + TestFlight.
 - Unit tests run on every push via `.github/workflows/tests.yml`.
-- Store listings not yet submitted: screenshots, descriptions, feature graphic, content rating, privacy policy.
+- ~~Store listings not yet submitted~~ ✅ Play store listing, content rating, data safety,
+  privacy policy all submitted + approved with the first closed-testing review (2026-08-15, §4.23).
+- **Android closed test running since 2026-08-15** (~30 testers): keep ≥12 opted in through
+  ~2026-08-29, then **Apply for production** (questionnaire asks about tester engagement).
+- Still open for Android production: Ebone's Gmail (yahoo rejected), testers' lifetime promo
+  codes (both stores), consider License Testers so tester IAP purchases are free, real-device
+  purchase sandbox test.
+- Still open for iOS: submit IAP products WITH next app version + per-product review
+  screenshots in ASC; RevenueCat Android app (secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+  already in GitHub); sync-code screen.
 
 ### Follow-ups queued by recent work
 - If testers override cost expectations differently, consider surfacing negative component
