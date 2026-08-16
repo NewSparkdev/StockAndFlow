@@ -4,7 +4,7 @@
 > Branch for all this work: **`maui-migration`** (base: `main`).
 > **Releases ship from `worktree-onboarding`** (checked out at `.claude/worktrees/onboarding`) —
 > it carries the CI workflows, version number, EF compiled model, and all `v*` tags.
-> Last updated: **2026-08-15**.
+> Last updated: **2026-08-16**.
 
 ---
 
@@ -634,6 +634,64 @@ qualification, in one session:
   if the count stays ≥ 12. Google's production questionnaire asks about recruitment and
   engagement quality — collect tester feedback + ship a fix or two during the window.
 
+### 4.24 Play credential clean split — the "InterviewGenAI" scare (2026-08-16)
+- Play Console warned the app must use **Billing Library 8 by 2026-08-30** (see §4.25); the
+  work exposed that the CI upload credential was a service account named
+  `github-actions-deploy@interviewgenai.iam.gserviceaccount.com` — alarming, since
+  "InterviewGenAI" meant nothing to anyone. Full forensic chain established it was legit:
+  created **Jul 22 during CI setup** inside the user's old InterviewGenAI GCP project (the
+  project that happened to be selected), key downloaded to `Downloads` that afternoon, invited
+  to Play by the owner, and attributed by the Play **activity log** as the uploader of every
+  release. Enumerating all GCP projects confirmed no other candidate existed.
+- **Clean split executed** (user's call — "no lazy energy"): new GCP project **`stockandflow`**,
+  service account **`play-publisher@stockandflow.iam.gserviceaccount.com`**, scoped Play
+  permissions only (testing+production releases, tester lists, app info, financial data,
+  manage orders — deliberately NOT admin). Key at `signing\stockandflow-a154b5f24193.json`;
+  same key now serves CI (GitHub secret) and RevenueCat. Old interviewgenai user removed
+  from Play Console.
+- **Git-hygiene catch**: `signing\` and `apple-certs\` held private keys (Apple distribution
+  key, keystore base64) that were NOT git-ignored — one `git add .` from history. Now excluded
+  via `.git/info/exclude` (machine-local, covers all worktrees).
+- Also fixed for good: the recurring GitHub 403-as-`Ramesusxd` — `~/.gitconfig` routed
+  github.com credentials to gh CLI (logged in as the wrong account). Removed the override;
+  GCM now holds a NewSparkdev OAuth token (browser-mode flow; device-code mode kept failing).
+
+### 4.25 Google Play Billing Library 8 migration — shipped as 1.1.9 (2026-08-16)
+Play requires **Billing Library 8.0.0+ for all app updates from 2026-08-30**.
+`Plugin.InAppBilling` tops out at Billing v7 (its own v9.x line binds v7), so it was removed
+entirely; **RevenueCat is now the single billing backend on Android and iOS** — completing
+the plan's original architecture and deleting 117 lines.
+
+- **RevenueCat dashboard (Android)**: Play app `appaa9ba4922f` (with play-publisher JSON),
+  3 Play products created manually (subs as `productId:basePlanId`; lifetime non-consumable),
+  attached to entitlement "NewSpark.Dev Pro", mapped into the `default` offering's packages
+  next to their App Store twins. Android public SDK key `goog_yXYLRkkkbUeRxqZEXcbqLZFjQzi`.
+- **Code** (commit `4f03630`): EntitlementService rewritten RevenueCat-only (`#if ANDROID ||
+  IOS`; graceful stubs elsewhere); per-platform SDK key pick; **`NormalizeProductId` strips
+  Play's `:basePlanId` suffix** so entitlement checks and paywall prices key identically on
+  both stores (without it Android purchases would never match). Resolved dependency chain:
+  Kebechet wrapper 5.4.4 → RC Android 9.2.0.2 → **Xamarin.Android.Google.BillingClient 8.0.0**.
+  iOS needs NO changes — it already ran this path; the normalizer is a no-op for bare App
+  Store ids.
+- **Emulator-verified**: boots → Reports gate → paywall (correct prices) → purchase tap fails
+  gracefully ("product not available") instead of the old MissingMethodException crash.
+- **The upload saga** — builds 19–24, three real causes peeled one at a time (never
+  "propagation"):
+  1. GitHub secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` **was never actually updated** on the
+     first attempt while the old account had already been removed from Play — CI kept
+     authenticating as a deleted user. Caught by checking the secret's **`updated_at`
+     timestamp** via the API. Lesson: verify secret updates by timestamp, not by assumption.
+  2. The new GCP project needed the **Google Play Android Developer API enabled** (new
+     projects start with all APIs off).
+  3. RevenueCat's Play Services dependency merged **`com.google.android.gms.permission.AD_ID`**
+     into the manifest, contradicting the "no advertising ID" declaration — Play rejected the
+     release. Fixed with `tools:node="remove"` (commit `ba9110a`).
+- **Build 24 SUCCEEDED** → bundle **34 (1.1.9)** in internal testing; closed-track release
+  "34 (1.1.9)" created and **sent for review the same day**. Billing-8 deadline satisfied
+  with two weeks to spare. Tester clock unaffected.
+- Bonus: website logo pack in `store-assets\logo\` — composed SVG (rounded square) +
+  1024px PNG (rendered via Chrome canvas; no local SVG tooling) + 192px square/round icons.
+
 ---
 
 ## 5. Bugs found & fixed during emulator testing
@@ -688,6 +746,9 @@ qualification, in one session:
   privacy policy all submitted + approved with the first closed-testing review (2026-08-15, §4.23).
 - **Android closed test running since 2026-08-15** (~30 testers): keep ≥12 opted in through
   ~2026-08-29, then **Apply for production** (questionnaire asks about tester engagement).
+- **1.1.9 (Billing Library 8) in closed-track review as of 2026-08-16** — publishes
+  automatically on approval (§4.25). Watch for the RevenueCat "Credentials need attention"
+  badge to clear (~a day); delete the old `interviewgenai-*.json` from Downloads.
 - Still open for Android production: Ebone's Gmail (yahoo rejected), testers' lifetime promo
   codes (both stores), consider License Testers so tester IAP purchases are free, real-device
   purchase sandbox test.
