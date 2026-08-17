@@ -2,6 +2,7 @@ using System.IO;
 #if ANDROID || IOS
 using Maui.RevenueCat.InAppBilling;
 #endif
+using LiveChartsCore.SkiaSharpView.Maui;
 using Microsoft.Extensions.Logging;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using StockAndFlow.Data;
@@ -24,6 +25,9 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseSkiaSharp()
+			// LiveCharts 2.0 registers its chart handlers explicitly (rc4 did this
+			// implicitly) — without this call every chart renders blank.
+			.UseLiveCharts()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
