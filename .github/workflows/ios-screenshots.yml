@@ -76,7 +76,7 @@ jobs:
 
       - name: Install app on simulator
         run: |
-          APP_PATH=$(find . -name "*.app" -path "*/iossimulator-arm64/*" | head -1)
+          APP_PATH=$(find StockAndFlow.Mobile/bin -name "*.app" -path "*/iossimulator-arm64/*" | head -1)
           echo "Found app at: $APP_PATH"
           xcrun simctl install $SIMULATOR_UDID "$APP_PATH"
 
