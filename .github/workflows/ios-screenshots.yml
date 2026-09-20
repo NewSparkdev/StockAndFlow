@@ -19,6 +19,13 @@ jobs:
       - name: Install MAUI workload
         run: dotnet workload install maui-ios maui-android
 
+      - name: Install idb
+        run: |
+          brew tap facebook/fb
+          brew install idb-companion
+          python3 -m pip install --user --break-system-packages fb-idb
+          echo "$(python3 -m site --user-base)/bin" >> $GITHUB_PATH
+
       - name: Select Xcode
         run: |
           echo "Available Xcodes:"
@@ -80,6 +87,14 @@ jobs:
           echo "Found app at: $APP_PATH"
           xcrun simctl install $SIMULATOR_UDID "$APP_PATH"
 
+      - name: Start idb companion
+        run: |
+          idb_companion --udid $SIMULATOR_UDID > idb_companion.log 2>&1 &
+          echo $! > idb_companion.pid
+          sleep 5
+          cat idb_companion.log || true
+          idb list-targets
+
       - name: Take screenshots of all screens
         run: |
           mkdir -p screenshots
@@ -94,27 +109,27 @@ jobs:
           sleep 1
 
           # 2. Inventory tab — tap bottom nav (5 tabs, device points 393×852 for iPhone 16 Pro Max)
-          xcrun simctl io $SIMULATOR_UDID tap 79 820
+          idb ui tap 79 820 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/02_inventory.png
 
           # 3. Sales tab
-          xcrun simctl io $SIMULATOR_UDID tap 196 820
+          idb ui tap 196 820 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/03_sales.png
 
           # 4. Expenses tab
-          xcrun simctl io $SIMULATOR_UDID tap 314 820
+          idb ui tap 314 820 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
 
           # 5. Reports tab
-          xcrun simctl io $SIMULATOR_UDID tap 432 820
+          idb ui tap 432 820 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
 
           # 6. Open sidebar drawer (tap hamburger at top-left)
-          xcrun simctl io $SIMULATOR_UDID tap 30 70
+          idb ui tap 30 70 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/06_navigation.png
 
