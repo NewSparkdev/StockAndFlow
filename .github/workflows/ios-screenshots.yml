@@ -88,6 +88,13 @@ jobs:
           echo "Found app at: $APP_PATH"
           xcrun simctl install $SIMULATOR_UDID "$APP_PATH"
 
+      - name: Skip the first-launch onboarding carousel
+        run: |
+          # App.xaml.cs gates onboarding on Preferences "onboarding_done" (NSUserDefaults,
+          # standard suite = bundle id). Pre-seed it so we land straight on the dashboard —
+          # a fresh install otherwise shows a 4-page welcome carousel with no tab bar at all.
+          xcrun simctl spawn $SIMULATOR_UDID defaults write dev.newspark.stockandflow onboarding_done -bool YES
+
       - name: Start idb companion
         run: |
           idb_companion --udid $SIMULATOR_UDID > idb_companion.log 2>&1 &
@@ -109,30 +116,30 @@ jobs:
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/01_dashboard.png
           sleep 1
 
-          # 2. Inventory tab — tap bottom nav (5 tabs, device points 393×852 for iPhone 16 Pro Max)
-          idb ui tap 79 820 --udid $SIMULATOR_UDID
+          # BottomNavBar.cs: HeightRequest=84, Grid Padding(8,8,8,10), ColumnSpacing=6, 5 equal
+          # star columns. iPhone 16 Pro Max is 440x956 points (1320x2868px / 3x — verified from
+          # a captured screenshot, NOT the 393x852 an earlier version of this script assumed).
+          # Column width = (440 - 16 padding - 4*6 spacing) / 5 = 80; center of column i:
+          # 8 + i*86 + 40. Bar vertical center: 956 - 84/2 = 914.
+          # 2. Inventory tab (column 1)
+          idb ui tap 134 914 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/02_inventory.png
 
-          # 3. Sales tab
-          idb ui tap 196 820 --udid $SIMULATOR_UDID
+          # 3. Sales tab (column 2)
+          idb ui tap 220 914 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/03_sales.png
 
-          # 4. Expenses tab
-          idb ui tap 314 820 --udid $SIMULATOR_UDID
+          # 4. Expenses tab (column 3)
+          idb ui tap 306 914 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
 
-          # 5. Reports tab
-          idb ui tap 432 820 --udid $SIMULATOR_UDID
+          # 5. Reports tab (column 4)
+          idb ui tap 392 914 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
-
-          # 6. Open sidebar drawer (tap hamburger at top-left)
-          idb ui tap 30 70 --udid $SIMULATOR_UDID
-          sleep 2
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/06_navigation.png
 
           ls -lh screenshots/
 
