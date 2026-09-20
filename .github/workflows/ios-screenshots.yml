@@ -120,24 +120,26 @@ jobs:
           # star columns. iPhone 16 Pro Max is 440x956 points (1320x2868px / 3x — verified from
           # a captured screenshot, NOT the 393x852 an earlier version of this script assumed).
           # Column width = (440 - 16 padding - 4*6 spacing) / 5 = 80; center of column i:
-          # 8 + i*86 + 40. Bar vertical center: 956 - 84/2 = 914.
+          # 8 + i*86 + 40. The bar sits ABOVE the 34pt bottom safe-area inset, not flush to the
+          # screen edge (confirmed by sampling actual screenshot pixels: purple background runs
+          # from px 2514-2765, i.e. points 838-921.7 at 3x) — center y = 880, not 956-84/2=914.
           # 2. Inventory tab (column 1)
-          idb ui tap 134 914 --udid $SIMULATOR_UDID
+          idb ui tap 134 880 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/02_inventory.png
 
           # 3. Sales tab (column 2)
-          idb ui tap 220 914 --udid $SIMULATOR_UDID
+          idb ui tap 220 880 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/03_sales.png
 
           # 4. Expenses tab (column 3)
-          idb ui tap 306 914 --udid $SIMULATOR_UDID
+          idb ui tap 306 880 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
 
           # 5. Reports tab (column 4)
-          idb ui tap 392 914 --udid $SIMULATOR_UDID
+          idb ui tap 392 880 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
 
