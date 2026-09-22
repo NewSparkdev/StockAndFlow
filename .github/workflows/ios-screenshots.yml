@@ -250,20 +250,27 @@ jobs:
 
           # 6. Settings (from Dashboard — MainPage.xaml.cs's toolbar action). Position measured
           # directly from the captured 01_dashboard.png (native toolbar button, right-aligned).
-          snap screenshots/06_settings.png 48 880 371 85
+          # Two independently-verified taps, not one snap() call with both coords: snap() only
+          # checks the FINAL result, so if the first tap (switch tab) silently succeeded but the
+          # second (open Settings) silently failed, it would go undetected — as happened to the
+          # Record Sale step below in an earlier run (Sales tab worked, Record tap didn't, and
+          # the step still "passed" because the overall screen had changed from the Reports tab).
+          snap /tmp/settle.png 48 880
+          snap screenshots/06_settings.png 371 85
 
           # Dismiss the Settings modal (SettingsPage.xaml has a "Close" ToolbarItem) so the tab bar
           # underneath is reachable again. If this fails, the rest of the sequence is skipped but
           # the 6 screenshots already taken still get uploaded (see "Upload screenshots" step).
           if tap_close; then
             # Back on Dashboard now — establish a fresh baseline so snap() can detect whether
-            # the next tap sequence (Sales tab, then Record) actually changes the screen.
+            # the next taps (Sales tab, then Record) actually change the screen.
             xcrun simctl io $SIMULATOR_UDID screenshot /tmp/prev_shot.png
 
             # 7. Record Sale (from Sales — SalesViewModel's "Record" action opens the cart page).
             # Position measured directly from the captured 03_sales.png. This is the LAST
             # screenshot, so the modal is never dismissed — nothing needs it after this.
-            snap screenshots/07_record_sale.png 220 880 272 84
+            snap /tmp/settle.png 220 880
+            snap screenshots/07_record_sale.png 272 84
           fi
 
           ls -lh screenshots/
