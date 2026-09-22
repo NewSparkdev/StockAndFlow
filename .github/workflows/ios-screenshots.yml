@@ -108,14 +108,29 @@ jobs:
           mkdir -p screenshots
           BUNDLE_ID=dev.newspark.stockandflow
 
-          # idb occasionally drops a single tap silently (no error, UI just doesn't move) — seen
-          # intermittently on different taps across runs. Tapping the same spot twice is safe here:
-          # every target is either a tab (BottomNavBar.cs no-ops if already active) or a button
-          # that's about to navigate away, so a harmless repeat tap can't land on the wrong thing.
-          tap2() {
-            idb ui tap "$1" "$2" --udid $SIMULATOR_UDID
-            sleep 0.5
-            idb ui tap "$1" "$2" --udid $SIMULATOR_UDID
+          # idb occasionally drops a tap silently (no error, UI just doesn't move) — seen on
+          # different taps across runs, and a blind double-tap didn't fully fix it. Instead,
+          # actually check whether the screen changed and retry the tap(s) if it didn't: every
+          # target here is either a tab (BottomNavBar.cs no-ops if already active) or a button
+          # about to navigate away, so a harmless repeat tap can't land on the wrong thing.
+          snap() {
+            local outfile="$1"; shift
+            local coords=("$@")
+            for attempt in 1 2 3; do
+              local i=0
+              while [ $i -lt ${#coords[@]} ]; do
+                idb ui tap "${coords[$i]}" "${coords[$((i+1))]}" --udid $SIMULATOR_UDID
+                sleep 1
+                i=$((i+2))
+              done
+              sleep 1
+              xcrun simctl io $SIMULATOR_UDID screenshot "$outfile"
+              if [ ! -f /tmp/prev_shot.png ] || ! cmp -s "$outfile" /tmp/prev_shot.png; then
+                break
+              fi
+              echo "WARNING: $outfile unchanged after attempt $attempt, retrying tap(s): ${coords[*]}"
+            done
+            cp "$outfile" /tmp/prev_shot.png
           }
 
           # Launch app — SIMCTL_CHILD_ prefix passes SEED_DEMO_DATA into the app's environment
@@ -125,7 +140,7 @@ jobs:
 
           # 1. Dashboard
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/01_dashboard.png
-          sleep 1
+          cp screenshots/01_dashboard.png /tmp/prev_shot.png
 
           # BottomNavBar.cs: HeightRequest=84, Grid Padding(8,8,8,10), ColumnSpacing=6, 5 equal
           # star columns. iPhone 16 Pro Max is 440x956 points (1320x2868px / 3x — verified from
@@ -135,25 +150,17 @@ jobs:
           # screen edge (confirmed by sampling actual screenshot pixels: purple background runs
           # from px 2514-2765, i.e. points 838-921.7 at 3x) — center y = 880, not 956-84/2=914.
           # 2. Inventory tab (column 1)
-          tap2 134 880
-          sleep 2
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/02_inventory.png
+          snap screenshots/02_inventory.png 134 880
 
           # 3. Sales tab (column 2)
-          tap2 220 880
-          sleep 2
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/03_sales.png
+          snap screenshots/03_sales.png 220 880
 
           # 4. Expenses tab (column 3)
-          tap2 306 880
-          sleep 2
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
+          snap screenshots/04_expenses.png 306 880
 
           # 5. Reports tab (column 4) — SEED_DEMO_DATA also grants the Pro entitlement (see
           # DemoDataSeeder.cs), so this is the real charts page now, not the paywall.
-          tap2 392 880
-          sleep 2
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
+          snap screenshots/05_reports.png 392 880
 
           # Finds a native accessibility element by its exact label and prints "x y" (its center,
           # in points) on stdout, or nothing if not found. Used only for the "Close" toolbar item
@@ -185,39 +192,43 @@ jobs:
           sys.exit(1)
           PYEOF
 
-          tap_label() {
-            COORDS=$(idb ui describe-all --udid $SIMULATOR_UDID --json 2>/dev/null | python3 /tmp/find_label.py "$1" || true)
-            if [ -z "$COORDS" ]; then
-              echo "WARNING: could not find accessibility element labeled '$1' — dumping raw output for diagnosis:"
-              idb ui describe-all --udid $SIMULATOR_UDID --json 2>&1 | head -c 4000 || true
-              return 1
-            fi
-            echo "Tapping '$1' at $COORDS"
-            tap2 $COORDS
+          # Finds "Close" and taps it, retrying up to 3x if the element is still present
+          # afterwards (i.e. the tap didn't register) — same rationale as snap() above.
+          tap_close() {
+            for attempt in 1 2 3; do
+              COORDS=$(idb ui describe-all --udid $SIMULATOR_UDID --json 2>/dev/null | python3 /tmp/find_label.py "Close" || true)
+              if [ -z "$COORDS" ]; then
+                if [ $attempt -eq 1 ]; then
+                  echo "WARNING: could not find accessibility element labeled 'Close' — dumping raw output for diagnosis:"
+                  idb ui describe-all --udid $SIMULATOR_UDID --json 2>&1 | head -c 4000 || true
+                  return 1
+                fi
+                return 0   # gone after a previous successful tap — done
+              fi
+              echo "Tapping 'Close' at $COORDS (attempt $attempt)"
+              idb ui tap $COORDS --udid $SIMULATOR_UDID
+              sleep 1
+            done
+            echo "WARNING: 'Close' still present after 3 tap attempts — giving up"
+            return 1
           }
 
           # 6. Settings (from Dashboard — MainPage.xaml.cs's toolbar action). Position measured
           # directly from the captured 01_dashboard.png (native toolbar button, right-aligned).
-          tap2 48 880    # Dashboard tab (column 0)
-          sleep 2
-          tap2 371 85    # Settings button
-          sleep 2
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/06_settings.png
+          snap screenshots/06_settings.png 48 880 371 85
 
           # Dismiss the Settings modal (SettingsPage.xaml has a "Close" ToolbarItem) so the tab bar
           # underneath is reachable again. If this fails, the rest of the sequence is skipped but
           # the 6 screenshots already taken still get uploaded (see "Upload screenshots" step).
-          if tap_label "Close"; then
-            sleep 2
+          if tap_close; then
+            # Back on Dashboard now — establish a fresh baseline so snap() can detect whether
+            # the next tap sequence (Sales tab, then Record) actually changes the screen.
+            xcrun simctl io $SIMULATOR_UDID screenshot /tmp/prev_shot.png
 
             # 7. Record Sale (from Sales — SalesViewModel's "Record" action opens the cart page).
             # Position measured directly from the captured 03_sales.png. This is the LAST
             # screenshot, so the modal is never dismissed — nothing needs it after this.
-            tap2 220 880   # Sales tab (column 2)
-            sleep 2
-            tap2 272 84    # Record button
-            sleep 2
-            xcrun simctl io $SIMULATOR_UDID screenshot screenshots/07_record_sale.png
+            snap screenshots/07_record_sale.png 220 880 272 84
           fi
 
           ls -lh screenshots/
