@@ -77,6 +77,12 @@ public sealed class EntitlementService
 
 		await EnsureLoadedAsync();
 
+		// Screenshot CI seeds the Pro flag directly (see DemoDataSeeder.cs) so Reports shows real
+		// content instead of the paywall; a live RevenueCat check would immediately find no
+		// purchase on this anonymous simulator user and overwrite it back to false.
+		if (Environment.GetEnvironmentVariable("SEED_DEMO_DATA") == "1")
+			return;
+
 #if ANDROID || IOS
 		try
 		{
