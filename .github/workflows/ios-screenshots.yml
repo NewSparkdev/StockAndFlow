@@ -198,15 +198,30 @@ jobs:
           sys.exit(1)
           PYEOF
 
+          # describe-all occasionally returns empty/non-JSON output (a transient idb hiccup,
+          # unrelated to whether "Close" is actually on screen) — fetch with its own retry so
+          # that doesn't get misread as "element not found".
+          describe_all() {
+            for fetch in 1 2 3; do
+              RAW=$(idb ui describe-all --udid $SIMULATOR_UDID --json 2>/dev/null || true)
+              case "$RAW" in
+                \[*) printf '%s' "$RAW"; return 0 ;;
+              esac
+              sleep 1
+            done
+            printf '%s' "$RAW"   # give up — return whatever we last got, even if not JSON
+          }
+
           # Finds "Close" and taps it, retrying up to 3x if the element is still present
           # afterwards (i.e. the tap didn't register) — same rationale as snap() above.
           tap_close() {
             for attempt in 1 2 3; do
-              COORDS=$(idb ui describe-all --udid $SIMULATOR_UDID --json 2>/dev/null | python3 /tmp/find_label.py "Close" || true)
+              RAW=$(describe_all)
+              COORDS=$(printf '%s' "$RAW" | python3 /tmp/find_label.py "Close" 2>/dev/null || true)
               if [ -z "$COORDS" ]; then
                 if [ $attempt -eq 1 ]; then
                   echo "WARNING: could not find accessibility element labeled 'Close' — dumping raw output for diagnosis:"
-                  idb ui describe-all --udid $SIMULATOR_UDID --json 2>&1 | head -c 4000 || true
+                  printf '%s' "$RAW" | head -c 4000
                   return 1
                 fi
                 return 0   # gone after a previous successful tap — done
