@@ -147,13 +147,35 @@ jobs:
             cp "$outfile" /tmp/prev_shot.png
           }
 
+          # Detects the launch splash page (App.xaml.cs's BuildLoadingPage): solid purple with no
+          # white content area. Sampling one pixel where the Dashboard's white scroll content
+          # always is (px 660,1200 — well inside the header-to-navbar white area on every real
+          # page) is enough to tell "still loading" from "actually rendered".
+          cat > /tmp/is_still_splash.py <<'PYEOF'
+          import sys
+          from PIL import Image
+          im = Image.open(sys.argv[1]).convert('RGB')
+          r, g, b = im.getpixel((660, 1200))
+          sys.exit(0 if not (r > 200 and g > 200 and b > 200) else 1)
+          PYEOF
+          is_still_splash() { python3 /tmp/is_still_splash.py "$1"; }
+
           # Launch app — SIMCTL_CHILD_ prefix passes SEED_DEMO_DATA into the app's environment
           # (see DemoDataSeeder.cs) so screenshots show a populated demo business, not empty states.
           SIMCTL_CHILD_SEED_DEMO_DATA=1 xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
           sleep 9   # seeding 24 rows (10 items, 9 sales, 7 expenses) takes longer than the old sleep 4
 
-          # 1. Dashboard
-          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/01_dashboard.png
+          # 1. Dashboard — a fixed sleep isn't reliable (seeding time varies enough that this has
+          # caught the splash screen instead of the dashboard in more than one run); actually
+          # check and wait longer if it's not ready yet.
+          for attempt in 1 2 3 4 5; do
+            xcrun simctl io $SIMULATOR_UDID screenshot screenshots/01_dashboard.png
+            if ! is_still_splash screenshots/01_dashboard.png; then
+              break
+            fi
+            echo "WARNING: still on the launch splash screen after attempt $attempt, waiting more..."
+            sleep 4
+          done
           cp screenshots/01_dashboard.png /tmp/prev_shot.png
 
           # The very first tap of the sequence has failed 3/3 retries in every run so far, while
