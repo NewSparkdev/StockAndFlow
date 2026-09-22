@@ -108,6 +108,7 @@ public partial class App : Application
 				return;
 			}
 			await initTask;
+			await DemoDataSeeder.SeedIfRequestedAsync(dataService);
 
 			// With the protector installed, upgrade any stored credentials that predate the
 			// current encrypted format (plain text or the old CBC layout) before any page can
