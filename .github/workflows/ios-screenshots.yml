@@ -24,7 +24,7 @@ jobs:
           brew tap facebook/fb
           brew trust facebook/fb
           brew install idb-companion
-          python3 -m pip install --user --break-system-packages fb-idb
+          python3 -m pip install --user --break-system-packages fb-idb pillow
           echo "$(python3 -m site --user-base)/bin" >> $GITHUB_PATH
 
       - name: Select Xcode
@@ -108,6 +108,20 @@ jobs:
           mkdir -p screenshots
           BUNDLE_ID=dev.newspark.stockandflow
 
+          # A raw byte comparison of two screenshots is unreliable here: the status bar clock
+          # ticks over roughly once a minute, which can make two screenshots of the exact same
+          # (unchanged) page look "different" purely from the clock text — producing a false
+          # "the tap worked" verdict that isn't actually true. This crops out the status bar
+          # (top 220px of the 1320x2868 capture) before comparing pixel data.
+          cat > /tmp/crop_cmp.py <<'PYEOF'
+          import sys
+          from PIL import Image
+          a = Image.open(sys.argv[1]).convert('RGB')
+          b = Image.open(sys.argv[2]).convert('RGB')
+          crop = lambda im: im.crop((0, 220, im.width, im.height))
+          sys.exit(0 if list(crop(a).getdata()) == list(crop(b).getdata()) else 1)
+          PYEOF
+
           # idb occasionally drops a tap silently (no error, UI just doesn't move) — seen on
           # different taps across runs, and a blind double-tap didn't fully fix it. Instead,
           # actually check whether the screen changed and retry the tap(s) if it didn't: every
@@ -125,7 +139,7 @@ jobs:
               done
               sleep 1
               xcrun simctl io $SIMULATOR_UDID screenshot "$outfile"
-              if [ ! -f /tmp/prev_shot.png ] || ! cmp -s "$outfile" /tmp/prev_shot.png; then
+              if [ ! -f /tmp/prev_shot.png ] || ! python3 /tmp/crop_cmp.py "$outfile" /tmp/prev_shot.png; then
                 break
               fi
               echo "WARNING: $outfile unchanged after attempt $attempt, retrying tap(s): ${coords[*]}"
