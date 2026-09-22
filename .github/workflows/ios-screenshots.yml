@@ -108,6 +108,16 @@ jobs:
           mkdir -p screenshots
           BUNDLE_ID=dev.newspark.stockandflow
 
+          # idb occasionally drops a single tap silently (no error, UI just doesn't move) — seen
+          # intermittently on different taps across runs. Tapping the same spot twice is safe here:
+          # every target is either a tab (BottomNavBar.cs no-ops if already active) or a button
+          # that's about to navigate away, so a harmless repeat tap can't land on the wrong thing.
+          tap2() {
+            idb ui tap "$1" "$2" --udid $SIMULATOR_UDID
+            sleep 0.5
+            idb ui tap "$1" "$2" --udid $SIMULATOR_UDID
+          }
+
           # Launch app — SIMCTL_CHILD_ prefix passes SEED_DEMO_DATA into the app's environment
           # (see DemoDataSeeder.cs) so screenshots show a populated demo business, not empty states.
           SIMCTL_CHILD_SEED_DEMO_DATA=1 xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
@@ -125,23 +135,23 @@ jobs:
           # screen edge (confirmed by sampling actual screenshot pixels: purple background runs
           # from px 2514-2765, i.e. points 838-921.7 at 3x) — center y = 880, not 956-84/2=914.
           # 2. Inventory tab (column 1)
-          idb ui tap 134 880 --udid $SIMULATOR_UDID
+          tap2 134 880
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/02_inventory.png
 
           # 3. Sales tab (column 2)
-          idb ui tap 220 880 --udid $SIMULATOR_UDID
+          tap2 220 880
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/03_sales.png
 
           # 4. Expenses tab (column 3)
-          idb ui tap 306 880 --udid $SIMULATOR_UDID
+          tap2 306 880
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
 
           # 5. Reports tab (column 4) — SEED_DEMO_DATA also grants the Pro entitlement (see
           # DemoDataSeeder.cs), so this is the real charts page now, not the paywall.
-          idb ui tap 392 880 --udid $SIMULATOR_UDID
+          tap2 392 880
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
 
@@ -183,14 +193,14 @@ jobs:
               return 1
             fi
             echo "Tapping '$1' at $COORDS"
-            idb ui tap $COORDS --udid $SIMULATOR_UDID
+            tap2 $COORDS
           }
 
           # 6. Settings (from Dashboard — MainPage.xaml.cs's toolbar action). Position measured
           # directly from the captured 01_dashboard.png (native toolbar button, right-aligned).
-          idb ui tap 48 880 --udid $SIMULATOR_UDID   # Dashboard tab (column 0)
+          tap2 48 880    # Dashboard tab (column 0)
           sleep 2
-          idb ui tap 371 85 --udid $SIMULATOR_UDID   # Settings button
+          tap2 371 85    # Settings button
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/06_settings.png
 
@@ -203,9 +213,9 @@ jobs:
             # 7. Record Sale (from Sales — SalesViewModel's "Record" action opens the cart page).
             # Position measured directly from the captured 03_sales.png. This is the LAST
             # screenshot, so the modal is never dismissed — nothing needs it after this.
-            idb ui tap 220 880 --udid $SIMULATOR_UDID   # Sales tab (column 2)
+            tap2 220 880   # Sales tab (column 2)
             sleep 2
-            idb ui tap 272 84 --udid $SIMULATOR_UDID    # Record button
+            tap2 272 84    # Record button
             sleep 2
             xcrun simctl io $SIMULATOR_UDID screenshot screenshots/07_record_sale.png
           fi
