@@ -139,14 +139,81 @@ jobs:
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/04_expenses.png
 
-          # 5. Reports tab (column 4)
+          # 5. Reports tab (column 4) — SEED_DEMO_DATA also grants the Pro entitlement (see
+          # DemoDataSeeder.cs), so this is the real charts page now, not the paywall.
           idb ui tap 392 880 --udid $SIMULATOR_UDID
           sleep 2
           xcrun simctl io $SIMULATOR_UDID screenshot screenshots/05_reports.png
 
+          # Finds a native accessibility element by its exact label and prints "x y" (its center,
+          # in points) on stdout, or nothing if not found. Used only for the "Close" toolbar item
+          # below — a real UIBarButtonItem, unlike BottomNavBar's custom gesture-recognizer tiles,
+          # so its position isn't worth hand-measuring: idb can find it directly by label.
+          cat > /tmp/find_label.py <<'PYEOF'
+          import json, sys, re
+          label = sys.argv[1]
+          data = json.loads(sys.stdin.read())
+          items = data if isinstance(data, list) else [data]
+          def frame_of(el):
+              f = el.get('frame')
+              if isinstance(f, dict) and all(k in f for k in ('x','y','width','height')):
+                  return f['x'], f['y'], f['width'], f['height']
+              s = el.get('AXFrame')
+              if isinstance(s, str):
+                  m = re.match(r'\{\{([\d.-]+), ([\d.-]+)\}, \{([\d.-]+), ([\d.-]+)\}\}', s)
+                  if m:
+                      return tuple(float(g) for g in m.groups())
+              return None
+          for el in items:
+              lbl = el.get('AXLabel') or el.get('label') or el.get('title') or el.get('AXTitle') or ''
+              if lbl.strip().lower() == label.lower():
+                  fr = frame_of(el)
+                  if fr:
+                      x, y, w, h = fr
+                      print(f"{x + w/2:.0f} {y + h/2:.0f}")
+                      sys.exit(0)
+          sys.exit(1)
+          PYEOF
+
+          tap_label() {
+            COORDS=$(idb ui describe-all --udid $SIMULATOR_UDID --json 2>/dev/null | python3 /tmp/find_label.py "$1" || true)
+            if [ -z "$COORDS" ]; then
+              echo "WARNING: could not find accessibility element labeled '$1' — dumping raw output for diagnosis:"
+              idb ui describe-all --udid $SIMULATOR_UDID --json 2>&1 | head -c 4000 || true
+              return 1
+            fi
+            echo "Tapping '$1' at $COORDS"
+            idb ui tap $COORDS --udid $SIMULATOR_UDID
+          }
+
+          # 6. Settings (from Dashboard — MainPage.xaml.cs's toolbar action). Position measured
+          # directly from the captured 01_dashboard.png (native toolbar button, right-aligned).
+          idb ui tap 48 880 --udid $SIMULATOR_UDID   # Dashboard tab (column 0)
+          sleep 2
+          idb ui tap 371 85 --udid $SIMULATOR_UDID   # Settings button
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/06_settings.png
+
+          # Dismiss the Settings modal (SettingsPage.xaml has a "Close" ToolbarItem) so the tab bar
+          # underneath is reachable again. If this fails, the rest of the sequence is skipped but
+          # the 6 screenshots already taken still get uploaded (see "Upload screenshots" step).
+          if tap_label "Close"; then
+            sleep 2
+
+            # 7. Record Sale (from Sales — SalesViewModel's "Record" action opens the cart page).
+            # Position measured directly from the captured 03_sales.png. This is the LAST
+            # screenshot, so the modal is never dismissed — nothing needs it after this.
+            idb ui tap 220 880 --udid $SIMULATOR_UDID   # Sales tab (column 2)
+            sleep 2
+            idb ui tap 272 84 --udid $SIMULATOR_UDID    # Record button
+            sleep 2
+            xcrun simctl io $SIMULATOR_UDID screenshot screenshots/07_record_sale.png
+          fi
+
           ls -lh screenshots/
 
       - name: Upload screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-screenshots
