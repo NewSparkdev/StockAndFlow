@@ -178,11 +178,15 @@ jobs:
           done
           cp screenshots/01_dashboard.png /tmp/prev_shot.png
 
-          # The very first tap of the sequence has failed 3/3 retries in every run so far, while
-          # every later tap succeeds reliably — this isn't idb flakiness, it's the simulator/touch
-          # pipeline still settling right after the long initial launch+seed wait. A plain settle
-          # delay before the first tap, with no retry loop involved yet, targets that directly.
-          sleep 4
+          # The very first idb tap of the sequence has failed all 3 retries in multiple runs,
+          # while every later tap (seconds apart) succeeds reliably. Root cause: idb_companion's
+          # connection sits completely idle from the "idb list-targets" sanity check (Start idb
+          # companion step) through the entire launch+seed+dashboard-ready wait — around a minute
+          # with zero idb traffic, confirmed from run timestamps — long enough that its first real
+          # command afterward can fail/hang while it re-negotiates. Ping it right before that first
+          # real tap instead of leaving it idle the whole time.
+          idb list-targets --udid $SIMULATOR_UDID >/dev/null 2>&1 || true
+          sleep 1
 
           # BottomNavBar.cs: HeightRequest=84, Grid Padding(8,8,8,10), ColumnSpacing=6, 5 equal
           # star columns. iPhone 16 Pro Max is 440x956 points (1320x2868px / 3x — verified from
