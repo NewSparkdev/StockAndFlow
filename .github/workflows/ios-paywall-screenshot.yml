@@ -105,6 +105,15 @@ jobs:
           mkdir -p screenshots
           BUNDLE_ID=dev.newspark.stockandflow
 
+          cat > /tmp/crop_cmp.py <<'PYEOF'
+          import sys
+          from PIL import Image
+          a = Image.open(sys.argv[1]).convert('RGB')
+          b = Image.open(sys.argv[2]).convert('RGB')
+          crop = lambda im: im.crop((0, 220, im.width, im.height))
+          sys.exit(0 if list(crop(a).getdata()) == list(crop(b).getdata()) else 1)
+          PYEOF
+
           cat > /tmp/is_still_splash.py <<'PYEOF'
           import sys
           from PIL import Image
@@ -129,18 +138,24 @@ jobs:
             sleep 4
           done
           sleep 4
+          cp /tmp/dashboard.png /tmp/prev_shot.png
 
           # idb_companion connection goes stale after the long idle wait above — cheap ping first.
           idb list-targets --udid $SIMULATOR_UDID >/dev/null 2>&1 || true
           sleep 1
 
           # Reports tab (column 4 of the bottom nav bar) — Pro-gated, so this now shows the
-          # paywall since GRANT_PRO_FOR_SCREENSHOTS wasn't set.
+          # paywall since GRANT_PRO_FOR_SCREENSHOTS wasn't set. Actually verify the screen
+          # changed before accepting the result, retrying the tap if it didn't (same approach
+          # as snap() in ios-screenshots.yml).
           for attempt in 1 2 3; do
             idb ui tap 392 880 --udid $SIMULATOR_UDID
             sleep 2
             xcrun simctl io $SIMULATOR_UDID screenshot screenshots/paywall.png
-            break
+            if ! python3 /tmp/crop_cmp.py screenshots/paywall.png /tmp/prev_shot.png; then
+              break
+            fi
+            echo "WARNING: screen unchanged after attempt $attempt, retrying tap"
           done
 
           ls -lh screenshots/
