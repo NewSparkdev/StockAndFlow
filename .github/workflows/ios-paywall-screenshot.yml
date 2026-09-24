@@ -151,12 +151,18 @@ jobs:
           for attempt in 1 2 3; do
             idb ui tap 392 880 --udid $SIMULATOR_UDID
             sleep 2
-            xcrun simctl io $SIMULATOR_UDID screenshot screenshots/paywall.png
-            if ! python3 /tmp/crop_cmp.py screenshots/paywall.png /tmp/prev_shot.png; then
+            xcrun simctl io $SIMULATOR_UDID screenshot /tmp/paywall_check.png
+            if ! python3 /tmp/crop_cmp.py /tmp/paywall_check.png /tmp/prev_shot.png; then
               break
             fi
             echo "WARNING: screen unchanged after attempt $attempt, retrying tap"
           done
+
+          # The paywall page loads with a scroll animation into view; a screenshot taken right as
+          # it lands has shown a torn/ghosted status-bar compositor artifact in one run. Settle
+          # briefly and take the real screenshot fresh, discarding the verification capture above.
+          sleep 2
+          xcrun simctl io $SIMULATOR_UDID screenshot screenshots/paywall.png
 
           ls -lh screenshots/
 
