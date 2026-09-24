@@ -18,9 +18,12 @@ internal static class DemoDataSeeder
 		if (Environment.GetEnvironmentVariable("SEED_DEMO_DATA") != "1")
 			return;
 
-		// Screenshot-only: unlocks the real Reports page instead of the paywall. Same storage key
+		// Screenshot-only: unlocks the real Reports page instead of the paywall. Opt-in separately
+		// from data seeding so a screenshot run can capture the paywall itself (e.g. for the IAP
+		// review screenshot) with realistic demo data still in place. Same storage key
 		// EntitlementService reads ("pro_entitlement_active"); never touched outside this CI path.
-		await SecureStorage.Default.SetAsync("pro_entitlement_active", "1");
+		if (Environment.GetEnvironmentVariable("GRANT_PRO_FOR_SCREENSHOTS") == "1")
+			await SecureStorage.Default.SetAsync("pro_entitlement_active", "1");
 
 		var existing = await dataService.GetAllAsync<InventoryItem>();
 		if (existing.Count > 0)

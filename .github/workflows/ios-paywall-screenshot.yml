@@ -1,0 +1,154 @@
+name: iOS Paywall Screenshot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshot:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-ios maui-android
+
+      - name: Install idb
+        run: |
+          brew tap facebook/fb
+          brew trust facebook/fb
+          brew install idb-companion
+          python3 -m pip install --user --break-system-packages fb-idb pillow
+          echo "$(python3 -m site --user-base)/bin" >> $GITHUB_PATH
+
+      - name: Select Xcode
+        run: |
+          echo "Available Xcodes:"
+          ls /Applications/ | grep -i xcode || true
+          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then
+            echo "Selecting: $LATEST"
+            sudo xcode-select -switch "$LATEST/Contents/Developer"
+          fi
+          xcodebuild -version
+          sudo xcodebuild -runFirstLaunch
+          DEV=$(xcode-select -p)
+          SDKS="$DEV/Platforms/MacOSX.platform/Developer/SDKs"
+          echo "macOS SDKs before fix:"
+          ls -la "$SDKS" 2>/dev/null || echo none
+          OLDER_XCODES=$(ls -d /Applications/Xcode_26.5*.app /Applications/Xcode_26.4*.app /Applications/Xcode_26.3*.app 2>/dev/null | sort -rV)
+          GOOD_SDK=""
+          for APP in $OLDER_XCODES; do
+            SDK_DIR="$APP/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs"
+            REAL_SDK=$(find "$SDK_DIR" -maxdepth 1 -name "MacOSX*.sdk" -not -type l -type d 2>/dev/null | sort -V | tail -1)
+            if [ -n "$REAL_SDK" ]; then
+              GOOD_SDK="$REAL_SDK"
+              break
+            fi
+          done
+          if [ -n "$GOOD_SDK" ]; then
+            echo "Replacing broken SDK with: $GOOD_SDK"
+            sudo mkdir -p "$SDKS"
+            sudo rm -rf "$SDKS/MacOSX.sdk"
+            sudo ln -sf "$GOOD_SDK" "$SDKS/MacOSX.sdk"
+            echo "Linked MacOSX.sdk -> $GOOD_SDK"
+          else
+            echo "WARNING: No older Xcode macOS SDK found"
+          fi
+          echo "macOS SDKs after fix:"
+          ls -la "$SDKS"
+
+      - name: Build for simulator
+        run: |
+          dotnet build StockAndFlow.Mobile/StockAndFlow.Mobile.csproj \
+            -f net10.0-ios \
+            -c Debug \
+            -r iossimulator-arm64 \
+            -p:ApplicationId=dev.newspark.stockandflow
+
+      - name: Boot iPhone 16 Pro Max simulator
+        run: |
+          UDID=$(xcrun simctl list devices available | grep "iPhone 16 Pro Max" | head -1 | grep -oE '[A-F0-9-]{36}' || true)
+          if [ -z "$UDID" ]; then
+            UDID=$(xcrun simctl create "iPhone 16 Pro Max" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max")
+          fi
+          echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot $UDID || true
+          xcrun simctl bootstatus $UDID -b
+
+      - name: Install app on simulator
+        run: |
+          APP_PATH=$(find StockAndFlow.Mobile/bin -name "*.app" -path "*/iossimulator-arm64/*" | head -1)
+          echo "Found app at: $APP_PATH"
+          xcrun simctl install $SIMULATOR_UDID "$APP_PATH"
+
+      - name: Skip the first-launch onboarding carousel
+        run: |
+          xcrun simctl spawn $SIMULATOR_UDID defaults write dev.newspark.stockandflow onboarding_done -bool YES
+
+      - name: Start idb companion
+        run: |
+          idb_companion --udid $SIMULATOR_UDID > idb_companion.log 2>&1 &
+          echo $! > idb_companion.pid
+          sleep 5
+          cat idb_companion.log || true
+          idb list-targets
+
+      - name: Take paywall screenshot
+        run: |
+          mkdir -p screenshots
+          BUNDLE_ID=dev.newspark.stockandflow
+
+          cat > /tmp/is_still_splash.py <<'PYEOF'
+          import sys
+          from PIL import Image
+          im = Image.open(sys.argv[1]).convert('RGB')
+          r, g, b = im.getpixel((660, 1200))
+          sys.exit(0 if not (r > 200 and g > 200 and b > 200) else 1)
+          PYEOF
+          is_still_splash() { python3 /tmp/is_still_splash.py "$1"; }
+
+          # SEED_DEMO_DATA=1 but NOT GRANT_PRO_FOR_SCREENSHOTS — demo data is seeded (so the app
+          # isn't in an empty first-run state) but the Pro entitlement is left ungranted, so
+          # navigating to a Pro-gated feature shows the real paywall (see DemoDataSeeder.cs).
+          SIMCTL_CHILD_SEED_DEMO_DATA=1 xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
+          sleep 9
+
+          for attempt in 1 2 3 4 5; do
+            xcrun simctl io $SIMULATOR_UDID screenshot /tmp/dashboard.png
+            if ! is_still_splash /tmp/dashboard.png; then
+              break
+            fi
+            echo "WARNING: still on the launch splash screen after attempt $attempt, waiting more..."
+            sleep 4
+          done
+          sleep 4
+
+          # idb_companion connection goes stale after the long idle wait above — cheap ping first.
+          idb list-targets --udid $SIMULATOR_UDID >/dev/null 2>&1 || true
+          sleep 1
+
+          # Reports tab (column 4 of the bottom nav bar) — Pro-gated, so this now shows the
+          # paywall since GRANT_PRO_FOR_SCREENSHOTS wasn't set.
+          for attempt in 1 2 3; do
+            idb ui tap 392 880 --udid $SIMULATOR_UDID
+            sleep 2
+            xcrun simctl io $SIMULATOR_UDID screenshot screenshots/paywall.png
+            break
+          done
+
+          ls -lh screenshots/
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-paywall-screenshot
+          path: screenshots/
+          if-no-files-found: error

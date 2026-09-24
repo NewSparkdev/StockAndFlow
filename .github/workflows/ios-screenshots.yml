@@ -162,7 +162,7 @@ jobs:
 
           # Launch app — SIMCTL_CHILD_ prefix passes SEED_DEMO_DATA into the app's environment
           # (see DemoDataSeeder.cs) so screenshots show a populated demo business, not empty states.
-          SIMCTL_CHILD_SEED_DEMO_DATA=1 xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
+          SIMCTL_CHILD_SEED_DEMO_DATA=1 SIMCTL_CHILD_GRANT_PRO_FOR_SCREENSHOTS=1 xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
           sleep 9   # seeding 24 rows (10 items, 9 sales, 7 expenses) takes longer than the old sleep 4
 
           # 1. Dashboard — a fixed sleep isn't reliable (seeding time varies enough that this has
