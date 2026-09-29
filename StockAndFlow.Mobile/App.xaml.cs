@@ -21,6 +21,11 @@ public partial class App : Application
 		// awaited in InitializeAsync before anything reads or writes credentials — saving settings
 		// while the default passthrough provider is still active would store them unencrypted.
 		_credentialInit = MauiCredentialProtector.InitializeAsync();
+
+#if ANDROID
+		// Modal pages get their own window with dark status-bar icons; see ModalStatusBar.
+		ModalPushed += (_, _) => ModalStatusBar.Apply();
+#endif
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
