@@ -4,6 +4,11 @@ namespace StockAndFlow.Mobile.Pages;
 
 public partial class PaywallPage : ContentPage
 {
+	private const string PrivacyPolicyUrl = "https://www.newspark.dev/privacy";
+	// No custom EULA: Apple's standard one on iOS, Google Play's terms on Android.
+	private const string AppleStandardEulaUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+	private const string GooglePlayTermsUrl = "https://play.google.com/about/play-terms/";
+
 	private readonly EntitlementService _entitlements;
 	private bool _busy;
 
@@ -16,6 +21,30 @@ public partial class PaywallPage : ContentPage
 		{
 			ReasonLabel.Text = reason;
 			ReasonLabel.IsVisible = true;
+		}
+
+		var account = DeviceInfo.Platform == DevicePlatform.iOS ? "Apple Account" : "Google Play account";
+		RenewalLabel.Text =
+			$"Subscriptions renew automatically at the price shown unless cancelled at least 24 hours before " +
+			$"the end of the current period. Payment is charged to your {account}. Manage or cancel anytime " +
+			$"in your {account} settings.";
+	}
+
+	private async void OnPrivacyTapped(object? sender, TappedEventArgs e) =>
+		await OpenLinkAsync(PrivacyPolicyUrl);
+
+	private async void OnTermsTapped(object? sender, TappedEventArgs e) =>
+		await OpenLinkAsync(DeviceInfo.Platform == DevicePlatform.iOS ? AppleStandardEulaUrl : GooglePlayTermsUrl);
+
+	private async Task OpenLinkAsync(string url)
+	{
+		try
+		{
+			await Browser.Default.OpenAsync(url, BrowserLaunchMode.SystemPreferred);
+		}
+		catch
+		{
+			await DisplayAlert("Couldn't open link", url, "OK");
 		}
 	}
 

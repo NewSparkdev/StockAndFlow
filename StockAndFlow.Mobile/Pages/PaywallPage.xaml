@@ -75,9 +75,30 @@
                     TextColor="{StaticResource Primary}"
                     Clicked="OnRestoreClicked" />
 
-            <Label Text="Subscriptions renew automatically until cancelled in your device's store settings."
+            <Label x:Name="RenewalLabel"
                    Style="{StaticResource Caption}"
                    HorizontalTextAlignment="Center" />
+
+            <!-- Apple guideline 3.1.2 requires working Privacy Policy and Terms of Use links in the
+                 purchase flow of any app selling auto-renewable subscriptions. -->
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="16">
+                <Label Text="Privacy Policy"
+                       FontSize="14"
+                       TextColor="{StaticResource Primary}"
+                       TextDecorations="Underline">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnPrivacyTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <Label Text="Terms of Use"
+                       FontSize="14"
+                       TextColor="{StaticResource Primary}"
+                       TextDecorations="Underline">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTermsTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>
