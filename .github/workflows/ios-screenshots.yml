@@ -264,6 +264,20 @@ jobs:
                 if [ $attempt -eq 1 ]; then
                   echo "WARNING: could not find accessibility element labeled 'Close' — dumping raw output for diagnosis:"
                   printf '%s' "$RAW" | head -c 4000
+                  # describe-all sometimes returns nothing at all (2026-09-29 run: empty dump), which
+                  # silently dropped the Record Sale shot. Close sits at a fixed spot (top-right
+                  # toolbar, measured from 06_settings.png: 1143,253 px / 3 = 381,84 pt) — fall back
+                  # to tapping it there, verified the same way snap() verifies taps.
+                  xcrun simctl io $SIMULATOR_UDID screenshot /tmp/close_before.png
+                  for fb in 1 2 3; do
+                    echo "Falling back to fixed 'Close' tap at 381 84 (attempt $fb)"
+                    idb ui tap 381 84 --udid $SIMULATOR_UDID
+                    sleep 2
+                    xcrun simctl io $SIMULATOR_UDID screenshot /tmp/close_after.png
+                    if ! python3 /tmp/crop_cmp.py /tmp/close_before.png /tmp/close_after.png; then
+                      return 0   # screen changed — Settings dismissed
+                    fi
+                  done
                   return 1
                 fi
                 return 0   # gone after a previous successful tap — done
