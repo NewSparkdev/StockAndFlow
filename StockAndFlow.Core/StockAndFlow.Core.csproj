@@ -12,6 +12,10 @@
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView" Version="2.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <!-- EF Core 10.0.10 pulls SQLitePCLRaw 2.1.11, whose bundled native SQLite has a high-severity
+         advisory (GHSA-2m69-gcr7-jv3q). 2.1.13 ships a patched SQLite on the same 2.1 line; this
+         direct reference lifts every head (Android/iOS/Windows) to it. Drop once EF Core does. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
