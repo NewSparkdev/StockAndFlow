@@ -8,7 +8,8 @@ namespace StockAndFlow.Mobile;
 /// App Store screenshots show real content instead of empty states, and grants the Pro entitlement
 /// so the Reports screenshot shows real charts instead of the paywall. Only runs when the
 /// SEED_DEMO_DATA environment variable is set — passed as SIMCTL_CHILD_SEED_DEMO_DATA by the
-/// iOS screenshot workflow — and only when the database is otherwise empty. A real install never
+/// iOS screenshot workflow, or via `adb shell setprop debug.mono.env` on a Debug Android build —
+/// and only when the database is otherwise empty. A real install never
 /// has this environment variable set, so this never touches a user's data or entitlement.
 /// </summary>
 internal static class DemoDataSeeder
@@ -44,6 +45,9 @@ internal static class DemoDataSeeder
 		foreach (var item in items)
 			await dataService.SaveAsync(item);
 
+		// Four weeks of sales, all inside the Sales/Expenses pages' default one-month window, sized
+		// against the expenses below so the business reads as healthy (~$918 revenue, ~$364 net,
+		// ~40% margin) — a store screenshot showing a loss sells the app badly.
 		var now = DateTime.Now;
 		var sales = new[]
 		{
@@ -56,6 +60,25 @@ internal static class DemoDataSeeder
 			MakeSale(cedar, 4, now.AddDays(-7), null),
 			MakeSale(citrus, 3, now.AddDays(-8), "Sophie M."),
 			MakeSale(seaSalt, 1, now.AddDays(-9), null),
+			MakeSale(lavender, 3, now.AddDays(-10), "Grace H."),
+			MakeSale(cedar, 2, now.AddDays(-11), null),
+			MakeSale(driftwood, 1, now.AddDays(-12), "Owen B."),
+			MakeSale(lavender, 2, now.AddDays(-13), null),
+			MakeSale(seaSalt, 2, now.AddDays(-14), "Mia L."),
+			MakeSale(vanilla, 3, now.AddDays(-15), null),
+			MakeSale(citrus, 2, now.AddDays(-16), "Emma R."),
+			MakeSale(lavender, 4, now.AddDays(-17), null),
+			MakeSale(cedar, 1, now.AddDays(-18), "Lucas D."),
+			MakeSale(driftwood, 3, now.AddDays(-19), null),
+			MakeSale(seaSalt, 2, now.AddDays(-20), "Ava K."),
+			MakeSale(lavender, 1, now.AddDays(-21), null),
+			MakeSale(vanilla, 2, now.AddDays(-22), "Chloe S."),
+			MakeSale(cedar, 3, now.AddDays(-23), null),
+			MakeSale(lavender, 2, now.AddDays(-24), "Noah P."),
+			MakeSale(driftwood, 2, now.AddDays(-25), null),
+			MakeSale(seaSalt, 1, now.AddDays(-26), "Ella W."),
+			MakeSale(citrus, 2, now.AddDays(-27), null),
+			MakeSale(lavender, 3, now.AddDays(-28), "Grace H."),
 		};
 		foreach (var sale in sales)
 			await dataService.SaveAsync(sale);
@@ -65,7 +88,7 @@ internal static class DemoDataSeeder
 			new Expense { Category = "Supplies", Amount = 85.00m, Description = "Glass jars restock", ExpenseDate = now.AddDays(-6) },
 			new Expense { Category = "Shipping", Amount = 32.50m, Description = "USPS labels", ExpenseDate = now.AddDays(-5) },
 			new Expense { Category = "Marketing", Amount = 50.00m, Description = "Instagram ads", ExpenseDate = now.AddDays(-3) },
-			new Expense { Category = "Rent", Amount = 300.00m, Description = "Studio space (partial)", ExpenseDate = now.AddDays(-10) },
+			new Expense { Category = "Rent", Amount = 60.00m, Description = "Craft fair table", ExpenseDate = now.AddDays(-10) },
 			new Expense { Category = "Supplies", Amount = 64.00m, Description = "Soy wax restock", ExpenseDate = now.AddDays(-12) },
 			new Expense { Category = "Equipment", Amount = 45.00m, Description = "Pouring pitcher", ExpenseDate = now.AddDays(-14) },
 			new Expense { Category = "Marketing", Amount = 20.00m, Description = "Farmers market booth fee", ExpenseDate = now.AddDays(-16) },
