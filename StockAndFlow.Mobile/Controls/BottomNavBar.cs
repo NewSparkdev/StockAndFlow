@@ -63,9 +63,15 @@ public class BottomNavBar : ContentView
 
 		// Fixed height so the bar measures identically on every page — otherwise the Auto grid row
 		// can resolve to slightly different heights per page, making the whole bar jump on navigation.
-		HeightRequest = 84;
+		// Set on the tile row, not the bar: the bar itself grows by the bottom safe-area inset below.
+		grid.HeightRequest = 84;
 		BackgroundColor = Color.FromArgb("#512BD4");
 		Content = grid;
+
+		// HostPage lets the layout extend under the iPhone home indicator; keep the purple background
+		// running to the screen edge but inset the tiles above the indicator.
+		SafeAreaEdges = new SafeAreaEdges(
+			SafeAreaRegions.None, SafeAreaRegions.None, SafeAreaRegions.None, SafeAreaRegions.Container);
 		UpdateSelection();
 	}
 

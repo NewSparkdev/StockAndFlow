@@ -54,6 +54,13 @@ public class HostPage : ContentPage
 		grid.Add(_bar);
 		Content = grid;
 
+		// Let the layout run into the bottom safe area (the iPhone home-indicator strip) so the purple
+		// bar reaches the screen edge; the bar pads its own tiles back out of that strip. Previously
+		// the strip showed the bare page background — white in light mode, black in dark mode.
+		// Top/left/right stay safe so the nav bar and landscape notch insets are unaffected.
+		SafeAreaEdges = new SafeAreaEdges(
+			SafeAreaRegions.Container, SafeAreaRegions.Container, SafeAreaRegions.Container, SafeAreaRegions.None);
+
 		_bar.SectionSelected += SelectSection;
 
 		SelectSection("dashboard");
