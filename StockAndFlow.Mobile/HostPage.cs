@@ -58,8 +58,12 @@ public class HostPage : ContentPage
 		// bar reaches the screen edge; the bar pads its own tiles back out of that strip. Previously
 		// the strip showed the bare page background — white in light mode, black in dark mode.
 		// Top/left/right stay safe so the nav bar and landscape notch insets are unaffected.
-		SafeAreaEdges = new SafeAreaEdges(
+		// Both the page AND its root grid need it: in .NET 10 a Layout touching the screen edge applies
+		// the safe-area inset itself too (setting only the page left the strip in place).
+		var edges = new SafeAreaEdges(
 			SafeAreaRegions.Container, SafeAreaRegions.Container, SafeAreaRegions.Container, SafeAreaRegions.None);
+		SafeAreaEdges = edges;
+		grid.SafeAreaEdges = edges;
 
 		_bar.SectionSelected += SelectSection;
 
