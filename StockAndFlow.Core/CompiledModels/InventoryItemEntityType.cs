@@ -19,7 +19,7 @@ namespace StockAndFlow.Data.CompiledModels
                 "StockAndFlow.Models.InventoryItem",
                 typeof(InventoryItem),
                 baseEntityType,
-                propertyCount: 20,
+                propertyCount: 21,
                 unnamedIndexCount: 5,
                 keyCount: 1);
 
@@ -86,6 +86,13 @@ namespace StockAndFlow.Data.CompiledModels
                 valueGenerated: ValueGenerated.OnAdd,
                 sentinel: false);
             isDeleted.AddAnnotation("Relational:DefaultValue", false);
+
+            var isSellable = runtimeEntityType.AddProperty(
+                "IsSellable",
+                typeof(bool),
+                propertyInfo: typeof(InventoryItem).GetProperty("IsSellable", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(InventoryItem).GetField("<IsSellable>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var lastModifiedDate = runtimeEntityType.AddProperty(
                 "LastModifiedDate",

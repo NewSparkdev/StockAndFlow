@@ -11,7 +11,7 @@ namespace StockAndFlow.Data.CompiledModels
     public partial class StockAndFlowDbContextModel
     {
         private StockAndFlowDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("bb628414-5642-4d93-901e-1db16c520494"), entityTypeCount: 7)
+            : base(skipDetectChanges: false, modelId: new Guid("fda7ee7f-04ff-4493-81f9-bedf75378f8b"), entityTypeCount: 7)
         {
         }
 
