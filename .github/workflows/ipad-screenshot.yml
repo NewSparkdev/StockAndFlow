@@ -123,6 +123,18 @@ jobs:
           file screenshots/ipad_dashboard.png
           ls -lh screenshots/
 
+      - name: Take Inventory and Sales screenshots
+        run: |
+          BUNDLE_ID=dev.newspark.stockandflow
+          for SECTION in inventory sales; do
+            xcrun simctl terminate $SIMULATOR_UDID $BUNDLE_ID || true
+            sleep 2
+            SIMCTL_CHILD_SEED_DEMO_DATA=1 SIMCTL_CHILD_GRANT_PRO_FOR_SCREENSHOTS=1 SIMCTL_CHILD_SCREENSHOT_SECTION=$SECTION xcrun simctl launch $SIMULATOR_UDID $BUNDLE_ID
+            sleep 12
+            xcrun simctl io $SIMULATOR_UDID screenshot screenshots/ipad_$SECTION.png
+          done
+          ls -lh screenshots/
+
       - name: Upload screenshot
         if: always()
         uses: actions/upload-artifact@v4

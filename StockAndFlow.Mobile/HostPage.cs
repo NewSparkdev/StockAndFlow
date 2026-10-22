@@ -68,6 +68,12 @@ public class HostPage : ContentPage
 		_bar.SectionSelected += SelectSection;
 
 		SelectSection("dashboard");
+
+		// Screenshot-only: CI launches the app on a given section (SIMCTL_CHILD_SCREENSHOT_SECTION).
+		// Unset in normal use, and SelectSection ignores unknown ids.
+		var startSection = Environment.GetEnvironmentVariable("SCREENSHOT_SECTION");
+		if (!string.IsNullOrEmpty(startSection))
+			SelectSection(startSection);
 	}
 
 	private void Register(View view)
